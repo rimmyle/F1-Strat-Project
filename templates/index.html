@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Strategy Predictor</title>
+    {% if loading %}
+      <meta http-equiv="refresh" content="2" />
+    {% endif %}
+    <style>
+      :root {
+        --bg: #08111f;
+        --panel: #101a2d;
+        --panel-2: #15233b;
+        --text: #eef4ff;
+        --muted: #97a7c2;
+        --accent: #44c2ff;
+        --border: rgba(148, 163, 184, 0.18);
+        --success: #63e6b2;
+        --warn: #ffbf69;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top, rgba(68, 194, 255, 0.18), transparent 35%),
+          linear-gradient(180deg, #09101d 0%, var(--bg) 100%);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .page {
+        width: min(1100px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      header {
+        padding: 18px 0 24px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.45rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--accent);
+        background: rgba(68, 194, 255, 0.08);
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        max-width: min(100%, 520px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .view-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.45rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgba(68, 194, 255, 0.04);
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+      }
+
+      .view-link.active {
+        color: var(--accent);
+        background: rgba(68, 194, 255, 0.12);
+      }
+
+      .view-link.session-link {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .view-link.data-link {
+        color: var(--warn);
+        background: rgba(255, 191, 105, 0.08);
+      }
+
+      h1 {
+        margin: 16px 0 12px;
+        font-size: clamp(2.1rem, 4vw, 3.5rem);
+        line-height: 1.05;
+      }
+
+      .lead {
+        max-width: 70ch;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+        font-size: 1rem;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 28px 0 20px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.9);
+      }
+
+      .toolbar.data-toolbar {
+        grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr) auto;
+        align-items: start;
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .field input,
+      .field select {
+        width: 100%;
+        padding: 0.85rem 0.95rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--panel-2);
+        color: var(--text);
+        font: inherit;
+      }
+
+      .field input:focus,
+      .field select:focus {
+        outline: 2px solid rgba(68, 194, 255, 0.3);
+        border-color: rgba(68, 194, 255, 0.5);
+      }
+
+      .toolbar button {
+        align-self: end;
+        padding: 0.9rem 1rem;
+        border: 0;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent), #77f0d1);
+        color: #07101d;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .toolbar button.secondary {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+
+      .driver-picker {
+        position: relative;
+      }
+
+      .driver-trigger {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0.75rem 0.9rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--panel-2);
+        color: var(--text);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .driver-trigger:hover {
+        border-color: rgba(68, 194, 255, 0.5);
+      }
+
+      .driver-trigger-copy {
+        min-width: 0;
+      }
+
+      .driver-trigger-copy strong,
+      .driver-option-copy strong {
+        display: block;
+        font-size: 0.95rem;
+        line-height: 1.35;
+      }
+
+      .driver-trigger-copy small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .team-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 28px;
+        border-radius: 8px;
+        color: #08111f;
+        font-weight: 800;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        flex: 0 0 auto;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+      }
+
+      .driver-menu {
+        position: absolute;
+        z-index: 30;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        display: none;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(9, 16, 29, 0.98);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        max-height: 360px;
+        overflow: auto;
+      }
+
+      .driver-picker.open .driver-menu {
+        display: grid;
+        gap: 6px;
+      }
+
+      .driver-option {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0.72rem 0.85rem;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .driver-option:hover,
+      .driver-option.active {
+        border-color: rgba(68, 194, 255, 0.4);
+        background: rgba(33, 52, 86, 0.8);
+      }
+
+      .driver-option-copy small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .stint-field {
+        min-width: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+        gap: 20px;
+      }
+
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.92);
+        overflow: hidden;
+      }
+
+      .panel header {
+        padding: 18px 20px 10px;
+      }
+
+      .panel h2 {
+        margin: 0 0 6px;
+        font-size: 1.2rem;
+      }
+
+      .panel .subtle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.5;
+      }
+
+      .summary {
+        display: grid;
+        gap: 12px;
+        padding: 0 20px 20px;
+      }
+
+      .summary.dense {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .stint-panel {
+        grid-column: 1 / -1;
+      }
+
+      .stint-panel.embedded {
+        grid-column: auto;
+        margin-top: 0;
+      }
+
+      .stint-viewport {
+        padding: 0 20px 20px;
+        overflow-x: auto;
+      }
+
+      .stint-chart {
+        display: flex;
+        gap: 10px;
+        min-width: 860px;
+        align-items: stretch;
+      }
+
+      .stint-bar {
+        flex: 1 1 0;
+        min-width: 160px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(21, 35, 59, 0.95);
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      .stint-bar:hover {
+        border-color: rgba(68, 194, 255, 0.65);
+        background: rgba(33, 52, 86, 0.98);
+      }
+
+      .stint-bar.active {
+        border-color: rgba(255, 191, 105, 0.85);
+        background: linear-gradient(135deg, rgba(255, 191, 105, 0.95), rgba(255, 138, 91, 0.95));
+        color: #07101d;
+      }
+
+      .stint-bar span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .stint-bar strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+
+      .stint-bar small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .stint-lap-picker {
+        margin-top: 14px;
+        padding: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 14px;
+        background: linear-gradient(180deg, rgba(7, 14, 27, 0.95), rgba(12, 19, 34, 0.98));
+      }
+
+      .stint-lap-picker header {
+        padding: 0 0 10px;
+      }
+
+      .stint-lap-grid {
+        display: grid;
+        gap: 6px;
+        grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+      }
+
+      .lap-tile {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(21, 35, 59, 0.95);
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .lap-tile:hover {
+        border-color: rgba(68, 194, 255, 0.65);
+        background: rgba(33, 52, 86, 0.98);
+      }
+
+      .lap-tile.active {
+        border-color: rgba(255, 191, 105, 0.85);
+        background: linear-gradient(135deg, rgba(255, 191, 105, 0.95), rgba(255, 138, 91, 0.95));
+        color: #07101d;
+      }
+
+      .lap-tile.fresh {
+        box-shadow: inset 0 0 0 1px rgba(99, 230, 178, 0.14);
+      }
+
+      .metric {
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(21, 35, 59, 0.95);
+        border: 1px solid var(--border);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 1.02rem;
+        line-height: 1.45;
+      }
+
+      .notice {
+        margin: 0 0 18px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 191, 105, 0.28);
+        background: rgba(255, 191, 105, 0.08);
+        color: #ffe1b0;
+      }
+
+      .loading {
+        margin: 0 0 18px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(68, 194, 255, 0.28);
+        background: rgba(68, 194, 255, 0.08);
+        color: #d7f4ff;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 14px 18px;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      td:first-child,
+      th:first-child {
+        padding-left: 20px;
+      }
+
+      td:last-child,
+      th:last-child {
+        padding-right: 20px;
+      }
+
+      .empty {
+        padding: 20px;
+        color: var(--muted);
+      }
+
+      .ok {
+        color: var(--success);
+      }
+
+      .warn {
+        color: var(--warn);
+      }
+
+      .session-note {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .session-panel {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      }
+
+      .charts {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.92);
+        overflow: hidden;
+      }
+
+      .charts header {
+        padding: 18px 20px 10px;
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        padding: 0 20px 20px;
+      }
+
+      .chart-card {
+        padding: 14px 14px 12px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(21, 35, 59, 0.95);
+      }
+
+      .chart-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+        color: var(--text);
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .chart-title span {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .chart-svg {
+        width: 100%;
+        height: 180px;
+        display: block;
+      }
+
+      .chart-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .track-map {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.92);
+        overflow: hidden;
+      }
+
+      .track-map header {
+        padding: 18px 20px 10px;
+      }
+
+      .track-map-viewport {
+        padding: 0 20px 20px;
+      }
+
+      .track-svg {
+        width: 100%;
+        height: min(70vh, 720px);
+        display: block;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(7, 14, 27, 0.95), rgba(12, 19, 34, 0.98));
+      }
+
+      .track-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .legend-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+      }
+
+      @media (max-width: 900px) {
+        .toolbar,
+        .grid,
+        .session-panel,
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="topbar">
+          <a class="eyebrow session-link" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}">{{ session_badge }}</a>
+          <a class="view-link {% if view == 'results' %}active{% endif %}" href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}">Results</a>
+          <a class="view-link {% if view == 'strategy' %}active{% endif %}" href="/strategy?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}">Strategy</a>
+          <a class="view-link data-link {% if view == 'data' %}active{% endif %}" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}">DATA</a>
+        </div>
+        <h1>Strategy Predictor</h1>
+        <p class="lead">
+          This page now pulls live session data from the FastF1 API. Try a different
+          year, Grand Prix, or session code to inspect race results and build on
+          top of them.
+        </p>
+      </header>
+
+      {% if page == 'session' %}
+        <form class="toolbar" method="get" action="{{ form_action }}">
+          <div class="field">
+            <label for="year">Year</label>
+            <select id="year" name="year" onchange="this.form.submit()">
+              {% for option in years %}
+                <option value="{{ option }}" {% if option == form.year %}selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="gp">Grand Prix</label>
+            <select id="gp" name="gp" onchange="this.form.submit()">
+              {% for option in events %}
+                <option value="{{ option.value }}" {% if option.value == form.gp %}selected{% endif %}>
+                  {{ option.label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="session">Session</label>
+            <select id="session" name="session" onchange="this.form.submit()">
+              {% for option in sessions %}
+                <option value="{{ option.value }}" {% if option.value == form.session %}selected{% endif %}>
+                  {{ option.label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit">Open results</button>
+        </form>
+      {% elif page == 'data' %}
+        <form class="toolbar data-toolbar" method="get" action="{{ form_action }}" data-data-form>
+          <input type="hidden" name="year" value="{{ form.year }}" />
+          <input type="hidden" name="gp" value="{{ form.gp }}" />
+          <input type="hidden" name="session" value="{{ form.session }}" />
+          <div class="field">
+            <label for="driver">Driver</label>
+            <div class="driver-picker" data-driver-picker>
+              <input type="hidden" name="driver" value="{{ selected_driver }}" data-driver-input />
+              <button type="button" class="driver-trigger" data-driver-trigger aria-haspopup="listbox" aria-expanded="false">
+                {% if selected_driver_data %}
+                  <svg class="team-badge" viewBox="0 0 44 28" aria-hidden="true">
+                    <rect x="0" y="0" width="44" height="28" rx="8" fill="{{ selected_driver_data.team_badge_color }}"></rect>
+                    <text x="22" y="18" text-anchor="middle" fill="#08111f" font-size="13" font-weight="800" font-family="Arial, Helvetica, sans-serif">{{ selected_driver_data.team_badge_text }}</text>
+                  </svg>
+                  <span class="driver-trigger-copy">
+                    <strong>{{ selected_driver_data.abbreviation }} - {{ selected_driver_data.full_name }}</strong>
+                  </span>
+                {% endif %}
+              </button>
+              <div class="driver-menu" data-driver-menu role="listbox" aria-label="Driver options">
+                {% for option in drivers %}
+                  <button
+                    type="button"
+                    class="driver-option {% if option.value == selected_driver %}active{% endif %}"
+                    data-driver-value="{{ option.value }}"
+                    aria-selected="{% if option.value == selected_driver %}true{% else %}false{% endif %}"
+                  >
+                    <svg class="team-badge" viewBox="0 0 44 28" aria-hidden="true">
+                      <rect x="0" y="0" width="44" height="28" rx="8" fill="{{ option.team_badge_color }}"></rect>
+                      <text x="22" y="18" text-anchor="middle" fill="#08111f" font-size="13" font-weight="800" font-family="Arial, Helvetica, sans-serif">{{ option.team_badge_text }}</text>
+                    </svg>
+                    <span class="driver-option-copy">
+                      <strong>{{ option.abbreviation }} - {{ option.full_name }}</strong>
+                      <small>Driver {{ option.value }}</small>
+                    </span>
+                  </button>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="field stint-field">
+            <label>Race stints</label>
+            <div class="session-note">Pick a driver, then choose a stint from the graphic. The laps inside that stint unlock after selection.</div>
+            {% if race_stints %}
+              <div class="stint-viewport">
+                <div class="stint-chart">
+                  {% for stint in race_stints.stints %}
+                    <a
+                      class="stint-bar {% if selected_stint_data and stint.stint == selected_stint_data.stint %}active{% endif %}"
+                      href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&stint={{ stint.stint }}"
+                    >
+                      <span>Stint {{ stint.stint }}</span>
+                      <strong>{{ stint.compound }}{% if stint.fresh_tyre %} / fresh{% endif %}</strong>
+                      <small>
+                        {% if stint.start_lap and stint.end_lap %}
+                          L{{ stint.start_lap }} to L{{ stint.end_lap }}
+                        {% else %}
+                          {{ stint.lap_count }} laps
+                        {% endif %}
+                      </small>
+                      <small>{{ stint.lap_count }} laps total</small>
+                    </a>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          <button type="submit">Load telemetry</button>
+        </form>
+      {% endif %}
+
+      {% if error %}
+        <p class="notice">FastF1 could not load that session: {{ error }}</p>
+      {% endif %}
+
+      {% if loading %}
+        <p class="loading">FastF1 is loading that session in the background. This page will refresh automatically.</p>
+      {% endif %}
+
+      {% if page == 'session' %}
+        <section class="session-panel">
+          <div class="panel">
+            <header>
+              <h2>Session selector</h2>
+              <p class="subtle">
+                Pick a year, Grand Prix, and session, then jump straight to the results page.
+              </p>
+            </header>
+            <div class="summary">
+              <p class="session-note">
+                This page is the starting point for session navigation. The selector above controls the
+                session context, and the Results tab takes you to the data view for the selected event.
+              </p>
+              <div class="metric">
+                <span>Selected session</span>
+                <strong>{{ session_badge }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <aside class="panel">
+            <header>
+              <h2>What happens next</h2>
+              <p class="subtle">Results opens the data table for this exact session.</p>
+            </header>
+            <div class="summary">
+              <div class="metric">
+                <span>Results page</span>
+                <strong>Session table and event summary</strong>
+              </div>
+              <div class="metric">
+                <span>Strategy page</span>
+                <strong>Strategy workspace for this same session</strong>
+              </div>
+            </div>
+          </aside>
+        </section>
+      {% elif view == 'strategy' %}
+        <section class="grid">
+          <div class="panel">
+            <header>
+              <h2>Strategy workspace</h2>
+              <p class="subtle">
+                {% if data %}
+                  Starting point for {{ data.event_name }}. We can layer in pit windows, stint models, and tire plans next.
+                {% elif loading %}
+                  The session is still loading, so the strategy view will fill in shortly.
+                {% else %}
+                  Load a session to begin building strategy logic.
+                {% endif %}
+              </p>
+            </header>
+            <div class="summary">
+              <div class="metric">
+                <span>Lead driver</span>
+                <strong>{% if strategy %}{{ strategy.leader }}{% else %}-{% endif %}</strong>
+              </div>
+              <div class="metric">
+                <span>Lead team</span>
+                <strong>{% if strategy %}{{ strategy.leader_team }}{% else %}-{% endif %}</strong>
+              </div>
+              <div class="metric">
+                <span>Lead time</span>
+                <strong>{% if strategy %}{{ strategy.leader_time }}{% else %}-{% endif %}</strong>
+              </div>
+              <div class="metric">
+                <span>Sample size</span>
+                <strong>{% if strategy %}{{ strategy.entries }} drivers{% else %}-{% endif %}</strong>
+              </div>
+            </div>
+          </div>
+
+          <aside class="panel">
+            <header>
+              <h2>Session snapshot</h2>
+              <p class="subtle">A compact summary of the selected event.</p>
+            </header>
+
+            <div class="summary">
+              <div class="metric">
+                <span>Status</span>
+                <strong class="{% if data %}ok{% elif loading %}warn{% else %}warn{% endif %}">
+                  {% if data %}Connected{% elif loading %}Loading{% else %}Waiting for data{% endif %}
+                </strong>
+              </div>
+              <div class="metric">
+                <span>Query</span>
+                <strong>{{ form.year }} / {{ form.gp }} / {{ form.session }}</strong>
+              </div>
+              <div class="metric">
+                <span>Event</span>
+                <strong>
+                  {% if data %}
+                    {{ data.event_name }} - Round {{ data.event_round }}
+                  {% elif loading %}
+                    Fetching {{ form.gp }}
+                  {% else %}
+                    Select an event to begin
+                  {% endif %}
+                </strong>
+              </div>
+              <div class="metric">
+                <span>Country</span>
+                <strong>{% if data %}{{ data.event_country }}{% else %}-{% endif %}</strong>
+              </div>
+            </div>
+          </aside>
+        </section>
+      {% elif page == 'data' %}
+        <section class="grid">
+          <div class="panel">
+            <header>
+              <h2>Telemetry</h2>
+              <p class="subtle">
+                {% if telemetry_summary %}
+                  Telemetry samples for the selected lap.
+                {% elif loading %}
+                  The session is loading now.
+                {% else %}
+                  Load telemetry for a lap in the selected session.
+                {% endif %}
+              </p>
+            </header>
+            <div class="summary">
+              <div class="metric">
+                <span>Driver</span>
+                <strong>{% if telemetry_summary %}{{ telemetry_summary.driver }}{% else %}-{% endif %}</strong>
+              </div>
+              <div class="metric">
+                <span>Lap</span>
+                <strong>{% if telemetry_summary %}{{ telemetry_summary.lap_number }}{% else %}-{% endif %}</strong>
+              </div>
+              <div class="metric">
+                <span>Lap Time</span>
+                <strong>{% if telemetry_summary %}{{ telemetry_summary.lap_time }}{% else %}-{% endif %}</strong>
+              </div>
+              <div class="metric">
+                <span>Max Speed</span>
+                <strong>{% if telemetry_summary %}{{ telemetry_summary.max_speed }} km/h{% else %}-{% endif %}</strong>
+              </div>
+            </div>
+          </div>
+
+          <section class="panel" style="grid-column: 1 / -1;">
+            <header>
+              <h2>Lap record</h2>
+              <p class="subtle">All the lap-level fields FastF1 exposes for the selected lap.</p>
+            </header>
+            <div class="summary dense">
+              {% for key, label, value in lap_record %}
+                <div class="metric">
+                  <span>{{ label }}</span>
+                  <strong>{{ value }}</strong>
+                </div>
+              {% endfor %}
+            </div>
+          </section>
+
+          {% if selected_stint_data %}
+            <section class="panel stint-panel embedded">
+              <header>
+                <h2>Stint {{ selected_stint_data.stint }} laps</h2>
+                <p class="subtle">Choose a lap from this stint to update the telemetry below.</p>
+              </header>
+              <div class="stint-lap-picker">
+                <div class="stint-lap-grid">
+                  {% for lap in selected_stint_data.laps %}
+                    <a
+                      class="lap-tile {% if lap.value == selected_lap %}active{% endif %} {% if lap.fresh_tyre %}fresh{% endif %}"
+                      href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&stint={{ selected_stint }}&lap={{ lap.value|urlencode }}"
+                      title="Lap {{ lap.lap_number }} - {{ lap.lap_time }} - {{ lap.compound }}"
+                    >
+                      {{ lap.lap_number }}
+                    </a>
+                  {% endfor %}
+                </div>
+              </div>
+            </section>
+          {% else %}
+            <section class="panel stint-panel embedded">
+              <header>
+                <h2>Stint laps</h2>
+                <p class="subtle">Choose a stint from the graphic above to reveal the laps inside it.</p>
+              </header>
+              <div class="empty">Select a stint above to reveal its lap choices.</div>
+            </section>
+          {% endif %}
+
+        </section>
+      {% else %}
+        <section class="grid">
+          <div class="panel">
+            <header>
+              <h2>Session results</h2>
+              <p class="subtle">
+                {% if data %}
+                  Showing the top 10 entries for {{ data.event_name }}. Session:
+                  {{ data.session_name }} on {{ data.session_date }}.
+                {% elif loading %}
+                  The session is being fetched now. You can keep browsing; this page will update when it is ready.
+                {% else %}
+                  No results loaded yet.
+                {% endif %}
+              </p>
+            </header>
+
+            <div class="table-wrap">
+              {% if data and data.rows %}
+                <table>
+                  <thead>
+                    <tr>
+                      {% for column in data.rows[0].keys() %}
+                        <th>{{ column }}</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in data.rows %}
+                      <tr>
+                        {% for value in row.values() %}
+                          <td>{{ value }}</td>
+                        {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              {% elif loading %}
+                <div class="empty">Loading FastF1 data in the background...</div>
+              {% else %}
+                <div class="empty">Run a query to load FastF1 data into the table.</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <aside class="panel">
+            <header>
+              <h2>Session snapshot</h2>
+              <p class="subtle">A compact summary of the selected event.</p>
+            </header>
+
+            <div class="summary">
+              <div class="metric">
+                <span>Status</span>
+                <strong class="{% if data %}ok{% elif loading %}warn{% else %}warn{% endif %}">
+                  {% if data %}Connected{% elif loading %}Loading{% else %}Waiting for data{% endif %}
+                </strong>
+              </div>
+              <div class="metric">
+                <span>Query</span>
+                <strong>{{ form.year }} / {{ form.gp }} / {{ form.session }}</strong>
+              </div>
+              <div class="metric">
+                <span>Event</span>
+                <strong>
+                  {% if data %}
+                    {{ data.event_name }} - Round {{ data.event_round }}
+                  {% elif loading %}
+                    Fetching {{ form.gp }}
+                  {% else %}
+                    Select an event to begin
+                  {% endif %}
+                </strong>
+              </div>
+              <div class="metric">
+                <span>Country</span>
+                <strong>{% if data %}{{ data.event_country }}{% else %}-{% endif %}</strong>
+              </div>
+            </div>
+          </aside>
+        </section>
+      {% endif %}
+
+      {% if page == 'data' %}
+        <section class="charts">
+          <header>
+            <h2>Telemetry charts</h2>
+            <p class="subtle">
+              {% if telemetry_charts %}
+                Each panel plots one telemetry column against time for the selected lap.
+              {% else %}
+                Load telemetry to inspect the charts here.
+              {% endif %}
+            </p>
+          </header>
+          <div class="charts-grid" id="telemetry-charts"></div>
+        </section>
+
+        <section class="track-map">
+          <header>
+            <h2>Track map</h2>
+            <p class="subtle">
+              {% if track_map %}
+                The gray line shows the circuit outline from the session reference lap. The colored line is the selected driver lap.
+              {% else %}
+                Load telemetry to inspect the circuit map here.
+              {% endif %}
+            </p>
+          </header>
+          <div class="track-map-viewport">
+            <svg class="track-svg" id="track-svg" viewBox="0 0 1000 700" role="img" aria-label="Track map with racing line"></svg>
+            <div class="track-legend">
+              <span class="legend-item"><span class="legend-swatch" style="background:#9aa4b2"></span>Track outline</span>
+              <span class="legend-item"><span class="legend-swatch" style="background:#44c2ff"></span>Selected lap</span>
+            </div>
+          </div>
+        </section>
+      {% endif %}
+    </div>
+      {% if page == 'data' %}
+      <script>
+        (() => {
+          const picker = document.querySelector("[data-driver-picker]");
+          if (!picker) {
+            return;
+          }
+
+          const trigger = picker.querySelector("[data-driver-trigger]");
+          const menu = picker.querySelector("[data-driver-menu]");
+          const input = picker.querySelector("[data-driver-input]");
+          const form = picker.closest("form");
+
+          function closeMenu() {
+            picker.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+          }
+
+          function openMenu() {
+            picker.classList.add("open");
+            trigger.setAttribute("aria-expanded", "true");
+          }
+
+          trigger.addEventListener("click", () => {
+            if (picker.classList.contains("open")) {
+              closeMenu();
+            } else {
+              openMenu();
+            }
+          });
+
+          menu.addEventListener("click", (event) => {
+            const option = event.target.closest("[data-driver-value]");
+            if (!option) {
+              return;
+            }
+
+            input.value = option.getAttribute("data-driver-value") || "";
+            form.submit();
+          });
+
+          document.addEventListener("click", (event) => {
+            if (!picker.contains(event.target)) {
+              closeMenu();
+            }
+          });
+        })();
+      </script>
+      <script id="telemetry-json" type="application/json">{{ telemetry_charts | tojson }}</script>
+      <script id="track-map-json" type="application/json">{{ track_map | tojson }}</script>
+      <script>
+        (() => {
+          const container = document.getElementById("telemetry-charts");
+          const dataEl = document.getElementById("telemetry-json");
+          if (!container || !dataEl) {
+            return;
+          }
+
+          const charts = JSON.parse(dataEl.textContent || "[]");
+          if (!charts.length) {
+            container.innerHTML = '<div class="empty">Load telemetry to inspect the charts here.</div>';
+            return;
+          }
+
+          const width = 620;
+          const height = 180;
+          const padding = { top: 16, right: 18, bottom: 24, left: 44 };
+          const innerWidth = width - padding.left - padding.right;
+          const innerHeight = height - padding.top - padding.bottom;
+
+          function escapeHtml(value) {
+            return String(value)
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;");
+          }
+
+          function buildPath(points, chart) {
+            const xMin = chart.x_min;
+            const xMax = chart.x_max;
+            const yMin = chart.y_min;
+            const yMax = chart.y_max;
+            const xScale = xMax === xMin ? 1 : innerWidth / (xMax - xMin);
+            const yScale = yMax === yMin ? 1 : innerHeight / (yMax - yMin);
+            return points
+              .map(([x, y], index) => {
+                const px = padding.left + (x - xMin) * xScale;
+                const py = padding.top + innerHeight - (y - yMin) * yScale;
+                return `${index === 0 ? "M" : "L"} ${px.toFixed(2)} ${py.toFixed(2)}`;
+              })
+              .join(" ");
+          }
+
+          function buildGrid(chart) {
+            const xMin = chart.x_min;
+            const xMax = chart.x_max;
+            const yMin = chart.y_min;
+            const yMax = chart.y_max;
+            const xScale = xMax === xMin ? 1 : innerWidth / (xMax - xMin);
+            const yScale = yMax === yMin ? 1 : innerHeight / (yMax - yMin);
+            const yLines = 4;
+            let markup = "";
+
+            for (let i = 0; i <= yLines; i += 1) {
+              const value = yMin + ((yMax - yMin) / yLines) * i;
+              const y = padding.top + innerHeight - (value - yMin) * yScale;
+              markup += `<line x1="${padding.left}" y1="${y.toFixed(2)}" x2="${width - padding.right}" y2="${y.toFixed(2)}" stroke="rgba(148,163,184,0.14)" stroke-width="1" />`;
+              markup += `<text x="${padding.left - 8}" y="${(y + 4).toFixed(2)}" fill="rgba(151,167,194,0.9)" font-size="10" text-anchor="end">${value.toFixed(0)}</text>`;
+            }
+
+            for (let i = 0; i <= 3; i += 1) {
+              const value = xMin + ((xMax - xMin) / 3) * i;
+              const x = padding.left + (value - xMin) * xScale;
+              markup += `<line x1="${x.toFixed(2)}" y1="${padding.top}" x2="${x.toFixed(2)}" y2="${height - padding.bottom}" stroke="rgba(148,163,184,0.14)" stroke-width="1" />`;
+              markup += `<text x="${x.toFixed(2)}" y="${height - 8}" fill="rgba(151,167,194,0.9)" font-size="10" text-anchor="middle">${value.toFixed(1)}s</text>`;
+            }
+
+            return markup;
+          }
+
+          for (const chart of charts) {
+            const card = document.createElement("article");
+            card.className = "chart-card";
+            card.innerHTML = `
+              <div class="chart-title">
+                <div>${escapeHtml(chart.title)}</div>
+                <span>${escapeHtml(chart.unit || "")}</span>
+              </div>
+              <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(chart.title)} chart">
+                <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+                ${buildGrid(chart)}
+                <path d="${buildPath(chart.points, chart)}" fill="none" stroke="${chart.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                <text x="${padding.left}" y="12" fill="${chart.color}" font-size="10" font-weight="700">min ${chart.y_min.toFixed(0)}</text>
+                <text x="${width - padding.right}" y="12" fill="${chart.color}" font-size="10" font-weight="700" text-anchor="end">max ${chart.y_max.toFixed(0)}</text>
+              </svg>
+              <div class="chart-meta">
+                <span>${chart.points.length} samples</span>
+                <span>${chart.points[0][0].toFixed(2)}s to ${chart.points[chart.points.length - 1][0].toFixed(2)}s</span>
+              </div>
+            `;
+            container.appendChild(card);
+          }
+        })();
+      </script>
+      <script>
+        (() => {
+          const svg = document.getElementById("track-svg");
+          const dataEl = document.getElementById("track-map-json");
+          if (!svg || !dataEl) {
+            return;
+          }
+
+          const map = JSON.parse(dataEl.textContent || "null");
+          if (!map || !map.outline || !map.racing) {
+            svg.innerHTML = '<text x="24" y="36" fill="rgba(151,167,194,0.8)" font-size="16">Load telemetry to inspect the track map here.</text>';
+            return;
+          }
+
+          const width = 1000;
+          const height = 700;
+          const bounds = map.bounds;
+          const pad = 14;
+          const innerWidth = width - pad * 2;
+          const innerHeight = height - pad * 2;
+          const xRange = bounds.max_x - bounds.min_x || 1;
+          const yRange = bounds.max_y - bounds.min_y || 1;
+          const scale = Math.min(innerWidth / xRange, innerHeight / yRange) * 1.12;
+          const xOffset = (width - xRange * scale) / 2;
+          const yOffset = (height - yRange * scale) / 2;
+
+          function toPoint(point) {
+            const x = xOffset + (point[0] - bounds.min_x) * scale;
+            const y = height - (yOffset + (point[1] - bounds.min_y) * scale);
+            return [x, y];
+          }
+
+          function path(points, closed = false) {
+            return points
+              .map((point, index) => {
+                const [x, y] = toPoint(point);
+                return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+              })
+              .join(" ") + (closed ? " Z" : "");
+          }
+
+          function sample(points, count) {
+            if (points.length <= count) {
+              return points;
+            }
+            const step = (points.length - 1) / (count - 1);
+            const sampled = [];
+            for (let i = 0; i < count; i += 1) {
+              sampled.push(points[Math.round(i * step)]);
+            }
+            return sampled;
+          }
+
+          const outline = sample(map.outline, 900);
+          const racing = sample(map.racing, 700);
+          const [startX, startY] = toPoint(racing[0]);
+          const [endX, endY] = toPoint(racing[racing.length - 1]);
+
+          svg.innerHTML = `
+            <defs>
+              <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="1.6" result="coloredBlur"></feGaussianBlur>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+              </filter>
+            </defs>
+            <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+            <path d="${path(outline, true)}" fill="none" stroke="rgba(154, 164, 178, 0.72)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"></path>
+            <path d="${path(racing)}" fill="none" stroke="#ff8a5b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"></path>
+            <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
+            <circle cx="${endX.toFixed(2)}" cy="${endY.toFixed(2)}" r="7" fill="#ffbf69"></circle>
+          `;
+        })();
+      </script>
+    {% endif %}
+  </body>
+</html>
