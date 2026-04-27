@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -7,10 +8,11 @@ from threading import Lock
 import fastf1
 import pandas as pd
 import numpy as np
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for
 
 
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 cache_dir = Path(__file__).with_name(".fastf1-cache")
 cache_dir.mkdir(exist_ok=True)
 fastf1.Cache.enable_cache(str(cache_dir))
@@ -48,6 +50,49 @@ TEAM_BADGE_STYLES = {
     "RB F1 Team": ("RB", "#2b4562"),
     "Kick Sauber": ("KS", "#52e252"),
     "Stake F1 Team Kick Sauber": ("KS", "#52e252"),
+}
+TEAM_LOGO_URLS = {
+}
+TEAM_LOCAL_LOGOS = {
+    "Mercedes": "team-logos/mercedes.png",
+    "Red Bull Racing": "team-logos/red-bull-racing.svg",
+    "RB F1 Team": "team-logos/alphatauri.png",
+    "RB": "team-logos/alphatauri.png",
+    "Visa Cash App RB": "team-logos/alphatauri.png",
+    "Visa Cash App RB F1 Team": "team-logos/alphatauri.png",
+    "Visa Cash App RB Formula One Team": "team-logos/alphatauri.png",
+    "Ferrari": "team-logos/ferrari.svg",
+    "McLaren": "team-logos/mclaren.png",
+    "Aston Martin": "team-logos/aston-martin.svg",
+    "Alpine": "team-logos/alpine.svg",
+    "Williams": "team-logos/williams.png",
+    "Haas F1 Team": "team-logos/haas.svg",
+    "Alfa Romeo": "team-logos/alfa-romeo.svg",
+    "AlphaTauri": "team-logos/alphatauri.png",
+    "Sauber": "team-logos/sauber.svg",
+    "Kick Sauber": "team-logos/stake-kick-sauber.png",
+    "Stake F1 Team Kick Sauber": "team-logos/stake-kick-sauber.png",
+    "Mercedes-AMG PETRONAS F1 Team": "team-logos/mercedes.png",
+    "Mercedes-AMG Petronas F1 Team": "team-logos/mercedes.png",
+    "Mercedes-AMG Petronas Formula One Team": "team-logos/mercedes.png",
+    "Mercedes AMG Petronas F1 Team": "team-logos/mercedes.png",
+}
+TEAM_DEFAULT_LOGO = "team-logos/team-default.svg"
+DRIVER_HEADSHOT_DIR = Path(__file__).with_name("static") / "driver-headshots"
+TYRE_COMPOUND_COLORS = {
+    "SOFT": "#ff4d4d",
+    "MEDIUM": "#ffd84d",
+    "HARD": "#ffffff",
+    "INTERMEDIATE": "#34d399",
+    "WET": "#4d9cff",
+    "FULL WET": "#4d9cff",
+    "EXTREME WET": "#4d9cff",
+    "INTERS": "#34d399",
+    "C1": "#f3f4f6",
+    "C2": "#e5e7eb",
+    "C3": "#d1d5db",
+    "C4": "#ffd84d",
+    "C5": "#ff6b6b",
 }
 
 
@@ -135,12 +180,72 @@ def _team_badge(team_name):
     return badge_text, badge_color
 
 
+def _team_logo_url(team_name):
+    normalized = _clean_value(team_name)
+    if normalized in TEAM_LOCAL_LOGOS:
+        return url_for("static", filename=TEAM_LOCAL_LOGOS[normalized])
+    lowered = normalized.lower()
+    if lowered in {"rb", "rb f1 team", "visa cash app rb", "visa cash app rb f1 team", "visa cash app rb formula one team"}:
+        return url_for("static", filename="team-logos/alphatauri.png")
+    if "mercedes" in lowered:
+        return url_for("static", filename="team-logos/mercedes.png")
+    if "red bull" in lowered:
+        return url_for("static", filename="team-logos/red-bull-racing.svg")
+    if "ferrari" in lowered:
+        return url_for("static", filename="team-logos/ferrari.svg")
+    if "mclaren" in lowered:
+        return url_for("static", filename="team-logos/mclaren.png")
+    if "aston" in lowered:
+        return url_for("static", filename="team-logos/aston-martin.svg")
+    if "alpine" in lowered:
+        return url_for("static", filename="team-logos/alpine.svg")
+    if "williams" in lowered:
+        return url_for("static", filename="team-logos/williams.png")
+    if "haas" in lowered:
+        return url_for("static", filename="team-logos/haas.svg")
+    if "alpha" in lowered:
+        return url_for("static", filename="team-logos/alphatauri.png")
+    if "stake" in lowered or "kick" in lowered or "sauber" in lowered or "alfa" in lowered:
+        return url_for("static", filename="team-logos/stake-kick-sauber.png")
+    return url_for("static", filename=TEAM_DEFAULT_LOGO)
+
+
+def _driver_headshot_url(driver_id, headshot_url=""):
+    driver_id = _clean_value(driver_id).strip()
+    if driver_id:
+        local_name = f"{driver_id}.png"
+        local_path = DRIVER_HEADSHOT_DIR / local_name
+        if local_path.exists():
+            return url_for("static", filename=f"driver-headshots/{local_name}")
+    return _clean_value(headshot_url) if headshot_url else url_for("static", filename=TEAM_DEFAULT_LOGO)
+
+
+def _tyre_color(compound):
+    normalized = _clean_value(compound).strip().upper()
+    return TYRE_COMPOUND_COLORS.get(normalized, "#94a3b8")
+
+
+def _lap_time_seconds(value):
+    if pd.isna(value):
+        return None
+    if isinstance(value, pd.Timedelta):
+        return float(value.total_seconds())
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _driver_options(session):
     results = getattr(session, "results", None)
     if results is None or results.empty:
         return []
 
-    columns = [col for col in ["DriverNumber", "Abbreviation", "FullName", "TeamName", "Position"] if col in results.columns]
+    columns = [
+        col
+        for col in ["DriverNumber", "DriverId", "HeadshotUrl", "Abbreviation", "FullName", "TeamName", "Position"]
+        if col in results.columns
+    ]
     if not columns:
         return []
 
@@ -151,18 +256,23 @@ def _driver_options(session):
     options = []
     for _, row in ordered.iterrows():
         driver_number = _clean_value(row.get("DriverNumber", ""))
+        driver_id = _clean_value(row.get("DriverId", driver_number))
         abbreviation = _clean_value(row.get("Abbreviation", driver_number))
         full_name = _clean_value(row.get("FullName", abbreviation))
         team_name = _clean_value(row.get("TeamName", "-"))
+        headshot_url = _driver_headshot_url(driver_id, row.get("HeadshotUrl", ""))
         team_badge_text, team_badge_color = _team_badge(team_name)
         options.append(
             {
                 "value": driver_number,
+                "driver_id": driver_id,
                 "abbreviation": abbreviation,
                 "full_name": full_name,
                 "team_name": team_name,
                 "team_badge_text": team_badge_text,
                 "team_badge_color": team_badge_color,
+                "team_logo_url": _team_logo_url(team_name),
+                "headshot_url": headshot_url,
                 "label": f"{abbreviation} - {full_name}",
             }
         )
@@ -174,6 +284,23 @@ def _driver_options(session):
         seen.add(option["value"])
         deduped.append(option)
     return deduped
+
+
+def _driver_groups(session):
+    drivers = _driver_options(session)
+    if not drivers:
+        return []
+
+    grouped = {}
+    order = []
+    for driver in drivers:
+        team_name = driver.get("team_name", "-")
+        if team_name not in grouped:
+            grouped[team_name] = []
+            order.append(team_name)
+        grouped[team_name].append(driver)
+
+    return [{"team_name": team_name, "drivers": grouped[team_name]} for team_name in order]
 
 
 def _lap_options(session, driver_number):
@@ -382,10 +509,12 @@ def _race_stints(session, driver_number, session_code):
                 continue
             lap_number_int = int(lap_number)
             lap_time = lap_row.get("LapTime")
+            lap_time_seconds = _lap_time_seconds(lap_time)
             laps.append(
                 {
                     "lap_number": lap_number_int,
                     "lap_time": _clean_value(lap_time),
+                    "lap_time_seconds": lap_time_seconds,
                     "value": f"{_clean_value(driver_number)}:{lap_number_int}",
                     "compound": _clean_value(lap_row.get("Compound", "-")),
                     "fresh_tyre": bool(lap_row.get("FreshTyre", False)) if pd.notna(lap_row.get("FreshTyre", False)) else False,
@@ -398,6 +527,7 @@ def _race_stints(session, driver_number, session_code):
                 "end_lap": max(lap_numbers) if lap_numbers else None,
                 "lap_count": len(stint_laps),
                 "compound": compound,
+                "tyre_color": _tyre_color(compound),
                 "fresh_tyre": fresh_tyre,
                 "laps": laps,
             }
@@ -814,31 +944,29 @@ def data():
     if ctx["schedule_error"] and not error:
         error = ctx["schedule_error"]
     session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"]) if data_state else None
-    driver_number = request.args.get("driver", "")
+    driver_number = request.args.get("driver", "").strip()
+    driver_requested = bool(driver_number)
     lap_key = request.args.get("lap", "")
     stint_key = request.args.get("stint", "")
     lap_requested = bool(lap_key)
-    stint_requested = bool(stint_key)
     driver_options = _driver_options(session) if session else []
-    driver_number = _resolve_driver(session, driver_number) if session else None
+    driver_groups = _driver_groups(session) if session else []
+    driver_number = _resolve_driver(session, driver_number) if session and driver_requested else None
     selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
     race_stints = _race_stints(session, driver_number, ctx["session_code"]) if session and driver_number else None
     selected_stint = _parse_stint_value(stint_key)
-    selected_lap = None
+    selected_lap_value = lap_key if lap_requested else ""
+    selected_lap_data = None
     if session and driver_number:
         if lap_requested:
-            selected_lap = _resolve_lap(session, driver_number, lap_key)
-            if selected_lap is not None and selected_stint is None:
-                selected_stint = _parse_stint_value(selected_lap.get("Stint", None))
-        elif not stint_requested:
-            selected_lap = _resolve_lap(session, driver_number, "")
+            selected_lap_data = _resolve_lap(session, driver_number, lap_key)
+            if selected_lap_data is not None:
+                selected_lap_value = f"{_clean_value(driver_number)}:{_clean_value(selected_lap_data.get('LapNumber', ''))}"
+                if selected_stint is None:
+                    selected_stint = _parse_stint_value(selected_lap_data.get("Stint", None))
     selected_stint_data = None
     if race_stints and race_stints.get("stints") and selected_stint is not None:
         selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
-    if selected_lap is not None:
-        lap_value = f"{_clean_value(driver_number)}:{_clean_value(selected_lap.get('LapNumber', ''))}"
-    else:
-        lap_value = ""
 
     telemetry_columns = []
     telemetry_rows = []
@@ -846,13 +974,13 @@ def data():
     lap_record = []
     telemetry_charts = []
     track_map = None
-    if selected_lap is not None:
-        telemetry_columns, telemetry_rows, telemetry = _telemetry_rows(selected_lap)
-        telemetry_summary = _lap_summary(selected_lap, telemetry)
-        lap_record = _lap_record(selected_lap, telemetry)
-        telemetry_charts = _telemetry_charts(selected_lap)
+    if selected_lap_data is not None:
+        telemetry_columns, telemetry_rows, telemetry = _telemetry_rows(selected_lap_data)
+        telemetry_summary = _lap_summary(selected_lap_data, telemetry)
+        lap_record = _lap_record(selected_lap_data, telemetry)
+        telemetry_charts = _telemetry_charts(selected_lap_data)
         try:
-            track_map = _track_map_payload(session, selected_lap) if session else None
+            track_map = _track_map_payload(session, selected_lap_data) if session else None
         except Exception:
             track_map = None
     session_badge = ctx["session_badge"]
@@ -888,9 +1016,10 @@ def data():
             "session": ctx["session_code"],
         },
         drivers=driver_options,
+        driver_groups=driver_groups,
         selected_driver=driver_number,
         selected_driver_data=selected_driver_data,
-        selected_lap=lap_value,
+        selected_lap=selected_lap_value,
     )
 
 
@@ -930,4 +1059,5 @@ def strategy():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False)
+    port = int(os.environ.get("PORT", "5001"))
+    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)

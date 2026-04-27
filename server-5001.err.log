@@ -1,0 +1,63 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5001
+Press CTRL+C to quit
+core           INFO 	Loading data for Bahrain Grand Prix - Race [v3.8.2]
+127.0.0.1 - - [27/Apr/2026 14:36:06] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+req            INFO 	Using cached data for session_info
+req            INFO 	Using cached data for driver_info
+req            INFO 	Using cached data for session_status_data
+req            INFO 	Using cached data for lap_count
+req            INFO 	Using cached data for track_status_data
+req            INFO 	Using cached data for _extended_timing_data
+req            INFO 	Using cached data for timing_app_data
+core           INFO 	Processing timing data...
+req            INFO 	Using cached data for car_data
+req            INFO 	Using cached data for position_data
+req            INFO 	Using cached data for weather_data
+req            INFO 	Using cached data for race_control_messages
+core           INFO 	Finished loading data for 20 drivers: ['1', '11', '55', '16', '63', '4', '44', '81', '14', '18', '24', '20', '3', '22', '23', '27', '31', '10', '77', '2']
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/haas.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/mercedes.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/alphatauri.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/williams.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/mclaren.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/aston-martin.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/alpine.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/ferrari.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:09] "GET /static/team-logos/stake-kick-sauber.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:10] "GET /data?year=2024&gp=Bahrain+Grand+Prix&session=R&driver=1 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:10] "GET /static/driver-headshots/max_verstappen.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:10] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R&driver=1&stint=1 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:10] "GET /static/driver-headshots/max_verstappen.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:18] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/ferrari.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/mercedes.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/mclaren.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/stake-kick-sauber.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/aston-martin.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/haas.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/alphatauri.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/williams.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:19] "GET /static/team-logos/alpine.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:20] "GET /data?year=2024&gp=Bahrain+Grand+Prix&session=R&driver=1 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:20] "GET /static/driver-headshots/max_verstappen.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:21] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R&driver=1&stint=1 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:21] "GET /static/driver-headshots/max_verstappen.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/ferrari.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/mercedes.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/mclaren.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/aston-martin.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/stake-kick-sauber.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/haas.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/alphatauri.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/williams.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:37] "GET /static/team-logos/alpine.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:38] "GET /data?year=2024&gp=Bahrain+Grand+Prix&session=R&driver=16 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:38] "GET /static/driver-headshots/leclerc.png HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 14:36:39] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R&driver=16&stint=2 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 14:36:39] "GET /static/driver-headshots/leclerc.png HTTP/1.1" 304 -

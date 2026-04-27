@@ -1,0 +1,35 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5001
+Press CTRL+C to quit
+core           INFO 	Loading data for Bahrain Grand Prix - Race [v3.8.2]
+req            INFO 	Using cached data for session_info
+127.0.0.1 - - [27/Apr/2026 08:42:55] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+req            INFO 	Using cached data for driver_info
+req            INFO 	Using cached data for session_status_data
+req            INFO 	Using cached data for lap_count
+req            INFO 	Using cached data for track_status_data
+req            INFO 	Using cached data for _extended_timing_data
+req            INFO 	Using cached data for timing_app_data
+core           INFO 	Processing timing data...
+127.0.0.1 - - [27/Apr/2026 08:42:57] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+req            INFO 	Using cached data for car_data
+req            INFO 	Using cached data for position_data
+127.0.0.1 - - [27/Apr/2026 08:42:59] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+req            INFO 	Using cached data for weather_data
+req            INFO 	Using cached data for race_control_messages
+core           INFO 	Finished loading data for 20 drivers: ['1', '11', '55', '16', '63', '4', '44', '81', '14', '18', '24', '20', '3', '22', '23', '27', '31', '10', '77', '2']
+127.0.0.1 - - [27/Apr/2026 08:43:05] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 08:43:06] "GET /static/team-logos/ferrari.svg HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 08:43:06] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 09:36:01] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 09:36:01] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 09:40:03] "GET /static/team-logos/ferrari.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 10:06:04] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 10:06:04] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 10:06:04] "GET /static/team-logos/ferrari.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 10:06:11] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 10:06:11] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 10:06:12] "GET /static/team-logos/ferrari.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 10:11:07] "GET /data?year=2024&gp=Bahrain%20Grand%20Prix&session=R HTTP/1.1" 200 -
+127.0.0.1 - - [27/Apr/2026 10:11:07] "GET /static/team-logos/red-bull-racing.svg HTTP/1.1" 304 -
+127.0.0.1 - - [27/Apr/2026 10:11:09] "GET /static/team-logos/ferrari.svg HTTP/1.1" 304 -

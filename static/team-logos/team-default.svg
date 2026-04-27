@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96" role="img" aria-label="Formula 1 team logo placeholder">
+  <rect width="240" height="96" rx="16" fill="none"/>
+  <g fill="none" stroke="#97a7c2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+    <path d="M42 68V28h34" />
+    <path d="M42 48h22" />
+    <path d="M96 68V28h30" />
+    <path d="M96 48h20" />
+    <path d="M136 68l14-40 14 40" />
+    <path d="M144 54h12" />
+    <path d="M176 28h18" />
+    <path d="M185 28v40" />
+    <circle cx="208" cy="48" r="20" />
+  </g>
+</svg>
