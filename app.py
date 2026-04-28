@@ -112,6 +112,32 @@ def _clean_value(value):
     return str(value)
 
 
+def _format_lap_time(value):
+    if pd.isna(value):
+        return "-"
+    if isinstance(value, pd.Timedelta):
+        total_seconds = value.total_seconds()
+    else:
+        try:
+            total_seconds = float(value.total_seconds())
+        except (AttributeError, TypeError, ValueError):
+            try:
+                total_seconds = float(pd.to_timedelta(value).total_seconds())
+            except Exception:
+                return _clean_value(value)
+
+    minutes, seconds = divmod(total_seconds, 60)
+    whole_seconds = int(seconds)
+    millis = int(round((seconds - whole_seconds) * 1000))
+    if millis == 1000:
+        whole_seconds += 1
+        millis = 0
+    minutes = int(minutes)
+    if minutes > 0:
+        return f"{minutes}:{whole_seconds:02d}.{millis:03d}"
+    return f"{whole_seconds}.{millis:03d}" if millis else f"{whole_seconds}"
+
+
 def _session_rows(session):
     results = getattr(session, "results", None)
     if results is None or results.empty:
@@ -230,14 +256,26 @@ def _lap_time_seconds(value):
         return None
     if isinstance(value, pd.Timedelta):
         return float(value.total_seconds())
+    if hasattr(value, "total_seconds"):
+        try:
+            return float(value.total_seconds())
+        except (TypeError, ValueError):
+            pass
     try:
         return float(value)
     except (TypeError, ValueError):
-        return None
+        try:
+            parsed = pd.to_timedelta(value)
+        except Exception:
+            return None
+        if pd.isna(parsed):
+            return None
+        return float(parsed.total_seconds())
 
 
-def _driver_options(session):
-    results = getattr(session, "results", None)
+def _driver_options(session, results=None):
+    if results is None:
+        results = getattr(session, "results", None)
     if results is None or results.empty:
         return []
 
@@ -286,8 +324,8 @@ def _driver_options(session):
     return deduped
 
 
-def _driver_groups(session):
-    drivers = _driver_options(session)
+def _driver_groups(session, results=None):
+    drivers = _driver_options(session, results=results)
     if not drivers:
         return []
 
@@ -301,6 +339,65 @@ def _driver_groups(session):
         grouped[team_name].append(driver)
 
     return [{"team_name": team_name, "drivers": grouped[team_name]} for team_name in order]
+
+
+def _qualifying_driver_results(session, phase):
+    if not session:
+        return None
+
+    results = getattr(session, "results", None)
+    if results is None or results.empty:
+        return None
+
+    phase_code = str(phase or "Q1").strip().upper()
+    if phase_code not in {"Q1", "Q2", "Q3"}:
+        phase_code = "Q1"
+
+    if phase_code not in results.columns:
+        return results
+
+    ordered = results[results[phase_code].notna()].copy()
+    if ordered.empty:
+        return ordered
+
+    return ordered.sort_values(by=phase_code, na_position="last")
+
+
+def _qualifying_phase_rows(session, phase):
+    results = _qualifying_driver_results(session, phase)
+    if results is None or results.empty:
+        return []
+
+    phase_code = str(phase or "Q1").strip().upper()
+    if phase_code not in {"Q1", "Q2", "Q3"}:
+        phase_code = "Q1"
+
+    rows = []
+    for _, row in results.iterrows():
+        driver_number = _clean_value(row.get("DriverNumber", ""))
+        driver_id = _clean_value(row.get("DriverId", driver_number))
+        full_name = _clean_value(row.get("FullName", "-"))
+        abbreviation = _clean_value(row.get("Abbreviation", "-"))
+        team_name = _clean_value(row.get("TeamName", "-"))
+        phase_time = _format_lap_time(row.get(phase_code, None))
+        headshot_url = _driver_headshot_url(driver_id, row.get("HeadshotUrl", ""))
+        team_badge_text, team_badge_color = _team_badge(team_name)
+        rows.append(
+            {
+                "value": driver_number,
+                "driver_id": driver_id,
+                "abbreviation": abbreviation,
+                "full_name": full_name,
+                "team_name": team_name,
+                "team_badge_text": team_badge_text,
+                "team_badge_color": team_badge_color,
+                "headshot_url": headshot_url,
+                "phase_time": phase_time,
+                "position": _clean_value(row.get("Position", "-")),
+                "label": f"{abbreviation} - {full_name}",
+            }
+        )
+    return rows
 
 
 def _lap_options(session, driver_number):
@@ -321,10 +418,266 @@ def _lap_options(session, driver_number):
         lap_number = row.get("LapNumber")
         lap_time = row.get("LapTime")
         compound = _clean_value(row.get("Compound", "-"))
+        stint = _clean_value(row.get("Stint", "-"))
+        lap_time_text = _format_lap_time(lap_time)
         value = f"{_clean_value(driver_number)}:{_clean_value(lap_number)}"
-        label = f"Lap {_clean_value(lap_number)} - {_clean_value(lap_time)} - {compound}"
-        options.append({"value": value, "label": label})
+        label = f"Lap {_clean_value(lap_number)} - {lap_time_text} - {compound}"
+        options.append(
+            {
+                "value": value,
+                "lap_number": _clean_value(lap_number),
+                "lap_time": lap_time_text,
+                "stint": stint,
+                "compound": compound,
+                "label": label,
+            }
+        )
     return options
+
+
+def _qualifying_lap_options(session, driver_number):
+    if not session or not driver_number:
+        return []
+
+    driver_laps = session.laps.pick_drivers(driver_number)
+    if driver_laps is None or driver_laps.empty:
+        return []
+
+    valid = driver_laps.copy()
+    valid = valid.sort_values(by=["LapNumber", "Time"])
+
+    options = []
+    run_number = 0
+    for _, row in valid.iterrows():
+        lap_number = row.get("LapNumber")
+        if pd.isna(lap_number):
+            continue
+
+        lap_time = row.get("LapTime")
+        compound = _clean_value(row.get("Compound", "-"))
+        lap_time_text = _format_lap_time(lap_time)
+        pit_out = pd.notna(row.get("PitOutTime", None))
+        pit_in = pd.notna(row.get("PitInTime", None))
+
+        if pit_out:
+            run_number += 1
+        if run_number == 0:
+            run_number = 1
+
+        if pit_out and pit_in:
+            lap_role = "Out / In Lap"
+        elif pit_out:
+            lap_role = "Out Lap"
+        elif pit_in:
+            lap_role = "In Lap"
+        else:
+            lap_role = "Flying Lap"
+
+        value = f"{_clean_value(driver_number)}:{_clean_value(lap_number)}"
+        options.append(
+            {
+                "value": value,
+                "lap_number": _clean_value(lap_number),
+                "lap_time": lap_time_text,
+                "stint": f"Run {run_number}",
+                "compound": compound,
+                "lap_type": lap_role,
+                "label": f"Lap {_clean_value(lap_number)} - {lap_time_text} - {compound}",
+            }
+        )
+
+    return options
+
+
+def _qualifying_run_options(session, driver_number):
+    if not session or not driver_number:
+        return []
+
+    driver_laps = session.laps.pick_drivers(driver_number)
+    if driver_laps is None or driver_laps.empty:
+        return []
+
+    valid = driver_laps.copy().sort_values(by=["LapNumber", "Time"])
+    runs = []
+    current_run = None
+    run_number = 0
+
+    def finish_run(run):
+        if not run or not run["laps"]:
+            return None
+        flying_laps = [lap for lap in run["laps"] if lap["lap_type"] == "Flying Lap" and lap["lap_time_seconds"] is not None]
+        if flying_laps:
+            representative = min(flying_laps, key=lambda lap: lap["lap_time_seconds"])
+        else:
+            representative = next((lap for lap in run["laps"] if lap["lap_time_seconds"] is not None), run["laps"][0])
+        return {
+            "run_number": run["run_number"],
+            "lap_count": len(run["laps"]),
+            "value": representative["value"],
+            "lap_number": representative["lap_number"],
+            "lap_time": representative["lap_time"],
+            "compound": representative["compound"],
+            "lap_type": representative["lap_type"],
+            "label": f"Run {run['run_number']} - {representative['lap_time']}",
+        }
+
+    for _, row in valid.iterrows():
+        lap_number = row.get("LapNumber")
+        if pd.isna(lap_number):
+            continue
+
+        lap_time = row.get("LapTime")
+        compound = _clean_value(row.get("Compound", "-"))
+        lap_time_text = _format_lap_time(lap_time)
+        pit_out = pd.notna(row.get("PitOutTime", None))
+        pit_in = pd.notna(row.get("PitInTime", None))
+
+        if pit_out and current_run is not None:
+            run_item = finish_run(current_run)
+            if run_item is not None:
+                runs.append(run_item)
+            current_run = None
+
+        if current_run is None:
+            run_number += 1
+            current_run = {"run_number": run_number, "laps": []}
+
+        if pit_out and pit_in:
+            lap_role = "Out / In Lap"
+        elif pit_out:
+            lap_role = "Out Lap"
+        elif pit_in:
+            lap_role = "In Lap"
+        else:
+            lap_role = "Flying Lap"
+
+        current_run["laps"].append(
+            {
+                "value": f"{_clean_value(driver_number)}:{_clean_value(lap_number)}",
+                "lap_number": _clean_value(lap_number),
+                "lap_time": lap_time_text,
+                "lap_time_seconds": _lap_time_seconds(lap_time),
+                "compound": compound,
+                "lap_type": lap_role,
+            }
+        )
+
+    run_item = finish_run(current_run)
+    if run_item is not None:
+        runs.append(run_item)
+
+    return runs
+
+
+def _qualifying_run_laps(session, driver_number):
+    if not session or not driver_number:
+        return []
+
+    driver_laps = session.laps.pick_drivers(driver_number)
+    if driver_laps is None or driver_laps.empty:
+        return []
+
+    valid = driver_laps.copy().sort_values(by=["LapNumber", "Time"])
+    runs = []
+    current_run = None
+    run_number = 0
+
+    def finish_run(run):
+        if not run or not run["laps"]:
+            return None
+        return {
+            "run_number": run["run_number"],
+            "laps": run["laps"],
+            "flying_time": next(
+                (lap["lap_time"] for lap in run["laps"] if lap["lap_type"] == "Flying Lap" and lap["lap_time_seconds"] is not None),
+                next((lap["lap_time"] for lap in run["laps"] if lap["lap_time_seconds"] is not None), run["laps"][0]["lap_time"]),
+            ),
+            "flying_time_seconds": next(
+                (lap["lap_time_seconds"] for lap in run["laps"] if lap["lap_type"] == "Flying Lap" and lap["lap_time_seconds"] is not None),
+                next((lap["lap_time_seconds"] for lap in run["laps"] if lap["lap_time_seconds"] is not None), None),
+            ),
+            "representative": next(
+                (lap["value"] for lap in run["laps"] if lap["lap_type"] == "Flying Lap" and lap["lap_time_seconds"] is not None),
+                next((lap["value"] for lap in run["laps"] if lap["lap_time_seconds"] is not None), run["laps"][0]["value"]),
+            ),
+        }
+
+    for _, row in valid.iterrows():
+        lap_number = row.get("LapNumber")
+        if pd.isna(lap_number):
+            continue
+
+        lap_time = row.get("LapTime")
+        compound = _clean_value(row.get("Compound", "-"))
+        lap_time_text = _format_lap_time(lap_time)
+        lap_time_seconds = _lap_time_seconds(lap_time)
+        pit_out = pd.notna(row.get("PitOutTime", None))
+        pit_in = pd.notna(row.get("PitInTime", None))
+
+        if pit_out and current_run is not None:
+            run_item = finish_run(current_run)
+            if run_item is not None:
+                runs.append(run_item)
+            current_run = None
+
+        if current_run is None:
+            run_number += 1
+            current_run = {"run_number": run_number, "laps": []}
+
+        if pit_out and pit_in:
+            lap_role = "Out / In Lap"
+        elif pit_out:
+            lap_role = "Out Lap"
+        elif pit_in:
+            lap_role = "In Lap"
+        else:
+            lap_role = "Flying Lap"
+
+        current_run["laps"].append(
+            {
+                "value": f"{_clean_value(driver_number)}:{_clean_value(lap_number)}",
+                "lap_number": _clean_value(lap_number),
+                "lap_time": lap_time_text,
+                "lap_time_seconds": lap_time_seconds,
+                "compound": compound,
+                "lap_type": lap_role,
+                "is_flying": lap_role == "Flying Lap",
+            }
+        )
+
+    run_item = finish_run(current_run)
+    if run_item is not None:
+        runs.append(run_item)
+
+    flying_times = [run["flying_time_seconds"] for run in runs if run.get("flying_time_seconds") is not None]
+    fastest_flying_time = min(flying_times) if flying_times else None
+    for run in runs:
+        run["is_fastest"] = fastest_flying_time is not None and run.get("flying_time_seconds") == fastest_flying_time
+
+    return runs
+
+
+def _qualifying_driver_results(session, phase):
+    if not session:
+        return None
+
+    results = getattr(session, "results", None)
+    if results is None or results.empty:
+        return None
+
+    phase_code = str(phase or "Q1").strip().upper()
+    if phase_code not in {"Q1", "Q2", "Q3"}:
+        phase_code = "Q1"
+
+    if phase_code not in results.columns:
+        return results
+
+    ordered = results[results[phase_code].notna()].copy()
+    if ordered.empty:
+        return ordered
+
+    ordered = ordered.sort_values(by=phase_code, na_position="last")
+    return ordered
 
 
 def _parse_lap_key(lap_key):
@@ -343,8 +696,9 @@ def _parse_stint_value(stint_value):
         return None
 
 
-def _resolve_driver(session, driver_number):
-    drivers = _driver_options(session)
+def _resolve_driver(session, driver_number, drivers=None):
+    if drivers is None:
+        drivers = _driver_options(session)
     if driver_number and any(option["value"] == driver_number for option in drivers):
         return driver_number
     if drivers:
@@ -416,7 +770,7 @@ def _lap_summary(lap, telemetry):
         "driver": _clean_value(lap.get("Driver", "-")),
         "team": _clean_value(lap.get("Team", "-")),
         "lap_number": _clean_value(lap.get("LapNumber", "-")),
-        "lap_time": _clean_value(lap.get("LapTime", "-")),
+        "lap_time": _format_lap_time(lap.get("LapTime", "-")),
         "compound": _clean_value(lap.get("Compound", "-")),
         "stint": _clean_value(lap.get("Stint", "-")),
         "tyre_life": _clean_value(lap.get("TyreLife", "-")),
@@ -444,14 +798,7 @@ def _lap_record(lap, telemetry):
             gap_ahead = f"{float(gap_series.iloc[-1]):.3f} m"
 
     fields = [
-        ("driver", "Driver", _clean_value(lap.get("Driver", "-"))),
-        ("team", "Team", _clean_value(lap.get("Team", "-"))),
-        ("lap_number", "Lap Number", _clean_value(lap.get("LapNumber", "-"))),
-        ("lap_time", "Lap Time", _clean_value(lap.get("LapTime", "-"))),
         ("stint", "Stint", _clean_value(lap.get("Stint", "-"))),
-        ("sector_1_time", "Sector 1", _clean_value(lap.get("Sector1Time", "-"))),
-        ("sector_2_time", "Sector 2", _clean_value(lap.get("Sector2Time", "-"))),
-        ("sector_3_time", "Sector 3", _clean_value(lap.get("Sector3Time", "-"))),
         ("speed_i1", "Speed I1", _clean_value(lap.get("SpeedI1", "-"))),
         ("speed_i2", "Speed I2", _clean_value(lap.get("SpeedI2", "-"))),
         ("speed_fl", "Speed FL", _clean_value(lap.get("SpeedFL", "-"))),
@@ -543,6 +890,98 @@ def _race_stints(session, driver_number, session_code):
     }
 
 
+def _qualifying_phases(session, driver_number, session_code):
+    if not session or not driver_number or str(session_code).strip().upper() != "Q":
+        return None
+
+    results = getattr(session, "results", None)
+    if results is None or results.empty:
+        return None
+
+    row_match = results[results["DriverNumber"].astype(str).str.strip() == str(driver_number).strip()]
+    if row_match.empty:
+        return None
+
+    row = row_match.iloc[0]
+    driver_laps = session.laps.pick_drivers(driver_number)
+    if driver_laps is None or driver_laps.empty:
+        return None
+
+    valid_laps = driver_laps[driver_laps["LapTime"].notna()].copy()
+    if valid_laps.empty:
+        return None
+
+    phase_specs = []
+    for phase_number, field_name in enumerate(("Q1", "Q2", "Q3"), start=1):
+        phase_time = row.get(field_name, None)
+        phase_seconds = _lap_time_seconds(phase_time)
+        if phase_seconds is None:
+            continue
+        phase_specs.append(
+            {
+                "stint": phase_number,
+                "phase_label": field_name,
+                "phase_time": phase_time,
+                "phase_seconds": phase_seconds,
+                "tyre_color": "#44c2ff" if phase_number == 1 else "#77f0d1" if phase_number == 2 else "#ffbf69",
+            }
+        )
+
+    if not phase_specs:
+        return None
+
+    phase_laps = {spec["stint"]: [] for spec in phase_specs}
+    ordered_laps = valid_laps.sort_values(by=["LapNumber", "Time"])
+    for _, lap_row in ordered_laps.iterrows():
+        lap_number = lap_row.get("LapNumber")
+        if pd.isna(lap_number):
+            continue
+        lap_seconds = _lap_time_seconds(lap_row.get("LapTime", None))
+        if lap_seconds is None:
+            continue
+
+        best_phase = min(
+            phase_specs,
+            key=lambda spec: abs(lap_seconds - spec["phase_seconds"]),
+        )
+        lap_number_int = int(lap_number)
+        phase_laps[best_phase["stint"]].append(
+            {
+                "lap_number": lap_number_int,
+                "lap_time": _clean_value(lap_row.get("LapTime", "-")),
+                "lap_time_seconds": lap_seconds,
+                "value": f"{_clean_value(driver_number)}:{lap_number_int}",
+                "compound": _clean_value(lap_row.get("Compound", "-")),
+                "fresh_tyre": bool(lap_row.get("FreshTyre", False)) if pd.notna(lap_row.get("FreshTyre", False)) else False,
+            }
+        )
+
+    phases = []
+    for spec in phase_specs:
+        laps = phase_laps.get(spec["stint"], [])
+        phases.append(
+            {
+                "stint": spec["stint"],
+                "phase_label": spec["phase_label"],
+                "phase_time": _format_lap_time(spec["phase_time"]),
+                "lap_count": len(laps),
+                "compound": "-",
+                "tyre_color": spec["tyre_color"],
+                "fresh_tyre": False,
+                "laps": laps,
+            }
+        )
+
+    if not phases:
+        return None
+
+    return {
+        "driver": _clean_value(row.get("FullName", "-")),
+        "stints": phases,
+        "lap_total": int(valid_laps.shape[0]),
+    }
+
+
 def _telemetry_charts(lap):
     telemetry = lap.get_telemetry(frequency="original").reset_index(drop=True)
     if telemetry.empty or "Time" not in telemetry.columns:
@@ -591,12 +1030,54 @@ def _telemetry_charts(lap):
         if not points:
             continue
 
+        max_point = None
+        min_point = None
+        if column == "Speed":
+            speed_series = telemetry[column]
+            if not speed_series.empty:
+                for label_name, selector in (("max", speed_series.idxmax), ("min", speed_series.idxmin)):
+                    peak_index = selector()
+                    if peak_index not in telemetry.index:
+                        continue
+                    peak_row = telemetry.loc[peak_index]
+                    peak_time = peak_row.get("Time", None)
+                    peak_speed = peak_row.get("Speed", None)
+                    if pd.isna(peak_time) or pd.isna(peak_speed):
+                        continue
+                    try:
+                        marker = {
+                            "time": float(peak_time.total_seconds()),
+                            "value": float(peak_speed),
+                            "label": f"{float(peak_speed):.0f} km/h",
+                        }
+                    except Exception:
+                        continue
+                    if label_name == "max":
+                        max_point = marker
+                    else:
+                        min_point = marker
+
         y_values = [point[1] for point in points]
-        y_min = min(y_values)
-        y_max = max(y_values)
-        if y_min == y_max:
-            y_min -= 1
-            y_max += 1
+        if column == "nGear":
+            y_min = -1
+            y_max = 8
+            y_ticks = list(range(-1, 9))
+            y_tick_labels = ["R", "N", "1", "2", "3", "4", "5", "6", "7", "8"]
+        elif column == "Speed":
+            y_min = 0
+            y_max = max(y_values)
+            if y_max == y_min:
+                y_max += 1
+            y_ticks = None
+            y_tick_labels = None
+        else:
+            y_min = min(y_values)
+            y_max = max(y_values)
+            if y_min == y_max:
+                y_min -= 1
+                y_max += 1
+            y_ticks = None
+            y_tick_labels = None
 
         charts.append(
             {
@@ -609,6 +1090,10 @@ def _telemetry_charts(lap):
                 "x_max": points[-1][0],
                 "y_min": y_min,
                 "y_max": y_max,
+                "y_ticks": y_ticks,
+                "y_tick_labels": y_tick_labels,
+                "max_point": max_point,
+                "min_point": min_point,
             }
         )
 
@@ -625,7 +1110,34 @@ def _rotate_xy(points, rotation_degrees):
     return rotated.tolist()
 
 
-def _track_map_payload(session, lap):
+def _sample_track_point(samples, target_seconds):
+    if not samples:
+        return None
+    if len(samples) == 1:
+        return samples[0]
+
+    if target_seconds <= samples[0]["t"]:
+        return samples[0]
+    if target_seconds >= samples[-1]["t"]:
+        return samples[-1]
+
+    for index in range(1, len(samples)):
+        prev = samples[index - 1]
+        next_sample = samples[index]
+        if target_seconds > next_sample["t"]:
+            continue
+
+        span = next_sample["t"] - prev["t"] or 1.0
+        ratio = (target_seconds - prev["t"]) / span
+        return {
+            "x": prev["x"] + (next_sample["x"] - prev["x"]) * ratio,
+            "y": prev["y"] + (next_sample["y"] - prev["y"]) * ratio,
+        }
+
+    return samples[-1]
+
+
+def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
     try:
         circuit_info = session.get_circuit_info()
     except Exception:
@@ -644,9 +1156,96 @@ def _track_map_payload(session, lap):
         return None
 
     outline = circuit_points
-    racing = lap_pos.loc[:, ["X", "Y"]].dropna().to_numpy().tolist()
+    racing_frame = lap_pos.loc[:, [column for column in ["Time", "X", "Y"] if column in lap_pos.columns]].dropna(subset=["X", "Y"]).copy()
+    racing = racing_frame.loc[:, ["X", "Y"]].to_numpy().tolist()
     outline = _rotate_xy(outline, circuit_info.rotation)
     racing = _rotate_xy(racing, circuit_info.rotation)
+
+    if "Time" in racing_frame.columns:
+        time_values = racing_frame["Time"].dt.total_seconds().tolist()
+        time_base = next((value for value in time_values if pd.notna(value)), 0.0)
+        raw_time_series = [
+            float(value - time_base) if pd.notna(value) else index / max(len(racing) - 1, 1)
+            for index, value in enumerate(time_values)
+        ]
+    else:
+        raw_time_series = [index / max(len(racing) - 1, 1) for index in range(len(racing))]
+
+    if lap_duration_seconds is not None and raw_time_series:
+        source_duration = raw_time_series[-1] or 1.0
+        scale = float(lap_duration_seconds) / source_duration
+    else:
+        scale = 1.0
+
+    time_series = [float(value * scale) for value in raw_time_series]
+
+    racing_samples = []
+    for index, point in enumerate(racing):
+        if index >= len(time_series):
+            break
+        racing_samples.append(
+            {
+                "x": float(point[0]),
+                "y": float(point[1]),
+                "t": float(time_series[index]),
+            }
+        )
+
+    max_speed_marker = None
+    min_speed_marker = None
+    if telemetry is not None and not telemetry.empty and "Speed" in telemetry.columns:
+        speed_series = telemetry["Speed"].dropna()
+        if not speed_series.empty:
+            for marker_name, selector in (("max", speed_series.idxmax), ("min", speed_series.idxmin)):
+                speed_index = selector()
+                if speed_index not in telemetry.index:
+                    continue
+                speed_row = telemetry.loc[speed_index]
+                speed_time = speed_row.get("Time", None)
+                if pd.isna(speed_time):
+                    continue
+                target_seconds = _lap_time_seconds(speed_time)
+                if target_seconds is None:
+                    continue
+                point = _sample_track_point(racing_samples, target_seconds)
+                if point is None:
+                    continue
+                marker = {
+                    "speed": float(speed_row.get("Speed", 0.0)),
+                    "seconds": float(target_seconds),
+                    "x": float(point["x"]),
+                    "y": float(point["y"]),
+                }
+                if marker_name == "max":
+                    max_speed_marker = marker
+                else:
+                    min_speed_marker = marker
+
+    sector_markers = []
+    sector_specs = [
+        ("S1", lap.get("Sector1Time", None)),
+        ("S2", lap.get("Sector2Time", None)),
+        ("S3", lap.get("Sector3Time", None)),
+    ]
+    cumulative_seconds = 0.0
+    for label, sector_value in sector_specs:
+        sector_seconds = _lap_time_seconds(sector_value)
+        if sector_seconds is None:
+            continue
+        cumulative_seconds += sector_seconds
+        point = _sample_track_point(racing_samples, cumulative_seconds)
+        if point is None:
+            continue
+        sector_markers.append(
+            {
+                "label": label,
+                "time": _clean_value(sector_value),
+                "seconds": float(sector_seconds),
+                "cumulative_seconds": float(cumulative_seconds),
+                "x": float(point["x"]),
+                "y": float(point["y"]),
+            }
+        )
 
     all_points = outline + racing
     if not all_points:
@@ -660,6 +1259,10 @@ def _track_map_payload(session, lap):
     return {
         "outline": outline,
         "racing": racing,
+        "samples": racing_samples,
+        "sector_markers": sector_markers,
+        "max_speed_marker": max_speed_marker,
+        "min_speed_marker": min_speed_marker,
         "bounds": {
             "min_x": min(xs) - padding,
             "max_x": max(xs) + padding,
@@ -667,6 +1270,7 @@ def _track_map_payload(session, lap):
             "max_y": max(ys) + padding,
         },
         "rotation": circuit_info.rotation,
+        "duration": float(lap_duration_seconds) if lap_duration_seconds is not None else None,
     }
 
 
@@ -708,6 +1312,10 @@ def _resolve_context():
     if selected_event is not None:
         session_badge = f"{year} {selected_event.EventName} - {_session_label(session_code)}"
 
+    session_title = f"{year} {gp}"
+    if selected_event is not None:
+        session_title = f"{year} {selected_event.EventName}"
+
     return {
         "year": year,
         "year_int": year_int,
@@ -719,6 +1327,7 @@ def _resolve_context():
         "event_options": event_options,
         "session_options": session_options,
         "session_badge": session_badge,
+        "session_title": session_title,
     }
 
 
@@ -887,9 +1496,10 @@ def session_selector():
         view="session",
         strategy=None,
         session_badge=ctx["session_badge"],
+        session_title=ctx["session_title"],
         years=_year_options(),
         events=ctx["event_options"],
-        sessions=ctx["session_options"],
+        session_options=ctx["session_options"],
         form_action="/results",
         form={
             "year": ctx["year"],
@@ -922,9 +1532,10 @@ def results():
         view="results",
         strategy=strategy,
         session_badge=session_badge,
+        session_title=ctx["session_title"],
         years=_year_options(),
         events=ctx["event_options"],
-        sessions=ctx["session_options"],
+        session_options=ctx["session_options"],
         form_action="/results",
         form={
             "year": ctx["year"],
@@ -948,12 +1559,26 @@ def data():
     driver_requested = bool(driver_number)
     lap_key = request.args.get("lap", "")
     stint_key = request.args.get("stint", "")
+    qualifying_phase = request.args.get("phase", "").strip().upper()
     lap_requested = bool(lap_key)
-    driver_options = _driver_options(session) if session else []
-    driver_groups = _driver_groups(session) if session else []
-    driver_number = _resolve_driver(session, driver_number) if session and driver_requested else None
+    session_is_qualifying = str(ctx["session_code"]).strip().upper() == "Q"
+    if session_is_qualifying:
+        qualifying_phase = qualifying_phase if qualifying_phase in {"Q1", "Q2", "Q3"} else "Q1"
+    else:
+        qualifying_phase = ""
+
+    qualifying_results = _qualifying_driver_results(session, qualifying_phase) if session_is_qualifying else None
+    qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_phase) if session_is_qualifying else []
+    driver_options = _driver_options(session, results=qualifying_results) if session else []
+    driver_groups = _driver_groups(session, results=qualifying_results) if session else []
+    driver_number = _resolve_driver(session, driver_number, driver_options) if session and driver_requested else None
     selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
-    race_stints = _race_stints(session, driver_number, ctx["session_code"]) if session and driver_number else None
+    qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
+    qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
+    driver_lap_options = _lap_options(session, driver_number) if session and driver_number else []
+    race_stints = None
+    if session and driver_number:
+        race_stints = _qualifying_phases(session, driver_number, ctx["session_code"]) if session_is_qualifying else _race_stints(session, driver_number, ctx["session_code"])
     selected_stint = _parse_stint_value(stint_key)
     selected_lap_value = lap_key if lap_requested else ""
     selected_lap_data = None
@@ -967,6 +1592,9 @@ def data():
     selected_stint_data = None
     if race_stints and race_stints.get("stints") and selected_stint is not None:
         selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
+    selected_qualifying_run = None
+    if session_is_qualifying and qualifying_run_laps and lap_requested:
+        selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
 
     telemetry_columns = []
     telemetry_rows = []
@@ -980,7 +1608,8 @@ def data():
         lap_record = _lap_record(selected_lap_data, telemetry)
         telemetry_charts = _telemetry_charts(selected_lap_data)
         try:
-            track_map = _track_map_payload(session, selected_lap_data) if session else None
+            lap_duration = _lap_time_seconds(selected_lap_data.get("LapTime", None))
+            track_map = _track_map_payload(session, selected_lap_data, lap_duration, telemetry) if session else None
         except Exception:
             track_map = None
     session_badge = ctx["session_badge"]
@@ -1006,20 +1635,29 @@ def data():
         telemetry_charts=telemetry_charts,
         track_map=track_map,
         session_badge=session_badge,
+        session_title=ctx["session_title"],
         years=_year_options(),
         events=ctx["event_options"],
-        sessions=ctx["session_options"],
+        session_options=ctx["session_options"],
+        qualifying_phase=qualifying_phase,
+        qualifying_phase_rows=qualifying_phase_rows,
+        qualifying_run_options=qualifying_run_options,
+        qualifying_run_laps=qualifying_run_laps,
+        selected_qualifying_run=selected_qualifying_run,
         form_action="/data",
         form={
             "year": ctx["year"],
             "gp": ctx["gp"],
             "session": ctx["session_code"],
+            "phase": qualifying_phase,
         },
         drivers=driver_options,
         driver_groups=driver_groups,
         selected_driver=driver_number,
         selected_driver_data=selected_driver_data,
+        driver_lap_options=driver_lap_options,
         selected_lap=selected_lap_value,
+        session_is_qualifying=session_is_qualifying,
     )
 
 
@@ -1046,9 +1684,10 @@ def strategy():
         view="strategy",
         strategy=strategy_data,
         session_badge=session_badge,
+        session_title=ctx["session_title"],
         years=_year_options(),
         events=ctx["event_options"],
-        sessions=ctx["session_options"],
+        session_options=ctx["session_options"],
         form_action="/strategy",
         form={
             "year": ctx["year"],
