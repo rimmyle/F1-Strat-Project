@@ -3,12 +3,12 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import re
-from threading import Lock
+from threading import RLock
 
 import fastf1
 import pandas as pd
 import numpy as np
-from flask import Flask, render_template, request, url_for
+from flask import Flask, jsonify, render_template, request, url_for
 
 
 app = Flask(__name__)
@@ -20,8 +20,9 @@ fastf1.Cache.enable_cache(str(cache_dir))
 SESSION_CACHE = {}
 SESSION_JOBS = {}
 SESSION_OBJECTS = {}
+SESSION_PROGRESS = {}
 SCHEDULE_CACHE = {}
-SESSION_LOCK = Lock()
+SESSION_LOCK = RLock()
 SESSION_EXECUTOR = ThreadPoolExecutor(max_workers=2)
 YEAR_MIN = 2018
 YEAR_MAX = datetime.now().year
@@ -157,7 +158,7 @@ def _session_rows(session):
         "Laps",
     ]
     columns = [column for column in preferred_columns if column in results.columns]
-    rows = results.loc[:, columns].head(10).copy()
+    rows = results.loc[:, columns].head(20).copy()
     return [
         {column: _clean_value(row[column]) for column in columns}
         for _, row in rows.iterrows()
@@ -204,6 +205,38 @@ def _team_badge(team_name):
     if badge_color is None:
         badge_color = "#64748b"
     return badge_text, badge_color
+
+
+def _team_color(team_name):
+    normalized = _clean_value(team_name)
+    _, badge_color = TEAM_BADGE_STYLES.get(normalized, (None, None))
+    if badge_color:
+        return badge_color
+
+    lowered = normalized.lower()
+    if lowered in {"rb", "rb f1 team", "visa cash app rb", "visa cash app rb f1 team", "visa cash app rb formula one team"}:
+        return "#2b4562"
+    if "mercedes" in lowered:
+        return "#00d2be"
+    if "red bull" in lowered:
+        return "#1e41ff"
+    if "ferrari" in lowered:
+        return "#dc0000"
+    if "mclaren" in lowered:
+        return "#ff8700"
+    if "aston" in lowered:
+        return "#006f62"
+    if "alpine" in lowered:
+        return "#0090ff"
+    if "williams" in lowered:
+        return "#00a3e0"
+    if "haas" in lowered:
+        return "#b6babd"
+    if "alpha" in lowered:
+        return "#2b4562"
+    if "stake" in lowered or "kick" in lowered or "sauber" in lowered or "alfa" in lowered:
+        return "#52e252"
+    return "#64748b"
 
 
 def _team_logo_url(team_name):
@@ -356,10 +389,7 @@ def _qualifying_driver_results(session, phase):
     if phase_code not in results.columns:
         return results
 
-    ordered = results[results[phase_code].notna()].copy()
-    if ordered.empty:
-        return ordered
-
+    ordered = results.copy()
     return ordered.sort_values(by=phase_code, na_position="last")
 
 
@@ -380,6 +410,9 @@ def _qualifying_phase_rows(session, phase):
         abbreviation = _clean_value(row.get("Abbreviation", "-"))
         team_name = _clean_value(row.get("TeamName", "-"))
         phase_time = _format_lap_time(row.get(phase_code, None))
+        phase_seconds = _lap_time_seconds(row.get(phase_code, None))
+        if phase_seconds is None:
+            phase_time = "No Time"
         headshot_url = _driver_headshot_url(driver_id, row.get("HeadshotUrl", ""))
         team_badge_text, team_badge_color = _team_badge(team_name)
         rows.append(
@@ -393,6 +426,7 @@ def _qualifying_phase_rows(session, phase):
                 "team_badge_color": team_badge_color,
                 "headshot_url": headshot_url,
                 "phase_time": phase_time,
+                "phase_seconds": phase_seconds,
                 "position": _clean_value(row.get("Position", "-")),
                 "label": f"{abbreviation} - {full_name}",
             }
@@ -890,6 +924,204 @@ def _race_stints(session, driver_number, session_code):
     }
 
 
+def _pit_strategy_graph(session):
+    if not session:
+        return None
+
+    results = getattr(session, "results", None)
+    if results is None or results.empty or "Position" not in results.columns:
+        return None
+
+    driver_meta = _driver_options(session, results=results)
+    if not driver_meta:
+        return None
+
+    rows = []
+    max_lap = 0
+
+    def format_session_time(value, prefix_plus=False):
+        text = _clean_value(value).strip()
+        if not text or text == "-":
+            return "-"
+        text = text.replace("0 days ", "")
+        text = text.replace("0:0", "")
+        text = text.replace("0:", "")
+        text = text.replace("days ", "")
+        text = text.strip()
+        if text.startswith("0:"):
+            text = text[2:]
+        if prefix_plus and not text.startswith("+"):
+            text = f"+{text}"
+        return text
+
+    def classify_result_label(result_row, leader_laps):
+        status_text = _clean_value(result_row.get("Status", "")).strip().lower()
+        driver_laps = int(float(result_row.get("Laps", 0) or 0))
+        if "dns" in status_text or driver_laps <= 0:
+            return "DNS"
+        if any(token in status_text for token in ("retired", "dnf", "disqualified", "withdrawn", "accident", "damage", "engine", "mechanical", "suspension", "gearbox", "spin", "collision", "stopped")):
+            return "DNF"
+        if "lapped" in status_text or driver_laps < leader_laps:
+            laps_down = max(leader_laps - driver_laps, 1)
+            return f"+{laps_down} Laps"
+        return format_session_time(result_row.get("Time", ""), prefix_plus=True)
+
+    for driver in driver_meta:
+        driver_number = driver["value"]
+        laps = session.laps.pick_drivers(driver_number)
+        if laps is None or laps.empty or "Stint" not in laps.columns:
+            continue
+
+        ordered = laps[laps["LapNumber"].notna()].copy()
+        if ordered.empty:
+            continue
+
+        ordered = ordered.sort_values(by=["LapNumber", "Time"])
+        stints = []
+        for stint_number, stint_laps in ordered.groupby("Stint", dropna=True):
+            stint_laps = stint_laps.sort_values(by=["LapNumber", "Time"])
+            if stint_laps.empty:
+                continue
+
+            lap_numbers = stint_laps["LapNumber"].dropna().astype(int).tolist()
+            if not lap_numbers:
+                continue
+
+            compound_series = stint_laps["Compound"].dropna().astype(str) if "Compound" in stint_laps.columns else pd.Series([], dtype=str)
+            compound = compound_series[compound_series.str.strip() != ""].iloc[0] if not compound_series.empty else "-"
+
+            stints.append(
+                {
+                    "stint": int(stint_number) if pd.notna(stint_number) else 0,
+                    "start_lap": min(lap_numbers),
+                    "end_lap": max(lap_numbers),
+                    "lap_count": len(stint_laps),
+                    "compound": _clean_value(compound),
+                    "tyre_color": _tyre_color(compound),
+                }
+            )
+
+        if not stints:
+            continue
+
+        pit_laps = []
+        for stint in stints[1:]:
+            pit_laps.append(stint["start_lap"])
+        pit_laps = sorted(set(pit_laps))
+
+        max_lap = max(max_lap, max(stint["end_lap"] for stint in stints))
+        rows.append(
+            {
+                "driver_number": driver_number,
+                "driver": driver["full_name"],
+                "abbreviation": driver["abbreviation"],
+                "team": driver["team_name"],
+                "team_color": driver["team_badge_color"],
+                "current_position": int(driver.get("position") or len(rows) + 1),
+                "stints": stints,
+                "pit_laps": pit_laps,
+                "driver_number": driver_number,
+            }
+        )
+
+    if not rows or max_lap <= 0:
+        return None
+
+    def classify_track_status(raw_status):
+        status = _clean_value(raw_status).strip()
+        if not status:
+            return None
+        if "5" in status:
+            return {"label": "Red Flag", "short": "RF", "color": "#ef4444"}
+        if "4" in status:
+            return {"label": "Safety Car", "short": "SC", "color": "#facc15"}
+        if "6" in status or "7" in status:
+            return {"label": "Virtual Safety Car", "short": "VSC", "color": "#facc15"}
+        return None
+
+    status_segments = []
+    track_status = getattr(session, "track_status", None)
+    laps_for_status = None
+    if "LapNumber" in session.laps.columns and "LapStartTime" in session.laps.columns and "Time" in session.laps.columns:
+        laps_for_status = session.laps[
+            session.laps["LapNumber"].notna() & session.laps["LapStartTime"].notna() & session.laps["Time"].notna()
+        ].copy()
+        if not laps_for_status.empty:
+            laps_for_status = laps_for_status.sort_values(by=["LapNumber", "Time"])
+
+    if track_status is not None and not track_status.empty and laps_for_status is not None and not laps_for_status.empty:
+        status_events = track_status.sort_values(by="Time").copy()
+        status_events["end_time"] = status_events["Time"].shift(-1)
+        final_lap_time = laps_for_status["Time"].max()
+
+        current = None
+        for _, row in status_events.iterrows():
+            marker = classify_track_status(row.get("Status"))
+            if marker is None or marker["label"] not in {"Safety Car", "Virtual Safety Car", "Red Flag"}:
+                continue
+
+            start_time = row.get("Time")
+            end_time = row.get("end_time")
+            if pd.isna(start_time):
+                continue
+            if pd.isna(end_time):
+                end_time = final_lap_time
+            if pd.isna(end_time) or end_time <= start_time:
+                continue
+
+            overlapping_laps = laps_for_status[
+                (laps_for_status["LapStartTime"] < end_time) & (laps_for_status["Time"] > start_time)
+            ]["LapNumber"].dropna()
+            if overlapping_laps.empty:
+                continue
+
+            segment = {
+                "start_lap": int(float(overlapping_laps.min())),
+                "end_lap": int(float(overlapping_laps.max())),
+                **marker,
+            }
+
+            if current is not None and current["label"] == segment["label"] and segment["start_lap"] <= current["end_lap"] + 1:
+                current["end_lap"] = max(current["end_lap"], segment["end_lap"])
+                continue
+
+            if current is not None:
+                status_segments.append(current)
+            current = segment
+
+        if current is not None:
+            status_segments.append(current)
+
+    results_ordered = results.sort_values(by="Position") if "Position" in results.columns else results
+    leader_time = None
+    if results_ordered is not None and not results_ordered.empty:
+        leader_row = results_ordered.iloc[0]
+        leader_time = format_session_time(leader_row.get("Time", ""))
+        leader_laps = int(float(leader_row.get("Laps", 0) or 0))
+        for row in rows:
+            driver_row = results_ordered[results_ordered["DriverNumber"].astype(str).str.strip() == str(row["driver_number"]).strip()]
+            if driver_row.empty:
+                row["time_label"] = "-"
+                continue
+            result_row = driver_row.iloc[0]
+            if row["current_position"] == 1:
+                row["time_label"] = leader_time
+            else:
+                row["time_label"] = classify_result_label(result_row, leader_laps)
+    else:
+        for row in rows:
+            row["time_label"] = "-"
+
+    ordered_rows = sorted(rows, key=lambda item: item["current_position"])
+    return {
+        "title": "Pit strategy",
+        "lap_total": max_lap,
+        "leader_time": leader_time,
+        "drivers": ordered_rows,
+        "status_segments": status_segments,
+    }
+
+
 def _qualifying_phases(session, driver_number, session_code):
     if not session or not driver_number or str(session_code).strip().upper() != "Q":
         return None
@@ -1100,6 +1332,148 @@ def _telemetry_charts(lap):
     return charts
 
 
+def _race_position_graph(session):
+    if not session:
+        return None
+
+    results = getattr(session, "results", None)
+    if results is None or results.empty:
+        return None
+
+    if "Position" not in results.columns:
+        return None
+
+    driver_meta = _driver_options(session, results=results)
+    if not driver_meta:
+        return None
+
+    driver_results = {}
+    max_lap = 0
+    position_series = pd.to_numeric(results["Position"], errors="coerce").dropna()
+    max_position = int(position_series.max()) if not position_series.empty else 0
+    if max_position <= 0:
+        max_position = len(driver_meta)
+
+    for driver in driver_meta:
+        driver_number = driver["value"]
+        laps = session.laps.pick_drivers(driver_number)
+        if laps is None or laps.empty or "Position" not in laps.columns:
+            continue
+
+        ordered = laps[laps["LapNumber"].notna() & laps["Position"].notna()].copy()
+        if ordered.empty:
+            continue
+        ordered = ordered.sort_values(by=["LapNumber", "Time"])
+
+        points = []
+        for _, lap_row in ordered.iterrows():
+            lap_number = lap_row.get("LapNumber")
+            position = lap_row.get("Position")
+            if pd.isna(lap_number) or pd.isna(position):
+                continue
+            try:
+                lap_number = int(lap_number)
+                position = int(float(position))
+            except (TypeError, ValueError):
+                continue
+            points.append([lap_number, position])
+            if lap_number > max_lap:
+                max_lap = lap_number
+
+        if not points:
+            continue
+
+        driver_results[driver_number] = {
+            "value": driver_number,
+            "driver": driver["full_name"],
+            "abbreviation": driver["abbreviation"],
+            "team": driver["team_name"],
+            "color": _team_color(driver["team_name"]),
+            "points": points,
+            "current_position": points[-1][1],
+        }
+
+    if not driver_results or max_lap <= 0:
+        return None
+
+    def classify_track_status(raw_status):
+        status = _clean_value(raw_status).strip()
+        if not status:
+            return None
+        if "5" in status:
+            return {"label": "Red Flag", "short": "RF", "color": "#ef4444"}
+        if "4" in status:
+            return {"label": "Safety Car", "short": "SC", "color": "#f97316"}
+        if "6" in status or "7" in status:
+            return {"label": "Virtual Safety Car", "short": "VSC", "color": "#38bdf8"}
+        if "2" in status:
+            return {"label": "Yellow Flag", "short": "YF", "color": "#facc15"}
+        return None
+
+    status_segments = []
+    track_status = getattr(session, "track_status", None)
+    laps_for_status = None
+    if "LapNumber" in session.laps.columns and "LapStartTime" in session.laps.columns and "Time" in session.laps.columns:
+        laps_for_status = session.laps[
+            session.laps["LapNumber"].notna() & session.laps["LapStartTime"].notna() & session.laps["Time"].notna()
+        ].copy()
+        if not laps_for_status.empty:
+            laps_for_status = laps_for_status.sort_values(by=["LapNumber", "Time"])
+
+    if track_status is not None and not track_status.empty and laps_for_status is not None and not laps_for_status.empty:
+        status_events = track_status.sort_values(by="Time").copy()
+        status_events["end_time"] = status_events["Time"].shift(-1)
+        final_lap_time = laps_for_status["Time"].max()
+
+        current = None
+        for _, row in status_events.iterrows():
+            marker = classify_track_status(row.get("Status"))
+            if marker is None or marker["label"] not in {"Safety Car", "Virtual Safety Car", "Red Flag"}:
+                continue
+
+            start_time = row.get("Time")
+            end_time = row.get("end_time")
+            if pd.isna(start_time):
+                continue
+            if pd.isna(end_time):
+                end_time = final_lap_time
+            if pd.isna(end_time) or end_time <= start_time:
+                continue
+
+            overlapping_laps = laps_for_status[
+                (laps_for_status["LapStartTime"] < end_time) & (laps_for_status["Time"] > start_time)
+            ]["LapNumber"].dropna()
+            if overlapping_laps.empty:
+                continue
+
+            segment = {
+                "start_lap": int(float(overlapping_laps.min())),
+                "end_lap": int(float(overlapping_laps.max())),
+                **marker,
+            }
+
+            if current is not None and current["label"] == segment["label"] and segment["start_lap"] <= current["end_lap"] + 1:
+                current["end_lap"] = max(current["end_lap"], segment["end_lap"])
+                continue
+
+            if current is not None:
+                status_segments.append(current)
+            current = segment
+
+        if current is not None:
+            status_segments.append(current)
+
+    ordered_series = sorted(driver_results.values(), key=lambda item: item["current_position"])
+
+    return {
+        "title": "Race position changes",
+        "lap_total": max_lap,
+        "max_position": max_position,
+        "series": ordered_series,
+        "status_segments": status_segments,
+    }
+
+
 def _rotate_xy(points, rotation_degrees):
     if not points:
         return []
@@ -1287,13 +1661,9 @@ def _resolve_context():
     year_int = max(YEAR_MIN, min(YEAR_MAX, year_int))
     year = str(year_int)
 
-    try:
-        schedule = _schedule_for_year(year_int)
-    except Exception as exc:
-        schedule = None
-        schedule_error = str(exc)
-    else:
-        schedule_error = None
+    with SESSION_LOCK:
+        schedule = SCHEDULE_CACHE.get(year_int)
+    schedule_error = None
 
     selected_event = _selected_event(schedule, gp) if schedule is not None else None
     event_options = _event_options(schedule) if schedule is not None else []
@@ -1394,10 +1764,75 @@ def _session_options(event):
     return options
 
 
+def _all_session_options():
+    return [{"value": code, "label": label} for code, label in SESSION_CHOICES]
+
+
+def _session_selector_context():
+    year = request.args.get("year", "2024")
+    gp = request.args.get("gp", "Bahrain Grand Prix")
+    session_code = request.args.get("session", "R")
+
+    try:
+        year_int = int(year)
+    except ValueError:
+        year_int = YEAR_MAX
+
+    year_int = max(YEAR_MIN, min(YEAR_MAX, year_int))
+    year = str(year_int)
+
+    with SESSION_LOCK:
+        schedule = SCHEDULE_CACHE.get(year_int)
+
+    selected_event = _selected_event(schedule, gp) if schedule is not None else None
+    event_options = _event_options(schedule) if schedule is not None else [{"value": gp, "label": gp}]
+    session_options = _session_options(selected_event) if selected_event is not None else _all_session_options()
+
+    if selected_event is not None:
+        gp = str(selected_event.EventName)
+        if session_options and session_code.upper() not in {opt["value"] for opt in session_options}:
+            session_code = session_options[0]["value"]
+
+    session_badge = f"{year} {gp} - {_session_label(session_code)}"
+    if selected_event is not None:
+        session_badge = f"{year} {selected_event.EventName} - {_session_label(session_code)}"
+
+    session_title = f"{year} {gp}"
+    if selected_event is not None:
+        session_title = f"{year} {selected_event.EventName}"
+
+    return {
+        "year": year,
+        "year_int": year_int,
+        "gp": gp,
+        "session_code": session_code,
+        "schedule": schedule,
+        "schedule_error": None,
+        "selected_event": selected_event,
+        "event_options": event_options,
+        "session_options": session_options,
+        "session_badge": session_badge,
+        "session_title": session_title,
+    }
+
+
 def _event_from_session_data(year, gp):
     schedule = _schedule_for_year(year)
     event = _selected_event(schedule, gp)
     return schedule, event
+
+
+def _set_session_progress(key, progress, stage):
+    with SESSION_LOCK:
+        SESSION_PROGRESS[key] = {
+            "progress": max(0, min(100, int(progress))),
+            "stage": stage,
+        }
+
+
+def _get_session_progress(key):
+    with SESSION_LOCK:
+        return SESSION_PROGRESS.get(key, {"progress": 0, "stage": "Starting"})
 
 
 def _load_session_data(year, gp, session_code):
@@ -1405,9 +1840,19 @@ def _load_session_data(year, gp, session_code):
     if event is None:
         raise ValueError(f"No event schedule found for {year}")
 
-    session = event.get_session(session_code)
-    session.load()
     key = _session_key(year, gp, session_code)
+    _set_session_progress(key, 10, "Resolving event")
+    session = event.get_session(session_code)
+    _set_session_progress(key, 18, "Preparing FastF1 session")
+    _set_session_progress(key, 26, "Fetching session metadata")
+    _set_session_progress(key, 34, "Loading timing data")
+    session.load()
+    _set_session_progress(key, 52, "Loading laps and results")
+    _set_session_progress(key, 66, "Building race tables")
+    _set_session_progress(key, 78, "Building charts")
+    _set_session_progress(key, 88, "Finalizing session data")
+    rows = _session_rows(session)
+    _set_session_progress(key, 100, "Complete")
     with SESSION_LOCK:
         SESSION_OBJECTS[key] = session
     return {
@@ -1419,7 +1864,7 @@ def _load_session_data(year, gp, session_code):
         "event_name": getattr(session.event, "EventName", gp),
         "event_country": getattr(session.event, "Country", "-"),
         "event_round": getattr(session.event, "RoundNumber", "-"),
-        "rows": _session_rows(session),
+        "rows": rows,
     }
 
 
@@ -1431,18 +1876,21 @@ def _get_session_state(year, gp, session_code):
         if cached is not None:
             if cached.get("status") == "ready":
                 return cached
-            return {"status": "ready", **cached}
+            progress = _get_session_progress(key)
+            return {"status": "loading", **progress}
 
         future = SESSION_JOBS.get(key)
         if future is None:
+            _set_session_progress(key, 0, "Starting")
             future = SESSION_EXECUTOR.submit(_load_session_data, *key)
             SESSION_JOBS[key] = future
-            return {"status": "loading"}
+            return {"status": "loading", **_get_session_progress(key)}
 
     if future.done():
         try:
             result = future.result()
         except Exception as exc:
+            _set_session_progress(key, 100, "Error")
             result = {"status": "error", "message": str(exc)}
         else:
             if result.get("status") != "ready":
@@ -1451,48 +1899,36 @@ def _get_session_state(year, gp, session_code):
         with SESSION_LOCK:
             SESSION_JOBS.pop(key, None)
             SESSION_CACHE[key] = result
+            if result.get("status") == "ready":
+                SESSION_PROGRESS.pop(key, None)
 
         return result
 
-    return {"status": "loading"}
+    return {"status": "loading", **_get_session_progress(key)}
 
 
 def _session_object(year, gp, session_code):
     key = _session_key(year, gp, session_code)
     with SESSION_LOCK:
-        session = SESSION_OBJECTS.get(key)
-    if session is not None:
-        return session
-
-    session_state = _get_session_state(year, gp, session_code)
-    if session_state.get("status") != "ready":
-        return None
-
-    schedule, event = _event_from_session_data(year, gp)
-    if event is None:
-        return None
-
-    session = event.get_session(session_code)
-    session.load()
-    with SESSION_LOCK:
-        SESSION_OBJECTS[key] = session
-    return session
+        return SESSION_OBJECTS.get(key)
 
 
 @app.route("/")
 def index():
-    return results()
+    return session_selector()
 
 
 @app.route("/session")
 def session_selector():
-    ctx = _resolve_context()
+    ctx = _session_selector_context()
     return render_template(
         "index.html",
         page="session",
         data=None,
         error=ctx["schedule_error"],
         loading=False,
+        loading_progress=0,
+        loading_stage="",
         view="session",
         strategy=None,
         session_badge=ctx["session_badge"],
@@ -1509,16 +1945,60 @@ def session_selector():
     )
 
 
+@app.route("/session-status")
+def session_status():
+    ctx = _resolve_context()
+    session_state = _get_session_state(ctx["year"], ctx["gp"], ctx["session_code"])
+    return jsonify({
+        "status": session_state.get("status", "loading"),
+        "progress": session_state.get("progress", 0) if session_state.get("status") == "loading" else 100,
+        "stage": session_state.get("stage", "Loading"),
+    })
+
+
 @app.route("/results")
 def results():
     ctx = _resolve_context()
     session_state = _get_session_state(ctx["year"], ctx["gp"], ctx["session_code"])
     data = session_state if session_state.get("status") == "ready" else None
     loading = session_state.get("status") == "loading"
+    loading_progress = session_state.get("progress", 0) if loading else 0
+    loading_stage = session_state.get("stage", "") if loading else ""
     error = session_state.get("message") if session_state.get("status") == "error" else None
     if ctx["schedule_error"] and not error:
         error = ctx["schedule_error"]
     strategy = _strategy_summary(data) if data else None
+    session_is_race = str(ctx["session_code"]).strip().upper() == "R"
+    session_is_qualifying = str(ctx["session_code"]).strip().upper() == "Q"
+    session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"]) if data and (session_is_race or session_is_qualifying) else None
+    driver_number = request.args.get("driver", "").strip()
+    race_position_graph = _race_position_graph(session) if session_is_race and session else None
+    pit_strategy_graph = _pit_strategy_graph(session) if session_is_race and session else None
+    qualifying_results = _qualifying_driver_results(session, ctx.get("phase") or "Q1") if session_is_qualifying else None
+    qualifying_phase = (ctx.get("phase") or "Q1").strip().upper() if session_is_qualifying else ""
+    qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_phase) if session_is_qualifying else []
+    driver_options = _driver_options(session, results=qualifying_results) if session else []
+    driver_number = _resolve_driver(session, driver_number, driver_options) if session and driver_number else None
+    selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
+    qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
+    qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
+    qualifying_phase = qualifying_phase if qualifying_phase in {"Q1", "Q2", "Q3"} else "Q1"
+    if session_is_qualifying and qualifying_phase_rows:
+        leader_seconds = None
+        for row in qualifying_phase_rows:
+            if str(row.get("position", "")).strip() == "1":
+                leader_seconds = row.get("phase_seconds")
+                break
+        for row in qualifying_phase_rows:
+            if str(row.get("position", "")).strip() == "1":
+                row["display_time"] = _format_lap_time(row.get("phase_time"))
+            else:
+                phase_seconds = row.get("phase_seconds")
+                if leader_seconds is not None and phase_seconds is not None:
+                    gap = max(phase_seconds - leader_seconds, 0.0)
+                    row["display_time"] = f"+{_format_lap_time(pd.to_timedelta(gap, unit='s'))}"
+                else:
+                    row["display_time"] = _format_lap_time(row.get("phase_time"))
     session_badge = ctx["session_badge"]
     if data:
         session_badge = f"{data['year']} {data['event_name']} - {data['session_name']}"
@@ -1529,8 +2009,19 @@ def results():
         data=data,
         error=error,
         loading=loading,
+        loading_progress=loading_progress,
+        loading_stage=loading_stage,
         view="results",
         strategy=strategy,
+        race_position_graph=race_position_graph,
+        pit_strategy_graph=pit_strategy_graph,
+        session_is_qualifying=session_is_qualifying,
+        qualifying_phase=qualifying_phase,
+        qualifying_phase_rows=qualifying_phase_rows,
+        qualifying_run_options=qualifying_run_options,
+        qualifying_run_laps=qualifying_run_laps,
+        selected_driver=driver_number,
+        selected_driver_data=selected_driver_data,
         session_badge=session_badge,
         session_title=ctx["session_title"],
         years=_year_options(),
@@ -1551,6 +2042,8 @@ def data():
     session_state = _get_session_state(ctx["year"], ctx["gp"], ctx["session_code"])
     data_state = session_state if session_state.get("status") == "ready" else None
     loading = session_state.get("status") == "loading"
+    loading_progress = session_state.get("progress", 0) if loading else 0
+    loading_stage = session_state.get("stage", "") if loading else ""
     error = session_state.get("message") if session_state.get("status") == "error" else None
     if ctx["schedule_error"] and not error:
         error = ctx["schedule_error"]
@@ -1562,6 +2055,7 @@ def data():
     qualifying_phase = request.args.get("phase", "").strip().upper()
     lap_requested = bool(lap_key)
     session_is_qualifying = str(ctx["session_code"]).strip().upper() == "Q"
+    session_is_race = str(ctx["session_code"]).strip().upper() == "R"
     if session_is_qualifying:
         qualifying_phase = qualifying_phase if qualifying_phase in {"Q1", "Q2", "Q3"} else "Q1"
     else:
@@ -1602,6 +2096,8 @@ def data():
     lap_record = []
     telemetry_charts = []
     track_map = None
+    race_position_graph = _race_position_graph(session) if session_is_race and session else None
+    pit_strategy_graph = _pit_strategy_graph(session) if session_is_race and session else None
     if selected_lap_data is not None:
         telemetry_columns, telemetry_rows, telemetry = _telemetry_rows(selected_lap_data)
         telemetry_summary = _lap_summary(selected_lap_data, telemetry)
@@ -1622,6 +2118,8 @@ def data():
         data=data_state,
         error=error,
         loading=loading,
+        loading_progress=loading_progress,
+        loading_stage=loading_stage,
         view="data",
         strategy=_strategy_summary(data_state) if data_state else None,
         data_summary=_data_summary(data_state) if data_state else None,
@@ -1633,6 +2131,8 @@ def data():
         telemetry_columns=telemetry_columns,
         telemetry_rows=telemetry_rows,
         telemetry_charts=telemetry_charts,
+        race_position_graph=race_position_graph,
+        pit_strategy_graph=pit_strategy_graph,
         track_map=track_map,
         session_badge=session_badge,
         session_title=ctx["session_title"],
@@ -1667,6 +2167,8 @@ def strategy():
     session_state = _get_session_state(ctx["year"], ctx["gp"], ctx["session_code"])
     data = session_state if session_state.get("status") == "ready" else None
     loading = session_state.get("status") == "loading"
+    loading_progress = session_state.get("progress", 0) if loading else 0
+    loading_stage = session_state.get("stage", "") if loading else ""
     error = session_state.get("message") if session_state.get("status") == "error" else None
     if ctx["schedule_error"] and not error:
         error = ctx["schedule_error"]
@@ -1681,6 +2183,8 @@ def strategy():
         data=data,
         error=error,
         loading=loading,
+        loading_progress=loading_progress,
+        loading_stage=loading_stage,
         view="strategy",
         strategy=strategy_data,
         session_badge=session_badge,
@@ -1699,4 +2203,4 @@ def strategy():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5001"))
-    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)
+    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False, threaded=True)

@@ -4,9 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Strategy Predictor</title>
-    {% if loading %}
-      <meta http-equiv="refresh" content="2" />
-    {% endif %}
     <style>
       :root {
         --bg: #08111f;
@@ -72,15 +69,45 @@
 
       .header-divider {
         width: 100%;
-        height: 1px;
         margin: 2px 0 4px;
+        display: grid;
+        grid-template-rows: 1px 0fr 1px;
+        gap: 0;
+        transition: margin 620ms cubic-bezier(0.22, 1, 0.36, 1), grid-template-rows 620ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .header-divider-line {
+        height: 1px;
         background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.35), transparent);
+      }
+
+      .header-divider-center {
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+        min-height: 0;
       }
 
       .header-badges {
         display: grid;
         gap: 10px;
         margin-bottom: 18px;
+        transition: gap 620ms cubic-bezier(0.22, 1, 0.36, 1), margin-bottom 620ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .header-badges.open-menus {
+        gap: 18px;
+        margin-bottom: 22px;
+      }
+
+      .header-badges.open-menus .header-divider {
+        margin: 16px 0 10px;
+        grid-template-rows: 1px 72px 1px;
+      }
+
+      .header-badges.open-menus .header-divider-center {
+        min-height: 72px;
+        display: block;
       }
 
       .header-badges .topbar {
@@ -107,6 +134,11 @@
         background: rgba(68, 194, 255, 0.12);
       }
 
+      .view-link.active:not(.data-link) {
+        color: var(--accent);
+        background: rgba(68, 194, 255, 0.12);
+      }
+
       .view-link.session-link {
         color: var(--text);
         background: rgba(255, 255, 255, 0.04);
@@ -115,6 +147,12 @@
       .view-link.data-link {
         color: var(--warn);
         background: rgba(255, 191, 105, 0.08);
+      }
+
+      .view-link.data-link.active {
+        color: #ffd89a;
+        background: rgba(255, 191, 105, 0.18);
+        border-color: rgba(255, 191, 105, 0.36);
       }
 
       h1 {
@@ -150,18 +188,59 @@
       .session-badge-row {
         display: grid;
         justify-items: center;
-        gap: 12px;
+        gap: 10px;
       }
 
       .session-badge-group {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 10px;
+        gap: 4px;
         align-items: center;
       }
 
+      .session-badge-expansion-band {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        width: max-content;
+        max-width: min(520px, 100%);
+        margin: 0;
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.985);
+        max-height: 0;
+        overflow: hidden;
+        pointer-events: none;
+        transition:
+          opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+          transform 620ms cubic-bezier(0.22, 1, 0.36, 1),
+          max-height 620ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .session-badge-expansion-band.open {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        max-height: 64px;
+        pointer-events: auto;
+      }
+
       .session-dropdown {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .qualifying-session-toggle {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .practice-session-toggle {
         position: relative;
         display: inline-flex;
         align-items: center;
@@ -583,6 +662,87 @@
         text-align: center;
       }
 
+      .qualifying-telemetry-panel {
+        gap: 14px;
+      }
+
+      .qualifying-telemetry-strip {
+        display: grid;
+        gap: 14px;
+      }
+
+      .qualifying-telemetry-top {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: start;
+        gap: 12px;
+      }
+
+      .qualifying-telemetry-top .workflow-back {
+        grid-column: 3;
+        justify-self: end;
+      }
+
+      .qualifying-telemetry-driver {
+        grid-column: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-align: center;
+        width: fit-content;
+        justify-self: center;
+      }
+
+      .qualifying-telemetry-driver .selection-driver-copy {
+        display: grid;
+        gap: 2px;
+      }
+
+      .qualifying-telemetry-divider {
+        height: 1px;
+        width: 100%;
+        background: rgba(148, 163, 184, 0.16);
+      }
+
+      .qualifying-telemetry-phases,
+      .qualifying-telemetry-runs {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .qualifying-telemetry-laps {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .qualifying-lap-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 999px;
+        background: rgba(13, 19, 32, 0.94);
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.8rem;
+      }
+
+      .qualifying-lap-badge:hover,
+      .qualifying-lap-badge:focus-visible,
+      .qualifying-lap-badge.active {
+        border-color: rgba(68, 194, 255, 0.6);
+        background: #121a28;
+        box-shadow: 0 0 0 2px rgba(68, 194, 255, 0.18);
+      }
+
       .session-dropdown-trigger {
         border: 1px solid var(--border);
         border-radius: 999px;
@@ -610,28 +770,19 @@
         content: none;
       }
 
-      .session-dropdown-menu {
-        position: absolute;
-        top: calc(100% + 8px);
-        left: 0;
-        z-index: 10;
-        display: none;
-        min-width: 160px;
-        padding: 8px;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        background: rgba(9, 16, 29, 0.98);
-        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35);
+      .qualifying-session-trigger::after,
+      .practice-session-trigger::after {
+        content: none;
       }
 
-      .session-dropdown.open .session-dropdown-menu {
-        display: grid;
-        gap: 6px;
+      .qualifying-session-chip {
+        justify-content: center;
+        border-radius: 10px;
+        padding: 0.6rem 0.85rem;
       }
 
-      .session-dropdown-menu .session-chip {
-        width: 100%;
-        justify-content: flex-start;
+      .practice-session-chip {
+        justify-content: center;
         border-radius: 10px;
         padding: 0.6rem 0.85rem;
       }
@@ -891,6 +1042,38 @@
         gap: 20px;
       }
 
+      .results-layout {
+        display: block;
+        margin-top: 18px;
+        width: 100%;
+      }
+
+      .results-sidebar {
+        position: fixed;
+        left: 0;
+        top: 18px;
+        width: 280px;
+        z-index: 20;
+      }
+
+      .results-main {
+        width: 100%;
+      }
+
+      .results-sidebar .panel {
+        display: grid;
+        grid-template-rows: auto auto;
+      }
+
+      .results-sidebar .table-wrap {
+        overflow: visible;
+        max-height: none;
+      }
+
+      .results-sidebar table {
+        width: 100%;
+      }
+
       .panel {
         border: 1px solid var(--border);
         border-radius: 18px;
@@ -1113,6 +1296,91 @@
         color: #d7f4ff;
       }
 
+      body.is-loading {
+        overflow: hidden;
+      }
+
+      body.is-loading .page {
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .loading-overlay {
+        pointer-events: auto;
+      }
+
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at center, rgba(68, 194, 255, 0.16), transparent 38%),
+          rgba(4, 9, 17, 0.92);
+        backdrop-filter: blur(10px);
+      }
+
+      .loading-card {
+        width: min(520px, calc(100vw - 32px));
+        display: grid;
+        gap: 18px;
+        justify-items: center;
+        padding: 28px 26px 24px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(16, 26, 45, 0.98), rgba(9, 16, 29, 0.98));
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      .loading-wheel {
+        width: 132px;
+        height: 132px;
+        animation: loading-wheel-spin 1.15s linear infinite;
+        filter: drop-shadow(0 0 18px rgba(255, 77, 77, 0.22));
+      }
+
+      .loading-wheel text {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .loading-title {
+        margin: 0;
+        font-size: 1.2rem;
+        letter-spacing: 0.04em;
+      }
+
+      .loading-copy {
+        margin: 0;
+        color: var(--muted);
+        text-align: center;
+        line-height: 1.5;
+      }
+
+      .loading-bar {
+        width: 100%;
+        height: 12px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(148, 163, 184, 0.16);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+      }
+
+      .loading-bar span {
+        display: block;
+        width: var(--loading-progress, 0%);
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ff4d4d 0%, #ffb000 55%, #ff4d4d 100%);
+        transition: width 220ms linear;
+      }
+
+      @keyframes loading-wheel-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
       .table-wrap {
         overflow-x: auto;
       }
@@ -1193,6 +1461,123 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 16px;
         padding: 0 20px 20px;
+      }
+
+      .race-position-panel {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.92);
+        overflow: hidden;
+      }
+
+      .race-position-panel header {
+        padding: 18px 20px 10px;
+      }
+
+      .race-position-viewport {
+        padding: 0 0 20px;
+      }
+
+      .race-position-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        align-items: stretch;
+      }
+
+      .race-position-svg {
+        width: 100%;
+        height: 620px;
+        display: block;
+        background: rgba(10, 16, 28, 0.98);
+        border-top: 1px solid rgba(148, 163, 184, 0.14);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .race-position-series {
+        cursor: pointer;
+        transition: opacity 140ms ease, filter 140ms ease;
+        pointer-events: all;
+      }
+
+      .race-position-series .race-position-line {
+        transition: stroke-width 140ms ease, opacity 140ms ease, filter 140ms ease;
+        pointer-events: none;
+      }
+
+      .race-position-series .race-position-hit {
+        fill: none;
+        stroke: transparent;
+        stroke-width: 18;
+        pointer-events: stroke;
+      }
+
+      .race-position-series rect,
+      .race-position-series text {
+        pointer-events: all;
+      }
+
+      .pit-stint-bar {
+        cursor: pointer;
+        transition: opacity 140ms ease, filter 140ms ease, stroke-width 140ms ease;
+      }
+
+      .pit-stint-bar .pit-stint-hit {
+        fill: transparent;
+        stroke: transparent;
+        stroke-width: 18;
+        pointer-events: stroke;
+      }
+
+      .pit-stint-bar.is-hovered rect.pit-stint-fill {
+        filter: brightness(1.18);
+        stroke-width: 1.5;
+      }
+
+      .pit-stint-bar.is-hovered {
+        opacity: 1;
+      }
+
+      .race-position-series.is-hovered .race-position-line {
+        stroke-width: 4.4;
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.18));
+      }
+
+      .race-position-series.is-hovered {
+        opacity: 1;
+      }
+
+      .pit-strategy-panel {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.92);
+        overflow: hidden;
+      }
+
+      .pit-strategy-panel header {
+        padding: 18px 20px 10px;
+      }
+
+      .pit-strategy-viewport {
+        padding: 0 0 20px;
+      }
+
+      .pit-strategy-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        align-items: stretch;
+      }
+
+      .pit-strategy-svg {
+        width: 100%;
+        height: 700px;
+        display: block;
+        background: rgba(10, 16, 28, 0.98);
+        border-top: 1px solid rgba(148, 163, 184, 0.14);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
       }
 
       .chart-card {
@@ -1319,10 +1704,10 @@
       }
     </style>
   </head>
-  <body>
+  <body class="{% if loading %}is-loading{% endif %}" aria-busy="{% if loading %}true{% else %}false{% endif %}" style="--loading-progress: {{ loading_progress|default(0) }}%;"{% if loading %} data-loading-status-url="{{ url_for('session_status', year=form.year, gp=form.gp|urlencode, session=form.session, phase=form.phase) }}"{% endif %}>
     <div class="page">
       <header>
-        <div class="header-badges">
+        <div class="header-badges" data-header-badges>
           <div class="session-badge-row">
             <a class="session-badge-title" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}">{{ session_title }}</a>
             <div class="session-badge-group">
@@ -1346,57 +1731,62 @@
                   {{ session.label }}
                 </a>
               {% endfor %}
-              {% if ns.qualifying_sessions %}
-                <div class="session-dropdown {% if form.session == 'Q' %}open{% endif %}" data-session-dropdown>
+              {% if form.session in ['Q', 'SQ', 'SS'] or ns.qualifying_sessions %}
+                <div class="qualifying-session-toggle" data-qualifying-session-toggle>
                   <button
-                    class="session-chip session-dropdown-trigger {% if form.session == 'Q' %}active{% endif %}"
+                    class="session-chip session-dropdown-trigger qualifying-session-trigger {% if form.session == 'Q' or form.phase %}active{% endif %}"
                     type="button"
-                    data-session-dropdown-trigger
+                    data-qualifying-session-trigger
                     aria-haspopup="true"
-                    aria-expanded="{% if form.session == 'Q' %}true{% else %}false{% endif %}"
-                  >
-                    Qualifying
-                  </button>
-                  <div class="session-dropdown-menu" data-session-dropdown-menu>
-                    {% for phase in ['Q1', 'Q2', 'Q3'] %}
-                      <a
-                        class="session-chip {% if form.session == 'Q' and form.phase == phase %}active{% endif %}"
-                        href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=Q&phase={{ phase }}"
-                      >
-                        {{ phase }}
-                      </a>
-                    {% endfor %}
-                  </div>
+                    aria-expanded="false"
+                    >
+                      Qualifying
+                    </button>
                 </div>
               {% endif %}
-              {% if ns.practice_sessions %}
-                <div class="session-dropdown {% if form.session in ['FP1', 'FP2', 'FP3'] %}open{% endif %}" data-session-dropdown>
+              {% if form.session in ['FP1', 'FP2', 'FP3'] or ns.practice_sessions %}
+                <div class="practice-session-toggle" data-practice-session-toggle>
                   <button
-                    class="session-chip session-dropdown-trigger {% if form.session in ['FP1', 'FP2', 'FP3'] %}active{% endif %}"
+                    class="session-chip session-dropdown-trigger practice-session-trigger {% if form.session in ['FP1', 'FP2', 'FP3'] %}active{% endif %}"
                     type="button"
-                    data-session-dropdown-trigger
+                    data-practice-session-trigger
                     aria-haspopup="true"
-                    aria-expanded="{% if form.session in ['FP1', 'FP2', 'FP3'] %}true{% else %}false{% endif %}"
-                  >
-                    Practice
-                  </button>
-                  <div class="session-dropdown-menu" data-session-dropdown-menu>
-                    {% for session in ns.practice_sessions %}
-                      <a
-                        class="session-chip {% if session.value == form.session %}active{% endif %}"
-                        href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
-                      >
-                        {{ session.label }}
-                      </a>
-                    {% endfor %}
-                  </div>
+                    aria-expanded="false"
+                    >
+                      Practice
+                    </button>
                 </div>
               {% endif %}
             </div>
           </div>
-          <div class="header-divider" role="separator" aria-hidden="true"></div>
+          <div class="header-divider" role="separator" aria-hidden="true">
+            <div class="header-divider-line"></div>
+            <div class="header-divider-center">
+              <div class="session-badge-expansion-band" data-qualifying-session-menu hidden>
+                {% for phase in ['Q1', 'Q2', 'Q3'] %}
+                  <a
+                    class="session-chip qualifying-session-chip {% if form.session == 'Q' and form.phase == phase %}active{% endif %}"
+                    href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=Q&phase={{ phase }}"
+                  >
+                    {{ phase }}
+                  </a>
+                {% endfor %}
+              </div>
+              <div class="session-badge-expansion-band" data-practice-session-menu hidden>
+                {% for session in ns.practice_sessions %}
+                  <a
+                    class="session-chip practice-session-chip {% if session.value == form.session %}active{% endif %}"
+                    href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
+                  >
+                    {{ session.label }}
+                  </a>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="header-divider-line"></div>
+          </div>
           <div class="topbar">
-            <a class="view-link {% if view == 'results' %}active{% endif %}" href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Results</a>
+            <a class="view-link {% if view == 'results' %}active{% endif %}" href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Overview</a>
             <a class="view-link {% if view == 'strategy' %}active{% endif %}" href="/strategy?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Strategy</a>
             <a class="view-link data-link {% if view == 'data' %}active{% endif %}" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">DATA</a>
           </div>
@@ -1435,106 +1825,91 @@
             <label for="driver">{% if session_is_qualifying and selected_lap %}Qualifying laps{% elif session_is_qualifying %}{{ qualifying_phase }} Results{% elif not selected_driver %}Driver{% elif selected_stint_data and selected_lap %}Stint laps{% elif selected_stint_data and session_is_qualifying %}Phase pace{% elif selected_stint_data %}Stint pace{% endif %}</label>
             <div class="driver-picker" data-driver-picker>
               <input type="hidden" name="driver" value="{{ selected_driver or '' }}" data-driver-input />
-              {% if session_is_qualifying %}
-                <div class="qualifying-results">
-                  <header>
-                    <div>
-                      <h2>{{ qualifying_phase }} Results</h2>
-                      <p class="subtle">Select a driver to view their laps for this qualifying session.</p>
-                    </div>
-                    {% if selected_driver %}
-                      <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Back to drivers</a>
-                    {% endif %}
-                  </header>
-                  <div class="qualifying-results-list" role="listbox" aria-label="{{ qualifying_phase }} driver results">
-                    {% if qualifying_phase_rows %}
-                      {% for row in qualifying_phase_rows %}
-                        <div class="qualifying-result-item {% if row.value == selected_driver %}active{% endif %}">
+              {% if not session_is_qualifying and not selected_driver %}
+                <div class="driver-panel" data-driver-panel role="listbox" aria-label="Driver options">
+                  {% for group in driver_groups %}
+                    <div class="driver-group">
+                      <div class="driver-group-title">
+                        <img class="team-logo" src="{{ group.drivers[0].team_logo_url }}" alt="{{ group.team_name }} logo" loading="lazy" />
+                        <span>{{ group.team_name }}</span>
+                      </div>
+                      <div class="driver-group-items">
+                        {% for option in group.drivers %}
                           <button
                             type="button"
-                            class="qualifying-result-row"
-                            data-driver-value="{{ row.value }}"
+                            class="driver-option {% if option.value == selected_driver %}active{% endif %}"
+                            data-driver-value="{{ option.value }}"
                             data-driver-button
-                            aria-selected="{% if row.value == selected_driver %}true{% else %}false{% endif %}"
+                            aria-selected="{% if option.value == selected_driver %}true{% else %}false{% endif %}"
                           >
-                            <img class="qualifying-result-headshot" src="{{ row.headshot_url }}" alt="{{ row.full_name }} headshot" loading="lazy" />
-                            <span class="qualifying-result-copy">
-                              <strong>{{ row.full_name }}</strong>
-                              <small>{{ row.team_name }}</small>
+                            <span class="driver-option-copy">
+                              <strong>{{ option.abbreviation }} - {{ option.full_name }}</strong>
+                              <small>Driver {{ option.value }}</small>
                             </span>
-                            <span class="qualifying-result-time">{{ row.phase_time }}</span>
                           </button>
-                          {% if row.value == selected_driver and qualifying_run_laps %}
-                            <div class="qualifying-result-expanded">
-                              <span class="qualifying-result-expanded-title">Runs</span>
-                              <div class="qualifying-result-expanded-runs">
-                                {% for run in qualifying_run_laps %}
-                                  <a
-                                    class="qualifying-run-badge {% if run.representative == selected_lap %}active{% endif %}"
-                                    href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&lap={{ run.representative }}{% if form.phase %}&phase={{ form.phase }}{% endif %}"
-                                  >
-                                    <span class="qualifying-run-badge-copy">
-                                      <strong>Run {{ run.run_number }}</strong>
-                                      <span class="run-time">{{ run.flying_time }}</span>
-                                    </span>
-                                    {% if run.is_fastest %}
-                                      <span class="qualifying-run-fastest">Fastest</span>
-                                    {% endif %}
-                                  </a>
-                                {% endfor %}
-                              </div>
-                            </div>
-                          {% endif %}
-                        </div>
-                      {% endfor %}
-                    {% else %}
-                      <div class="empty">No classified drivers found for {{ qualifying_phase }}.</div>
-                    {% endif %}
-                  </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endfor %}
                 </div>
               {% endif %}
-              {% if selected_driver and driver_lap_options and not session_is_qualifying %}
-                <section class="panel driver-laps-panel">
-                  <div class="driver-laps-header">
-                    <div class="selection-driver centered">
+              {% if session_is_qualifying and selected_lap and selected_driver %}
+                <div class="qualifying-telemetry-strip">
+                  <div class="qualifying-telemetry-top">
+                    <div class="qualifying-telemetry-driver">
                       <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
                       <span class="selection-driver-copy">
                         <strong>{{ selected_driver_data.full_name }}</strong>
                         <small>{{ selected_driver_data.team_name }}</small>
                       </span>
                     </div>
-                    <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Back to drivers</a>
+                    <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase=Q1">Back to Q1 results</a>
                   </div>
-                  <div class="table-wrap">
-                    <table class="driver-laps-table">
-                      <thead>
-                        <tr>
-                          <th>Lap</th>
-                          <th>Time</th>
-                          <th>Stint</th>
-                          <th>Compound</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {% for lap in driver_lap_options %}
-                          <tr class="{% if lap.value == selected_lap %}active{% endif %}">
-                            <td>{{ lap.lap_number }}</td>
-                            <td>{{ lap.lap_time }}</td>
-                            <td>{{ lap.stint }}</td>
-                            <td>{{ lap.compound }}</td>
-                            <td>
-                              <a class="driver-lap-link" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&lap={{ lap.value }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">
-                                View
-                              </a>
-                            </td>
-                          </tr>
-                        {% endfor %}
-                      </tbody>
-                    </table>
+                  <div class="qualifying-telemetry-divider"></div>
+                  <div class="qualifying-telemetry-phases">
+                    {% for phase_code in ['Q1', 'Q2', 'Q3'] %}
+                      <a
+                        class="session-chip qualifying-phase-chip {% if phase_code == qualifying_phase %}active{% endif %}"
+                        href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ phase_code }}&driver={{ selected_driver }}{% if selected_lap %}&lap={{ selected_lap }}{% endif %}"
+                      >
+                        {{ phase_code }}
+                      </a>
+                    {% endfor %}
                   </div>
-                </section>
-              {% elif selected_stint_data %}
+                  {% if qualifying_run_laps %}
+                    <div class="qualifying-telemetry-runs">
+                      {% for run in qualifying_run_laps %}
+                        <a
+                          class="qualifying-run-badge {% if run.representative == selected_lap %}active{% endif %}"
+                          href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&lap={{ run.representative }}"
+                        >
+                          <span class="qualifying-run-badge-copy">
+                            <strong>Run {{ run.run_number }}</strong>
+                            <span class="run-time">{{ run.flying_time }}</span>
+                          </span>
+                          {% if run.is_fastest %}
+                            <span class="qualifying-run-fastest">Fastest</span>
+                          {% endif %}
+                        </a>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                  {% if selected_qualifying_run %}
+                    <div class="qualifying-telemetry-laps">
+                      {% for lap in selected_qualifying_run.laps %}
+                        <a
+                          class="qualifying-lap-badge {% if lap.value == selected_lap %}active{% endif %}"
+                          href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&lap={{ lap.value }}"
+                        >
+                          <strong>{{ lap.lap_type }}</strong>
+                          <span>{{ lap.lap_time }}</span>
+                        </a>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+              {% if selected_stint_data and not session_is_qualifying %}
                 <section class="selection-panel">
                   <div class="selection-panel-top {% if session_is_qualifying %}centered{% endif %}">
                     <div class="selection-driver {% if session_is_qualifying %}centered{% endif %}">
@@ -1565,7 +1940,7 @@
                     ></div>
                   </div>
                 </section>
-              {% elif race_stints %}
+              {% elif race_stints and not session_is_qualifying %}
                 <section class="selection-panel">
                   <div class="selection-panel-top {% if session_is_qualifying %}centered{% endif %}">
                     <div class="selection-driver {% if session_is_qualifying %}centered{% endif %}">
@@ -1753,86 +2128,132 @@
 
         </section>
       {% else %}
-        <section class="grid">
-          <div class="panel">
-            <header>
-              <h2>Session results</h2>
-              <p class="subtle">
-                {% if data %}
-                  Showing the top 10 entries for {{ data.event_name }}. Session:
-                  {{ data.session_name }} on {{ data.session_date }}.
-                {% elif loading %}
-                  The session is being fetched now. You can keep browsing; this page will update when it is ready.
+        {% if view == 'results' and session_is_qualifying %}
+          <section class="grid">
+            <section class="panel" style="grid-column: 1 / -1;">
+              <header>
+                <div>
+                  <h2>{{ qualifying_phase }} Results</h2>
+                  <p class="subtle">Select a driver to view their laps for this qualifying session.</p>
+                </div>
+              </header>
+              <div class="qualifying-results-list" role="listbox" aria-label="{{ qualifying_phase }} driver results">
+                {% if qualifying_phase_rows %}
+                  {% for row in qualifying_phase_rows %}
+                    <div class="qualifying-result-item {% if row.value == selected_driver %}active{% endif %}">
+                      <button
+                        type="button"
+                        class="qualifying-result-row"
+                        data-driver-value="{{ row.value }}"
+                        data-driver-button
+                        aria-selected="{% if row.value == selected_driver %}true{% else %}false{% endif %}"
+                      >
+                        <img class="qualifying-result-headshot" src="{{ row.headshot_url }}" alt="{{ row.full_name }} headshot" loading="lazy" />
+                        <span class="qualifying-result-copy">
+                          <strong>{{ row.full_name }}</strong>
+                          <small>{{ row.team_name }}</small>
+                        </span>
+                        <span class="qualifying-result-time">{{ row.display_time if row.display_time is defined else row.phase_time }}</span>
+                      </button>
+                      {% if row.value == selected_driver and qualifying_run_laps %}
+                        <div class="qualifying-result-expanded">
+                          <span class="qualifying-result-expanded-title">Runs</span>
+                          <div class="qualifying-result-expanded-runs">
+                            {% for run in qualifying_run_laps %}
+                              <a
+                                class="qualifying-run-badge {% if run.representative == selected_lap %}active{% endif %}"
+                                href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&lap={{ run.representative }}{% if form.phase %}&phase={{ form.phase }}{% endif %}"
+                              >
+                                <span class="qualifying-run-badge-copy">
+                                  <strong>Run {{ run.run_number }}</strong>
+                                  <span class="run-time">{{ run.flying_time }}</span>
+                                </span>
+                                {% if run.is_fastest %}
+                                  <span class="qualifying-run-fastest">Fastest</span>
+                                {% endif %}
+                              </a>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
                 {% else %}
-                  No results loaded yet.
+                  <div class="empty">No classified drivers found for {{ qualifying_phase }}.</div>
                 {% endif %}
-              </p>
-            </header>
-
-            <div class="table-wrap">
-              {% if data and data.rows %}
-                <table>
-                  <thead>
-                    <tr>
-                      {% for column in data.rows[0].keys() %}
-                        <th>{{ column }}</th>
-                      {% endfor %}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in data.rows %}
-                      <tr>
-                        {% for value in row.values() %}
-                          <td>{{ value }}</td>
-                        {% endfor %}
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              {% elif loading %}
-                <div class="empty">Loading FastF1 data in the background...</div>
-              {% else %}
-                <div class="empty">Run a query to load FastF1 data into the table.</div>
+              </div>
+            </section>
+          </section>
+        {% endif %}
+        {% if data %}
+          <section class="results-layout">
+            <div class="results-main">
+              {% if race_position_graph %}
+                <section class="race-position-panel">
+                  <header>
+                    <h2>{{ race_position_graph.title }}</h2>
+                  </header>
+                  <div class="race-position-viewport">
+                    <div class="race-position-layout">
+                      <svg
+                        class="race-position-svg"
+                        id="race-position-svg"
+                        viewBox="0 0 1000 620"
+                        role="img"
+                        aria-label="Race position changes chart"
+                      ></svg>
+                    </div>
+                  </div>
+                  <script id="race-position-json" type="application/json">{{ race_position_graph | tojson }}</script>
+                </section>
+              {% endif %}
+              {% if pit_strategy_graph %}
+                <section class="pit-strategy-panel">
+                  <header>
+                    <h2>{{ pit_strategy_graph.title }}</h2>
+                  </header>
+                  <div class="pit-strategy-viewport">
+                    <div class="pit-strategy-layout">
+                      <svg
+                        class="pit-strategy-svg"
+                        id="pit-strategy-svg"
+                        viewBox="0 0 1000 700"
+                        role="img"
+                        aria-label="Pit strategy chart"
+                      ></svg>
+                    </div>
+                  </div>
+                  <script id="pit-strategy-json" type="application/json">{{ pit_strategy_graph | tojson }}</script>
+                </section>
               {% endif %}
             </div>
-          </div>
-
-          <aside class="panel">
-            <header>
-              <h2>Session snapshot</h2>
-              <p class="subtle">A compact summary of the selected event.</p>
-            </header>
-
-            <div class="summary">
-              <div class="metric">
-                <span>Status</span>
-                <strong class="{% if data %}ok{% elif loading %}warn{% else %}warn{% endif %}">
-                  {% if data %}Connected{% elif loading %}Loading{% else %}Waiting for data{% endif %}
-                </strong>
+            <aside class="results-sidebar">
+              <div class="panel">
+                <header>
+                  <h2>Session results</h2>
+                </header>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Driver</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for row in data.rows %}
+                        <tr>
+                          <td>{{ row.Position if row.Position is defined else row.get('Position', '-') }}</td>
+                          <td>{{ row.FullName if row.FullName is defined else row.get('FullName', '-') }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div class="metric">
-                <span>Query</span>
-                <strong>{{ form.year }} / {{ form.gp }} / {{ form.session }}</strong>
-              </div>
-              <div class="metric">
-                <span>Event</span>
-                <strong>
-                  {% if data %}
-                    {{ data.event_name }} - Round {{ data.event_round }}
-                  {% elif loading %}
-                    Fetching {{ form.gp }}
-                  {% else %}
-                    Select an event to begin
-                  {% endif %}
-                </strong>
-              </div>
-              <div class="metric">
-                <span>Country</span>
-                <strong>{% if data %}{{ data.event_country }}{% else %}-{% endif %}</strong>
-              </div>
-            </div>
-          </aside>
-        </section>
+            </aside>
+          </section>
+        {% endif %}
       {% endif %}
 
       {% if page == 'data' and selected_lap %}
@@ -1867,7 +2288,7 @@
         </section>
       {% endif %}
     </div>
-      {% if page == 'data' %}
+      {% if page == 'data' or page == 'results' %}
       {% if selected_stint_data %}
       <script id="stint-graph-json" type="application/json">{{ selected_stint_data | tojson }}</script>
       {% endif %}
@@ -1877,27 +2298,20 @@
           history.scrollRestoration = "manual";
 
           const picker = document.querySelector("[data-driver-picker]");
-          if (!picker) {
-            const savedScroll = sessionStorage.getItem(scrollKey);
-            if (savedScroll !== null) {
-              sessionStorage.removeItem(scrollKey);
-              window.scrollTo(0, Number(savedScroll) || 0);
-            }
-            return;
+          if (picker) {
+            const input = picker.querySelector("[data-driver-input]");
+            const form = picker.closest("form");
+
+            picker.addEventListener("click", (event) => {
+              const option = event.target.closest("[data-driver-button]");
+              if (!option) {
+                return;
+              }
+
+              input.value = option.getAttribute("data-driver-value") || "";
+              form.submit();
+            });
           }
-
-          const input = picker.querySelector("[data-driver-input]");
-          const form = picker.closest("form");
-
-          picker.addEventListener("click", (event) => {
-            const option = event.target.closest("[data-driver-button]");
-            if (!option) {
-              return;
-            }
-
-            input.value = option.getAttribute("data-driver-value") || "";
-            form.submit();
-          });
 
           const stintLinks = document.querySelectorAll(".stint-bar");
           stintLinks.forEach((link) => {
@@ -1906,26 +2320,110 @@
             });
           });
 
-          const dropdown = document.querySelector("[data-session-dropdown]");
-          const dropdownTrigger = dropdown ? dropdown.querySelector("[data-session-dropdown-trigger]") : null;
-          const dropdownMenu = dropdown ? dropdown.querySelector("[data-session-dropdown-menu]") : null;
-          if (dropdown && dropdownTrigger && dropdownMenu) {
-            const closeDropdown = () => {
-              dropdown.classList.remove("open");
-              dropdownTrigger.setAttribute("aria-expanded", "false");
-            };
-
-            dropdownTrigger.addEventListener("click", (event) => {
-              event.preventDefault();
-              const willOpen = !dropdown.classList.contains("open");
-              dropdown.classList.toggle("open", willOpen);
-              dropdownTrigger.setAttribute("aria-expanded", willOpen ? "true" : "false");
-            });
-
-            document.addEventListener("click", (event) => {
-              if (!dropdown.contains(event.target)) {
-                closeDropdown();
+          const qualifyingRows = document.querySelectorAll(".qualifying-result-row");
+          qualifyingRows.forEach((row) => {
+            row.addEventListener("click", () => {
+              const driver = row.getAttribute("data-driver-value") || "";
+              const url = new URL(window.location.href);
+              url.pathname = "/results";
+              url.searchParams.set("driver", driver);
+              if (!url.searchParams.get("phase")) {
+                const phase = url.searchParams.get("session") === "Q" ? "Q1" : url.searchParams.get("phase") || "Q1";
+                url.searchParams.set("phase", phase);
               }
+              window.location.assign(url.toString());
+            });
+          });
+
+          const qualifyingToggle = document.querySelector("[data-qualifying-session-toggle]");
+          const qualifyingTrigger = qualifyingToggle ? qualifyingToggle.querySelector("[data-qualifying-session-trigger]") : null;
+          const practiceToggle = document.querySelector("[data-practice-session-toggle]");
+          const practiceTrigger = practiceToggle ? practiceToggle.querySelector("[data-practice-session-trigger]") : null;
+          const headerBadges = document.querySelector("[data-header-badges]");
+          const qualifyingMenu = document.querySelector("[data-qualifying-session-menu]");
+          const practiceMenu = document.querySelector("[data-practice-session-menu]");
+
+          const closeSessionToggle = (toggle, trigger) => {
+            if (!toggle || !trigger) {
+              return;
+            }
+            toggle.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+          };
+
+          const setExpansionMenu = (menu, show) => {
+            if (!menu) {
+              return;
+            }
+            if (show) {
+              menu.hidden = false;
+              window.requestAnimationFrame(() => {
+                menu.classList.add("open");
+              });
+              return;
+            }
+
+            menu.classList.remove("open");
+            window.setTimeout(() => {
+              if (!menu.classList.contains("open")) {
+                menu.hidden = true;
+              }
+            }, 420);
+          };
+
+          const syncHeaderSpacing = () => {
+            if (!headerBadges) {
+              return;
+            }
+            const open = Boolean(
+              (qualifyingToggle && qualifyingToggle.classList.contains("open")) ||
+              (practiceToggle && practiceToggle.classList.contains("open")),
+            );
+            headerBadges.classList.toggle("open-menus", open);
+          };
+
+          const activateMenu = (activeToggle, activeTrigger, activeMenu, inactiveToggle, inactiveTrigger, inactiveMenu) => {
+            if (activeToggle.classList.contains("open")) {
+              closeSessionToggle(activeToggle, activeTrigger);
+              setExpansionMenu(activeMenu, false);
+              syncHeaderSpacing();
+              return;
+            }
+
+            const inactiveIsOpen = inactiveToggle && inactiveToggle.classList.contains("open");
+            if (inactiveIsOpen) {
+              closeSessionToggle(inactiveToggle, inactiveTrigger);
+              setExpansionMenu(inactiveMenu, false);
+              syncHeaderSpacing();
+              window.setTimeout(() => {
+                setExpansionMenu(activeMenu, false);
+                window.requestAnimationFrame(() => {
+                  activeToggle.classList.add("open");
+                  activeTrigger.setAttribute("aria-expanded", "true");
+                  setExpansionMenu(activeMenu, true);
+                  syncHeaderSpacing();
+                });
+              }, 520);
+              return;
+            }
+
+            activeToggle.classList.add("open");
+            activeTrigger.setAttribute("aria-expanded", "true");
+            setExpansionMenu(activeMenu, true);
+            syncHeaderSpacing();
+          };
+
+          if (qualifyingToggle && qualifyingTrigger) {
+            qualifyingTrigger.addEventListener("click", (event) => {
+              event.preventDefault();
+              activateMenu(qualifyingToggle, qualifyingTrigger, qualifyingMenu, practiceToggle, practiceTrigger, practiceMenu);
+            });
+          }
+
+          if (practiceToggle && practiceTrigger) {
+            practiceTrigger.addEventListener("click", (event) => {
+              event.preventDefault();
+              activateMenu(practiceToggle, practiceTrigger, practiceMenu, qualifyingToggle, qualifyingTrigger, qualifyingMenu);
             });
           }
 
@@ -2056,8 +2554,387 @@
         })();
       </script>
       {% endif %}
+      {% if race_position_graph %}
+      <script>
+        (() => {
+          const svg = document.getElementById("race-position-svg");
+          const dataEl = document.getElementById("race-position-json");
+          if (!svg || !dataEl) {
+            return;
+          }
+
+          const graph = JSON.parse(dataEl.textContent || "null");
+          if (!graph || !graph.series || !graph.series.length) {
+            svg.innerHTML = '';
+            return;
+          }
+
+          const width = 1000;
+          const height = 620;
+          const pad = { top: 34, right: 12, bottom: 42, left: 40 };
+          const innerWidth = width - pad.left - pad.right;
+          const innerHeight = height - pad.top - pad.bottom;
+          const lapTotal = Math.max(Number(graph.lap_total || 0), 1);
+          const maxPosition = Math.max(Number(graph.max_position || 0), 1);
+          const xScale = lapTotal === 1 ? 1 : innerWidth / (lapTotal - 1);
+          const yScale = maxPosition === 1 ? 1 : innerHeight / (maxPosition - 1);
+          const statusBandTop = 8;
+          const statusBandHeight = 26;
+
+          function ordinal(value) {
+            const suffix = ["th", "st", "nd", "rd"];
+            const mod100 = value % 100;
+            const mod10 = value % 10;
+            return `${value}${suffix[(mod100 - mod10) % 10] || suffix[0]}`;
+          }
+
+          function escapeHtml(value) {
+            return String(value)
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;");
+          }
+
+          function statusStyle(label) {
+            if (label === "Red Flag") {
+              return { fill: "#ef4444", text: "#ffffff" };
+            }
+            if (label === "Safety Car") {
+              return { fill: "#facc15", text: "#111827" };
+            }
+            if (label === "Virtual Safety Car") {
+              return { fill: "#facc15", text: "#111827" };
+            }
+            return { fill: "#facc15", text: "#111827" };
+          }
+
+          function xForLap(lap) {
+            return pad.left + (Math.max(lap, 1) - 1) * xScale;
+          }
+
+          function xForLapEdge(lap, edge) {
+            const center = xForLap(lap);
+            if (lapTotal <= 1) {
+              return center;
+            }
+            const offset = xScale * 0.5;
+            if (edge === "start") {
+              return Math.max(pad.left, center - offset);
+            }
+            return Math.min(width - pad.right, center + offset);
+          }
+
+          function yForPosition(position) {
+            return pad.top + (Math.max(position, 1) - 1) * yScale;
+          }
+
+          function path(points) {
+            return points
+              .map(([lap, position], index) => {
+                const x = xForLap(lap);
+                const y = yForPosition(position);
+                return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+              })
+              .join(" ");
+          }
+
+          let statusMarkup = "";
+          statusMarkup = "";
+
+          const axisStatusMarkup = (graph.status_segments || [])
+            .filter((segment) => segment.label === "Safety Car" || segment.label === "Virtual Safety Car")
+            .map((segment) => {
+              const startX = xForLapEdge(segment.start_lap, "start");
+              const endX = xForLapEdge(segment.end_lap, "end");
+              if (endX <= startX) {
+                return "";
+              }
+              const fill = segment.label === "Safety Car" ? "#facc15" : "#38bdf8";
+              const label = segment.label === "Safety Car" ? "SC" : "VSC";
+              const labelWidth = segment.label === "Safety Car" ? 28 : 36;
+              return `
+                <line x1="${startX.toFixed(2)}" y1="${(height - 28).toFixed(2)}" x2="${startX.toFixed(2)}" y2="${(height - 10).toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                <line x1="${endX.toFixed(2)}" y1="${(height - 28).toFixed(2)}" x2="${endX.toFixed(2)}" y2="${(height - 10).toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                <g>
+                  <rect x="${((startX + endX) / 2 - (labelWidth / 2)).toFixed(2)}" y="${(height - 28).toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
+                  <text x="${((startX + endX) / 2).toFixed(2)}" y="${(height - 18).toFixed(2)}" fill="${fill}" font-size="9" font-weight="900" text-anchor="middle">${label}</text>
+                </g>
+              `;
+            })
+            .join("");
+
+          let grid = "";
+          for (let position = 1; position <= maxPosition; position += 1) {
+            const y = yForPosition(position);
+            grid += `<line x1="${pad.left}" y1="${y.toFixed(2)}" x2="${width - pad.right}" y2="${y.toFixed(2)}" stroke="rgba(148,163,184,0.12)" stroke-width="1" />`;
+            grid += `<text x="${pad.left - 6}" y="${(y + 4).toFixed(2)}" fill="rgba(151,167,194,0.9)" font-size="10" text-anchor="end">${ordinal(position)}</text>`;
+          }
+
+          const tickStep = lapTotal > 12 ? 5 : 1;
+          for (let lap = 1; lap <= lapTotal; lap += tickStep) {
+            const x = xForLap(lap);
+            grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1" />`;
+            grid += `<text x="${x.toFixed(2)}" y="${height - 16}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lap}</text>`;
+          }
+          if ((lapTotal - 1) % tickStep !== 0) {
+            const x = xForLap(lapTotal);
+            grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1" />`;
+            grid += `<text x="${x.toFixed(2)}" y="${height - 16}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lapTotal}</text>`;
+          }
+
+          const lanes = graph.series.map((series, index) => {
+            const points = series.points || [];
+            const d = path(points);
+            const last = points[points.length - 1] || [1, series.current_position || 1];
+            const lastX = xForLap(last[0]);
+            const lastY = yForPosition(last[1]);
+            const abbrev = escapeHtml(series.abbreviation || "");
+            const tagWidth = Math.max(28, Math.min(38, 16 + (abbrev.length * 6)));
+            const tagX = Math.min(width - pad.right - tagWidth, lastX - tagWidth / 2);
+            const href = `/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${encodeURIComponent(series.value || "")}`;
+            return `
+              <g class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" data-href="${href}" tabindex="0" role="button" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
+                <path class="race-position-hit" d="${d}" data-href="${href}"></path>
+                <path class="race-position-line" d="${d}" fill="none" stroke="${series.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                <rect x="${tagX.toFixed(2)}" y="${(lastY - 8).toFixed(2)}" width="${tagWidth.toFixed(2)}" height="16" rx="8" fill="${series.color}" stroke="#07101d" stroke-width="1.25"></rect>
+                <text x="${(tagX + tagWidth / 2).toFixed(2)}" y="${(lastY + 3).toFixed(2)}" fill="#07101d" font-size="9.5" font-weight="800" text-anchor="middle">${abbrev}</text>
+              </g>
+            `;
+          }).join("");
+          svg.innerHTML = `
+            <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+            ${axisStatusMarkup}
+            ${grid}
+            ${lanes}
+          `;
+          svg.style.pointerEvents = "auto";
+
+          const seriesGroups = Array.from(svg.querySelectorAll(".race-position-series"));
+          const openDriver = (group) => {
+            const href = group ? (group.getAttribute("data-href") || "").trim() : "";
+            if (!href) {
+              return;
+            }
+            window.location.assign(href);
+          };
+
+          const restoreSeriesOrder = () => {
+            const ordered = [...seriesGroups].sort((a, b) => Number(a.dataset.seriesIndex || 0) - Number(b.dataset.seriesIndex || 0));
+            ordered.forEach((group) => svg.appendChild(group));
+          };
+
+          const activateSeries = (group) => {
+            if (!group) {
+              return;
+            }
+            seriesGroups.forEach((item) => {
+              item.classList.toggle("is-hovered", item === group);
+              item.style.opacity = item === group ? "1" : "0.26";
+            });
+            svg.appendChild(group);
+          };
+
+          const clearSeries = () => {
+            seriesGroups.forEach((item) => {
+              item.classList.remove("is-hovered");
+              item.style.opacity = "1";
+            });
+            restoreSeriesOrder();
+          };
+
+          seriesGroups.forEach((group) => {
+            group.addEventListener("mouseenter", () => activateSeries(group));
+            group.addEventListener("mouseleave", clearSeries);
+            group.addEventListener("focus", () => activateSeries(group));
+            group.addEventListener("blur", clearSeries);
+            group.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openDriver(group);
+              }
+            });
+          });
+          svg.querySelectorAll(".race-position-hit").forEach((hit) => {
+            hit.addEventListener("click", (event) => {
+              event.preventDefault();
+              const group = hit.closest(".race-position-series");
+              openDriver(group);
+            });
+            hit.addEventListener("pointerup", (event) => {
+              event.preventDefault();
+              const group = hit.closest(".race-position-series");
+              openDriver(group);
+            });
+          });
+          svg.addEventListener("pointerleave", clearSeries);
+          svg.addEventListener("mouseleave", clearSeries);
+        })();
+      </script>
+      {% endif %}
+      {% if pit_strategy_graph %}
+      <script>
+        (() => {
+          const svg = document.getElementById("pit-strategy-svg");
+          const dataEl = document.getElementById("pit-strategy-json");
+          if (!svg || !dataEl) {
+            return;
+          }
+
+          const graph = JSON.parse(dataEl.textContent || "null");
+          if (!graph || !graph.drivers || !graph.drivers.length) {
+            svg.innerHTML = "";
+            return;
+          }
+
+          const plotWidth = 1000;
+          const labelColumnWidth = 118;
+          const width = plotWidth + labelColumnWidth;
+          const pad = { top: 34, right: 8, bottom: 42, left: 64 };
+          const rowStep = 28;
+          const rowHeight = 14;
+          const height = Math.max(560, pad.top + pad.bottom + graph.drivers.length * rowStep);
+          const innerWidth = plotWidth - pad.left - pad.right;
+          const lapTotal = Math.max(Number(graph.lap_total || 0), 1);
+          const xScale = lapTotal === 1 ? 1 : innerWidth / (lapTotal - 1);
+
+          svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+          svg.style.height = `${height}px`;
+
+          function escapeHtml(value) {
+            return String(value)
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;");
+          }
+
+          function xForLap(lap) {
+            return pad.left + (Math.max(lap, 1) - 1) * xScale;
+          }
+
+          function xForEndLap(lap) {
+            if (lapTotal <= 1) {
+              return plotWidth - pad.right;
+            }
+            return Math.min(plotWidth - pad.right, pad.left + Math.max(lap, 1) * xScale);
+          }
+
+          const axisStatusMarkup = (graph.status_segments || [])
+            .filter((segment) => segment.label === "Safety Car" || segment.label === "Virtual Safety Car")
+            .map((segment) => {
+              const startX = xForLap(segment.start_lap);
+              const endX = xForEndLap(segment.end_lap);
+              if (endX <= startX) {
+                return "";
+              }
+              const fill = segment.label === "Safety Car" ? "#facc15" : "#38bdf8";
+              const label = segment.label === "Safety Car" ? "SC" : "VSC";
+              const labelWidth = segment.label === "Safety Car" ? 28 : 36;
+              return `
+                <line x1="${startX.toFixed(2)}" y1="${(height - 28).toFixed(2)}" x2="${startX.toFixed(2)}" y2="${(height - 10).toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                <line x1="${endX.toFixed(2)}" y1="${(height - 28).toFixed(2)}" x2="${endX.toFixed(2)}" y2="${(height - 10).toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                <g>
+                  <rect x="${((startX + endX) / 2 - (labelWidth / 2)).toFixed(2)}" y="${(height - 28).toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
+                  <text x="${((startX + endX) / 2).toFixed(2)}" y="${(height - 18).toFixed(2)}" fill="${fill}" font-size="9" font-weight="900" text-anchor="middle">${label}</text>
+                </g>
+              `;
+            })
+            .join("");
+
+          let grid = "";
+          const tickStep = lapTotal > 12 ? 5 : 1;
+          for (let lap = 1; lap <= lapTotal; lap += tickStep) {
+            const x = xForLap(lap);
+            grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1" />`;
+            grid += `<text x="${x.toFixed(2)}" y="${height - 16}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lap}</text>`;
+          }
+          if ((lapTotal - 1) % tickStep !== 0) {
+            const x = xForLap(lapTotal);
+            grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1" />`;
+            grid += `<text x="${x.toFixed(2)}" y="${height - 16}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lapTotal}</text>`;
+          }
+
+          let rows = "";
+          const pitStintHits = [];
+          graph.drivers.forEach((driver, index) => {
+            const y = pad.top + index * rowStep + rowHeight;
+            const rowTop = y - (rowHeight / 2);
+            rows += `<line x1="${pad.left}" y1="${y.toFixed(2)}" x2="${plotWidth - pad.right}" y2="${y.toFixed(2)}" stroke="rgba(148,163,184,0.08)" stroke-width="1" />`;
+            rows += `<text x="${pad.left - 4}" y="${(y + 4).toFixed(2)}" fill="${driver.team_color || '#cbd5e1'}" font-size="11" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.driver || '')}</text>`;
+
+            (driver.stints || []).forEach((stint) => {
+              const startX = xForLap(stint.start_lap);
+              const endX = xForEndLap(stint.end_lap);
+              const barWidth = Math.max(6, endX - startX - 2);
+              const href = `/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${encodeURIComponent(driver.driver_number || driver.driver_number === 0 ? driver.driver_number : driver.driver_number)}&stint=${encodeURIComponent(stint.stint || "")}{% if form.phase %}&phase={{ form.phase }}{% endif %}`;
+              const separatorX = endX - 2;
+              rows += `
+                <g class="pit-stint-bar" data-href="${href}" tabindex="0" role="button" aria-label="Driver ${escapeHtml(driver.abbreviation || driver.driver || '')} stint ${escapeHtml(stint.stint || '')}">
+                  <rect class="pit-stint-hit" x="${(startX + 1).toFixed(2)}" y="${(rowTop - 3).toFixed(2)}" width="${(barWidth + 4).toFixed(2)}" height="${(rowHeight + 6).toFixed(2)}" rx="8"></rect>
+                  <rect class="pit-stint-fill" x="${(startX + 1).toFixed(2)}" y="${(rowTop).toFixed(2)}" width="${barWidth.toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="6" fill="${stint.tyre_color || '#94a3b8'}" opacity="0.92" stroke="rgba(7,16,29,0.72)" stroke-width="1"></rect>
+                </g>
+              `;
+              rows += `
+                <g aria-hidden="true">
+                  <rect x="${(separatorX - 3).toFixed(2)}" y="${(y - 3).toFixed(2)}" width="6" height="6" rx="1.5" transform="rotate(45 ${separatorX.toFixed(2)} ${y.toFixed(2)})" fill="rgba(226,232,240,0.72)"></rect>
+                </g>
+              `;
+            });
+
+            const timeLabel = escapeHtml(driver.time_label || "-");
+            const timeColumnCenter = plotWidth + (labelColumnWidth / 2);
+            rows += `<text x="${timeColumnCenter.toFixed(2)}" y="${(y + 4).toFixed(2)}" fill="rgba(226,232,240,0.96)" font-size="12" font-weight="800" text-anchor="middle">${timeLabel}</text>`;
+
+            (driver.pit_laps || []).forEach((lap) => {
+              const x = xForLap(lap);
+              rows += `<line x1="${x.toFixed(2)}" y1="${(y - 11).toFixed(2)}" x2="${x.toFixed(2)}" y2="${(y + 11).toFixed(2)}" stroke="rgba(231,238,250,0.75)" stroke-width="1.5"></line>`;
+              rows += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4.5" fill="#07101d" stroke="#e7eefc" stroke-width="1.5"></circle>`;
+            });
+          });
+
+          svg.innerHTML = `
+            <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+            <line x1="${plotWidth}" y1="18" x2="${plotWidth}" y2="${height - 18}" stroke="rgba(148,163,184,0.16)" stroke-width="1" />
+            ${grid}
+            ${axisStatusMarkup}
+            ${rows}
+          `;
+
+          const stintBars = Array.from(svg.querySelectorAll(".pit-stint-bar"));
+          const openStint = (bar) => {
+            const href = bar ? (bar.getAttribute("data-href") || "").trim() : "";
+            if (!href) {
+              return;
+            }
+            window.location.assign(href);
+          };
+
+          stintBars.forEach((bar) => {
+            bar.addEventListener("mouseenter", () => {
+              stintBars.forEach((item) => item.classList.toggle("is-hovered", item === bar));
+            });
+            bar.addEventListener("mouseleave", () => {
+              stintBars.forEach((item) => item.classList.remove("is-hovered"));
+            });
+            bar.addEventListener("click", (event) => {
+              event.preventDefault();
+              openStint(bar);
+            });
+            bar.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openStint(bar);
+              }
+            });
+          });
+        })();
+      </script>
+      {% endif %}
+      {% if page == 'data' %}
       <script id="telemetry-json" type="application/json">{{ telemetry_charts | tojson }}</script>
       <script id="track-map-json" type="application/json">{{ track_map | tojson }}</script>
+      {% endif %}
       <script>
         (() => {
           const container = document.getElementById("telemetry-charts");
@@ -2466,5 +3343,115 @@
         })();
       </script>
     {% endif %}
+
+      {% if loading %}
+        <div class="loading-overlay" role="status" aria-live="polite" aria-label="FastF1 loading session">
+        <div class="loading-card">
+          <svg class="loading-wheel" viewBox="0 0 160 160" aria-hidden="true">
+            <defs>
+              <radialGradient id="tire-fill" cx="50%" cy="50%" r="60%">
+                <stop offset="0%" stop-color="#2d3542"></stop>
+                <stop offset="48%" stop-color="#12161e"></stop>
+                <stop offset="100%" stop-color="#05070b"></stop>
+              </radialGradient>
+              <radialGradient id="wheel-face" cx="50%" cy="45%" r="62%">
+                <stop offset="0%" stop-color="#cfd4da"></stop>
+                <stop offset="52%" stop-color="#9ca3af"></stop>
+                <stop offset="100%" stop-color="#6b7280"></stop>
+              </radialGradient>
+              <linearGradient id="wheel-spoke" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#dbe1e7"></stop>
+                <stop offset="100%" stop-color="#8c949f"></stop>
+              </linearGradient>
+              <linearGradient id="tire-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.16)"></stop>
+                <stop offset="58%" stop-color="rgba(255,255,255,0.04)"></stop>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"></stop>
+              </linearGradient>
+            </defs>
+            <circle cx="80" cy="80" r="60" fill="url(#tire-fill)" stroke="#020305" stroke-width="7"></circle>
+            <circle cx="80" cy="80" r="52" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2"></circle>
+            <g fill="#b8bec6" opacity="0.72">
+              <rect x="77" y="16" width="6" height="16" rx="2.5"></rect>
+              <rect x="77" y="128" width="6" height="16" rx="2.5"></rect>
+              <rect x="16" y="77" width="16" height="6" rx="2.5"></rect>
+              <rect x="128" y="77" width="16" height="6" rx="2.5"></rect>
+            </g>
+            <g fill="url(#wheel-spoke)">
+              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(0 80 80)"></rect>
+              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(30 80 80)"></rect>
+              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(60 80 80)"></rect>
+              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(90 80 80)"></rect>
+              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(120 80 80)"></rect>
+              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(150 80 80)"></rect>
+            </g>
+            <circle cx="80" cy="80" r="41" fill="url(#wheel-face)" stroke="#6b7280" stroke-width="3"></circle>
+            <circle cx="80" cy="80" r="23" fill="#8f96a1" stroke="#e5e7eb" stroke-width="2"></circle>
+            <circle cx="80" cy="80" r="13" fill="#6b7280" stroke="#d1d5db" stroke-width="1.5"></circle>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ff2d2d" stroke-width="5" stroke-dasharray="18 72" stroke-linecap="round" transform="rotate(-12 80 80)"></circle>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ff2d2d" stroke-width="5" stroke-dasharray="18 72" stroke-linecap="round" transform="rotate(168 80 80)"></circle>
+            <path d="M41 71c8-22 25-36 39-36 14 0 31 11 40 31" fill="none" stroke="url(#tire-highlight)" stroke-width="9" stroke-linecap="round" opacity="0.9"></path>
+            <text x="80" y="24" text-anchor="middle" font-size="16" font-weight="900" fill="#ff2d2d" letter-spacing="0.06em">PIRELLI</text>
+            <text x="80" y="142" text-anchor="middle" font-size="16" font-weight="900" fill="#ff2d2d" letter-spacing="0.06em" transform="rotate(180 80 142)">PIRELLI</text>
+            <text x="80" y="85" text-anchor="middle" font-size="10" font-weight="800" fill="#1f2937" letter-spacing="0.16em">SOFT</text>
+          </svg>
+          <h2 class="loading-title">FastF1 is loading</h2>
+          <p class="loading-copy">{{ loading_stage|default("Session data is being fetched") }} · {{ loading_progress|default(0) }}%</p>
+          <div class="loading-bar" aria-hidden="true"><span></span></div>
+        </div>
+        <script>
+          (() => {
+            const body = document.body;
+            const statusUrl = body.getAttribute("data-loading-status-url");
+            const bar = document.querySelector(".loading-bar span");
+            const copy = document.querySelector(".loading-copy");
+            if (!statusUrl || !bar || !copy) {
+              return;
+            }
+
+            let redirected = false;
+
+            const setProgress = (progress, stage) => {
+              const value = Math.max(0, Math.min(100, Number(progress) || 0));
+              bar.style.width = `${value}%`;
+              body.style.setProperty("--loading-progress", `${value}%`);
+              copy.textContent = `${stage || "Loading"} · ${value}%`;
+            };
+
+            const poll = async () => {
+              if (redirected) {
+                return;
+              }
+
+              try {
+                const response = await fetch(statusUrl, { cache: "no-store" });
+                if (!response.ok) {
+                  throw new Error("status request failed");
+                }
+
+                const data = await response.json();
+                setProgress(data.progress, data.stage);
+
+                if (data.status === "ready") {
+                  redirected = true;
+                  setProgress(100, "Complete");
+                  window.setTimeout(() => {
+                    window.location.reload();
+                  }, 250);
+                  return;
+                }
+              } catch (error) {
+                setProgress(parseFloat(bar.style.width) || 0, "Loading");
+              }
+
+              window.setTimeout(poll, 1000);
+            };
+
+            setProgress({{ loading_progress|default(0) }}, "{{ loading_stage|default('Starting') }}");
+            window.setTimeout(poll, 250);
+          })();
+        </script>
+      </div>
+      {% endif %}
   </body>
 </html>
