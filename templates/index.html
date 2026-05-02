@@ -31,10 +31,17 @@
         font-family: Arial, Helvetica, sans-serif;
       }
 
+      body.page-transitioning .page {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
       .page {
         width: min(1100px, calc(100vw - 32px));
         margin: 0 auto;
         padding: 32px 0 48px;
+        opacity: 1;
+        transition: opacity 180ms ease, transform 180ms ease;
       }
 
       header {
@@ -114,6 +121,81 @@
         margin-bottom: 0;
       }
 
+      .session-selector-modal[hidden] {
+        display: none;
+      }
+
+      .session-selector-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        display: grid;
+        place-items: start center;
+        padding: 24px 24px 40px;
+        overflow-y: auto;
+      }
+
+      .session-selector-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(4, 9, 17, 0.86);
+        backdrop-filter: blur(10px);
+      }
+
+      .session-selector-dialog {
+        position: relative;
+        width: min(860px, calc(100vw - 32px));
+        max-height: calc(100vh - 64px);
+        overflow: auto;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 24px;
+        background: linear-gradient(180deg, rgba(16, 26, 45, 0.98), rgba(9, 16, 29, 0.98));
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
+        margin-top: 8px;
+      }
+
+      .session-selector-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 36px;
+        height: 36px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .session-selector-modal .panel {
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .session-selector-modal .summary {
+        padding: 0 20px 20px;
+      }
+
+      .session-selector-modal .toolbar {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+        align-items: end;
+        margin: 0 20px 20px;
+        padding: 20px;
+      }
+
+      .session-selector-modal .toolbar .field {
+        min-width: 0;
+      }
+
+      .session-selector-modal .toolbar button {
+        min-height: 48px;
+        padding-inline: 1.2rem;
+        white-space: nowrap;
+      }
+
       .view-link {
         display: inline-flex;
         align-items: center;
@@ -121,8 +203,8 @@
         padding: 0.45rem 0.8rem;
         border: 1px solid var(--border);
         border-radius: 999px;
-        color: var(--muted);
-        background: rgba(68, 194, 255, 0.04);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.04);
         font-size: 0.82rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -134,25 +216,26 @@
         background: rgba(68, 194, 255, 0.12);
       }
 
-      .view-link.active:not(.data-link) {
-        color: var(--accent);
-        background: rgba(68, 194, 255, 0.12);
-      }
-
       .view-link.session-link {
         color: var(--text);
         background: rgba(255, 255, 255, 0.04);
       }
 
       .view-link.data-link {
-        color: var(--warn);
-        background: rgba(255, 191, 105, 0.08);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .view-link.data-link.active {
         color: #ffd89a;
         background: rgba(255, 191, 105, 0.18);
         border-color: rgba(255, 191, 105, 0.36);
+      }
+
+      .view-link.strategy-link.active {
+        color: #63e6b2;
+        background: rgba(99, 230, 178, 0.12);
+        border-color: rgba(99, 230, 178, 0.28);
       }
 
       h1 {
@@ -204,7 +287,7 @@
         left: 50%;
         top: 50%;
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
         gap: 8px;
         width: max-content;
@@ -240,6 +323,12 @@
         align-items: center;
       }
 
+      .sprint-qualifying-session-toggle {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+
       .practice-session-toggle {
         position: relative;
         display: inline-flex;
@@ -262,10 +351,22 @@
         outline: none;
       }
 
-      .session-chip.active {
+      .session-chip.active:not(.race-session-chip):not(.qualifying-session-chip):not(.practice-session-chip):not(.qualifying-session-trigger):not(.practice-session-trigger) {
         color: var(--text);
         background: rgba(18, 26, 40, 0.98);
         border-color: rgba(99, 230, 178, 0.28);
+      }
+
+      .session-chip.race-session-chip.active {
+        color: #ffd0d0;
+        background: rgba(255, 45, 45, 0.14);
+        border-color: rgba(255, 45, 45, 0.38);
+      }
+
+      .header-badges.open-menus .session-chip.race-session-chip.active {
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: var(--border);
       }
 
       .session-chip:focus-visible,
@@ -304,7 +405,7 @@
       .qualifying-results {
         display: grid;
         gap: 10px;
-        padding: 12px;
+        padding: 12px 20px;
         border: 1px solid var(--border);
         border-radius: 14px;
         background: rgba(9, 16, 29, 0.95);
@@ -321,6 +422,7 @@
       .qualifying-results-list {
         display: grid;
         gap: 12px;
+        padding-inline: 4px;
       }
 
       .qualifying-result-item {
@@ -760,10 +862,44 @@
         border-color: rgba(99, 230, 178, 0.28);
       }
 
+      .qualifying-session-trigger.active {
+        color: #ffe49a;
+        background: rgba(255, 191, 105, 0.18);
+        border-color: rgba(255, 191, 105, 0.36);
+      }
+
+      .qualifying-session-toggle.open .qualifying-session-trigger {
+        color: #ffe49a;
+        background: rgba(255, 191, 105, 0.18);
+        border-color: rgba(255, 191, 105, 0.36);
+      }
+
+      .sprint-qualifying-session-trigger.active {
+        color: #ffe49a;
+        background: rgba(255, 191, 105, 0.18);
+        border-color: rgba(255, 191, 105, 0.36);
+      }
+
+      .sprint-qualifying-session-toggle.open .sprint-qualifying-session-trigger {
+        color: #ffe49a;
+        background: rgba(255, 191, 105, 0.18);
+        border-color: rgba(255, 191, 105, 0.36);
+      }
+
+      .practice-session-trigger.active {
+        color: var(--text);
+        background: rgba(18, 26, 40, 0.98);
+        border-color: rgba(99, 230, 178, 0.28);
+      }
+
+      .practice-session-toggle.open .practice-session-trigger {
+        color: var(--text);
+        background: rgba(18, 26, 40, 0.98);
+        border-color: rgba(99, 230, 178, 0.28);
+      }
+
       .session-dropdown-trigger::after {
-        content: "▾";
-        font-size: 0.75rem;
-        opacity: 0.8;
+        content: none;
       }
 
       .session-dropdown-trigger[data-session-dropdown-trigger]::after {
@@ -781,13 +917,20 @@
         padding: 0.6rem 0.85rem;
       }
 
+      .sprint-qualifying-session-chip {
+        justify-content: center;
+        border-radius: 10px;
+        padding: 0.6rem 0.85rem;
+        white-space: nowrap;
+      }
+
       .practice-session-chip {
         justify-content: center;
         border-radius: 10px;
         padding: 0.6rem 0.85rem;
       }
 
-      .session-chip.active {
+      .session-chip.active:not(.race-session-chip):not(.qualifying-session-chip):not(.practice-session-chip):not(.qualifying-session-trigger):not(.practice-session-trigger) {
         color: var(--text);
         background: rgba(18, 26, 40, 0.98);
         border-color: rgba(99, 230, 178, 0.28);
@@ -1054,6 +1197,45 @@
         top: 18px;
         width: 280px;
         z-index: 20;
+        transform: translateX(-100%);
+        opacity: 0;
+        visibility: hidden;
+        transition: transform 180ms ease, opacity 120ms ease, visibility 0s linear 180ms;
+        will-change: transform, opacity;
+        cursor: pointer;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .results-sidebar:hover,
+      .results-sidebar.open {
+        transform: translateX(0);
+        opacity: 1;
+        visibility: visible;
+        transition-delay: 0s;
+        pointer-events: auto;
+      }
+
+      .results-sidebar.pinned {
+        transform: translateX(0);
+        opacity: 1;
+        visibility: visible;
+        transition-delay: 0s;
+        pointer-events: auto;
+      }
+
+      .results-sidebar::before {
+        content: none;
+      }
+
+      .results-sidebar-edge-trigger {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 16px;
+        z-index: 19;
+        background: transparent;
       }
 
       .results-main {
@@ -1072,6 +1254,20 @@
 
       .results-sidebar table {
         width: 100%;
+      }
+
+      .driver-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .driver-flag {
+        font-size: 1rem;
+        line-height: 1;
+        width: 1.2em;
+        text-align: center;
+        flex: 0 0 auto;
       }
 
       .panel {
@@ -1521,6 +1717,11 @@
       .pit-stint-bar {
         cursor: pointer;
         transition: opacity 140ms ease, filter 140ms ease, stroke-width 140ms ease;
+        pointer-events: all;
+      }
+
+      .pit-stint-bar .pit-stint-fill {
+        transition: filter 140ms ease, stroke-width 140ms ease;
       }
 
       .pit-stint-bar .pit-stint-hit {
@@ -1709,14 +1910,16 @@
       <header>
         <div class="header-badges" data-header-badges>
           <div class="session-badge-row">
-            <a class="session-badge-title" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}">{{ session_title }}</a>
+            <a class="session-badge-title" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}" data-session-selector-trigger>{{ session_title }}</a>
             <div class="session-badge-group">
-              {% set ns = namespace(practice_sessions=[], qualifying_sessions=[], race_sessions=[], other_sessions=[]) %}
+              {% set ns = namespace(practice_sessions=[], qualifying_sessions=[], sprint_qualifying_sessions=[], race_sessions=[], other_sessions=[]) %}
               {% for session in session_options %}
                 {% if session.label in ["Practice 1", "Practice 2", "Practice 3"] %}
                   {% set ns.practice_sessions = ns.practice_sessions + [session] %}
                 {% elif session.label == "Qualifying" %}
                   {% set ns.qualifying_sessions = ns.qualifying_sessions + [session] %}
+                {% elif session.label == "Sprint Qualifying" %}
+                  {% set ns.sprint_qualifying_sessions = ns.sprint_qualifying_sessions + [session] %}
                 {% elif session.label == "Race" %}
                   {% set ns.race_sessions = ns.race_sessions + [session] %}
                 {% else %}
@@ -1725,16 +1928,16 @@
               {% endfor %}
               {% for session in ns.race_sessions + ns.other_sessions %}
                 <a
-                  class="session-chip {% if session.value == form.session %}active{% endif %}"
+                  class="session-chip {% if session.value == 'R' %}race-session-chip{% endif %} {% if session.value == form.session %}active{% endif %}"
                   href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}{% if form.phase %}&phase={{ form.phase }}{% endif %}"
                 >
                   {{ session.label }}
                 </a>
               {% endfor %}
-              {% if form.session in ['Q', 'SQ', 'SS'] or ns.qualifying_sessions %}
+              {% if form.session == 'Q' or ns.qualifying_sessions %}
                 <div class="qualifying-session-toggle" data-qualifying-session-toggle>
                   <button
-                    class="session-chip session-dropdown-trigger qualifying-session-trigger {% if form.session == 'Q' or form.phase %}active{% endif %}"
+                    class="session-chip session-dropdown-trigger qualifying-session-trigger {% if form.session == 'Q' %}active{% endif %}"
                     type="button"
                     data-qualifying-session-trigger
                     aria-haspopup="true"
@@ -1744,7 +1947,27 @@
                     </button>
                 </div>
               {% endif %}
-              {% if form.session in ['FP1', 'FP2', 'FP3'] or ns.practice_sessions %}
+              {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
+                <div class="sprint-qualifying-session-toggle" data-sprint-qualifying-session-toggle>
+                  <button
+                    class="session-chip session-dropdown-trigger sprint-qualifying-session-trigger {% if form.session == 'SQ' %}active{% endif %}"
+                    type="button"
+                    data-sprint-qualifying-session-trigger
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    Sprint Qualifying
+                  </button>
+                </div>
+              {% endif %}
+              {% if ns.practice_sessions|length == 1 %}
+                <a
+                  class="session-chip practice-session-chip {% if ns.practice_sessions[0].value == form.session %}active{% endif %}"
+                  href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ ns.practice_sessions[0].value }}{% if form.phase %}&phase={{ form.phase }}{% endif %}"
+                >
+                  Practice
+                </a>
+              {% elif form.session in ['FP1', 'FP2', 'FP3'] or ns.practice_sessions %}
                 <div class="practice-session-toggle" data-practice-session-toggle>
                   <button
                     class="session-chip session-dropdown-trigger practice-session-trigger {% if form.session in ['FP1', 'FP2', 'FP3'] %}active{% endif %}"
@@ -1768,54 +1991,93 @@
                     class="session-chip qualifying-session-chip {% if form.session == 'Q' and form.phase == phase %}active{% endif %}"
                     href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=Q&phase={{ phase }}"
                   >
-                    {{ phase }}
+                    Qualifying {{ phase[-1] }}
                   </a>
                 {% endfor %}
               </div>
-              <div class="session-badge-expansion-band" data-practice-session-menu hidden>
-                {% for session in ns.practice_sessions %}
-                  <a
-                    class="session-chip practice-session-chip {% if session.value == form.session %}active{% endif %}"
-                    href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
-                  >
-                    {{ session.label }}
-                  </a>
-                {% endfor %}
-              </div>
+              {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
+                <div class="session-badge-expansion-band" data-sprint-qualifying-session-menu hidden>
+                  {% for phase in ['Q1', 'Q2', 'Q3'] %}
+                    <a
+                      class="session-chip sprint-qualifying-session-chip {% if form.session == 'SQ' and form.phase == phase %}active{% endif %}"
+                      href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=SQ&phase={{ phase }}"
+                    >
+                      Sprint Qualifying {{ phase[-1] }}
+                    </a>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if ns.practice_sessions|length > 1 %}
+                <div class="session-badge-expansion-band" data-practice-session-menu hidden>
+                  {% for session in ns.practice_sessions %}
+                    <a
+                      class="session-chip practice-session-chip {% if session.value == form.session %}active{% endif %}"
+                      href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
+                    >
+                      Free {{ session.label }}
+                    </a>
+                  {% endfor %}
+                </div>
+              {% endif %}
             </div>
             <div class="header-divider-line"></div>
           </div>
           <div class="topbar">
             <a class="view-link {% if view == 'results' %}active{% endif %}" href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Overview</a>
-            <a class="view-link {% if view == 'strategy' %}active{% endif %}" href="/strategy?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Strategy</a>
+            <a class="view-link strategy-link {% if view == 'strategy' %}active{% endif %}" href="/strategy?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Strategy</a>
             <a class="view-link data-link {% if view == 'data' %}active{% endif %}" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">DATA</a>
           </div>
         </div>
       </header>
 
-      {% if page == 'session' %}
-        <form class="toolbar" method="get" action="{{ form_action }}">
-          <div class="field">
-            <label for="year">Year</label>
-            <select id="year" name="year" onchange="this.form.submit()">
-              {% for option in years %}
-                <option value="{{ option }}" {% if option == form.year %}selected{% endif %}>{{ option }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="gp">Grand Prix</label>
-            <select id="gp" name="gp" onchange="this.form.submit()">
-              {% for option in events %}
-                <option value="{{ option.value }}" {% if option.value == form.gp %}selected{% endif %}>
-                  {{ option.label }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <button type="submit">Open results</button>
-        </form>
-      {% elif page == 'data' %}
+      <div class="session-selector-modal" data-session-selector-modal data-available-events-url="{{ url_for('available_events') }}" hidden aria-hidden="true">
+        <div class="session-selector-backdrop" data-session-selector-close></div>
+        <div class="session-selector-dialog" role="dialog" aria-modal="true" aria-labelledby="session-selector-title">
+          <button type="button" class="session-selector-close" data-session-selector-close aria-label="Close session selector">×</button>
+          <section class="panel">
+            <header>
+              <h2 id="session-selector-title">Session selector</h2>
+              <p class="subtle">Pick a year and Grand Prix without leaving the current page.</p>
+            </header>
+            <div class="summary">
+              <p class="session-note">
+                The selected event will open in the Results view, and you can move to Strategy or DATA after that.
+              </p>
+              <div class="metric">
+                <span>Current session</span>
+                <strong>{{ session_badge }}</strong>
+              </div>
+            </div>
+            <form class="toolbar" method="get" action="/results">
+              <input type="hidden" name="phase" value="{{ form.phase }}" />
+              <input type="hidden" name="session" value="R" />
+              <div class="field">
+                <label for="modal-year">Year</label>
+                <select id="modal-year" name="year">
+                  {% for option in years %}
+                    <option value="{{ option }}" {% if option == form.year %}selected{% endif %}>{{ option }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="modal-gp">Grand Prix</label>
+                <select id="modal-gp" name="gp">
+                  {% if events %}
+                    {% for option in events %}
+                      <option value="{{ option.value }}" {% if option.value == form.gp or loop.first and form.gp not in events|map(attribute='value')|list %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                  {% else %}
+                    <option value="" disabled selected>No available Grand Prixs</option>
+                  {% endif %}
+                </select>
+              </div>
+              <button type="submit">Open results</button>
+            </form>
+          </section>
+        </div>
+      </div>
+
+      {% if page == 'data' %}
         <form class="toolbar data-toolbar" method="get" action="{{ form_action }}" data-data-form>
           <input type="hidden" name="year" value="{{ form.year }}" />
           <input type="hidden" name="gp" value="{{ form.gp }}" />
@@ -1940,6 +2202,48 @@
                     ></div>
                   </div>
                 </section>
+              {% elif selected_driver and not session_is_qualifying %}
+                <section class="selection-panel">
+                  <div class="selection-panel-top">
+                    <div class="selection-driver">
+                      {% if selected_driver_data %}
+                        <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
+                        <span class="selection-driver-copy">
+                          <strong>{{ selected_driver_data.full_name }}</strong>
+                          <small>{{ selected_driver_data.team_name }}</small>
+                        </span>
+                      {% else %}
+                        <span class="selection-driver-copy">
+                          <strong>Driver {{ selected_driver }}</strong>
+                          <small>No driver details loaded yet</small>
+                        </span>
+                      {% endif %}
+                    </div>
+                    <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Back to drivers</a>
+                  </div>
+                  {% if driver_lap_options %}
+                    <div class="stint-viewport">
+                      <div class="stint-chart" aria-label="Lap selector">
+                        {% for lap in driver_lap_options %}
+                          <a
+                            class="stint-bar {% if lap.value == selected_lap %}active{% endif %}"
+                            href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&lap={{ lap.value }}{% if form.phase %}&phase={{ form.phase }}{% endif %}"
+                            style="--stint-color: {{ lap.tyre_color if lap.tyre_color is defined else '#9ca3af' }}; --stint-flex: 1;"
+                          >
+                            <span>Lap {{ lap.lap_number }}</span>
+                            <strong>{{ lap.lap_time }}</strong>
+                            <small>{{ lap.compound }}</small>
+                          </a>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% else %}
+                    <div class="metric">
+                      <span>Driver selected</span>
+                      <strong>No stint data is available for this session yet.</strong>
+                    </div>
+                  {% endif %}
+                </section>
               {% elif race_stints and not session_is_qualifying %}
                 <section class="selection-panel">
                   <div class="selection-panel-top {% if session_is_qualifying %}centered{% endif %}">
@@ -2000,43 +2304,22 @@
         <p class="loading">FastF1 is loading that session in the background. This page will refresh automatically.</p>
       {% endif %}
 
-      {% if page == 'session' %}
-        <section class="session-panel">
-          <div class="panel">
-            <header>
-              <h2>Session selector</h2>
-              <p class="subtle">
-                Pick a year, Grand Prix, and session, then jump straight to the results page.
-              </p>
-            </header>
-            <div class="summary">
-              <p class="session-note">
-                This page is the starting point for session navigation. The selector above controls the
-                session context, and the Results tab takes you to the data view for the selected event.
-              </p>
-              <div class="metric">
-                <span>Selected session</span>
-                <strong>{{ session_badge }}</strong>
-              </div>
+      {% if view == 'results' and not data and not loading %}
+        <section class="panel">
+          <header>
+            <h2>Session not available</h2>
+            <p class="subtle">The selected year, Grand Prix, and session combination does not have data yet.</p>
+          </header>
+          <div class="summary">
+            <div class="metric">
+              <span>Selected session</span>
+              <strong>{{ session_badge }}</strong>
+            </div>
+            <div class="metric">
+              <span>Next step</span>
+              <strong>Pick another combination in the modal</strong>
             </div>
           </div>
-
-          <aside class="panel">
-            <header>
-              <h2>What happens next</h2>
-              <p class="subtle">Results opens the data table for this exact session.</p>
-            </header>
-            <div class="summary">
-              <div class="metric">
-                <span>Results page</span>
-                <strong>Session table and event summary</strong>
-              </div>
-              <div class="metric">
-                <span>Strategy page</span>
-                <strong>Strategy workspace for this same session</strong>
-              </div>
-            </div>
-          </aside>
         </section>
       {% elif view == 'strategy' %}
         <section class="grid">
@@ -2227,6 +2510,7 @@
                 </section>
               {% endif %}
             </div>
+            <div class="results-sidebar-edge-trigger" aria-hidden="true"></div>
             <aside class="results-sidebar">
               <div class="panel">
                 <header>
@@ -2244,7 +2528,15 @@
                       {% for row in data.rows %}
                         <tr>
                           <td>{{ row.Position if row.Position is defined else row.get('Position', '-') }}</td>
-                          <td>{{ row.FullName if row.FullName is defined else row.get('FullName', '-') }}</td>
+                          <td>
+                            {% set driver_flag = row.CountryFlag if row.CountryFlag is defined else row.get('CountryFlag', '') %}
+                            <span class="driver-name">
+                              {% if driver_flag %}
+                                <span class="driver-flag">{{ driver_flag }}</span>
+                              {% endif %}
+                              <span>{{ row.FullName if row.FullName is defined else row.get('FullName', '-') }}</span>
+                            </span>
+                          </td>
                         </tr>
                       {% endfor %}
                     </tbody>
@@ -2294,9 +2586,6 @@
       {% endif %}
       <script>
         (() => {
-          const scrollKey = "f1-strat-data-scroll-y";
-          history.scrollRestoration = "manual";
-
           const picker = document.querySelector("[data-driver-picker]");
           if (picker) {
             const input = picker.querySelector("[data-driver-input]");
@@ -2314,11 +2603,6 @@
           }
 
           const stintLinks = document.querySelectorAll(".stint-bar");
-          stintLinks.forEach((link) => {
-            link.addEventListener("click", () => {
-              sessionStorage.setItem(scrollKey, String(window.scrollY || window.pageYOffset || 0));
-            });
-          });
 
           const qualifyingRows = document.querySelectorAll(".qualifying-result-row");
           qualifyingRows.forEach((row) => {
@@ -2337,11 +2621,22 @@
 
           const qualifyingToggle = document.querySelector("[data-qualifying-session-toggle]");
           const qualifyingTrigger = qualifyingToggle ? qualifyingToggle.querySelector("[data-qualifying-session-trigger]") : null;
+          const sprintQualifyingToggle = document.querySelector("[data-sprint-qualifying-session-toggle]");
+          const sprintQualifyingTrigger = sprintQualifyingToggle ? sprintQualifyingToggle.querySelector("[data-sprint-qualifying-session-trigger]") : null;
           const practiceToggle = document.querySelector("[data-practice-session-toggle]");
           const practiceTrigger = practiceToggle ? practiceToggle.querySelector("[data-practice-session-trigger]") : null;
           const headerBadges = document.querySelector("[data-header-badges]");
           const qualifyingMenu = document.querySelector("[data-qualifying-session-menu]");
+          const sprintQualifyingMenu = document.querySelector("[data-sprint-qualifying-session-menu]");
           const practiceMenu = document.querySelector("[data-practice-session-menu]");
+          const sessionSelectorModal = document.querySelector("[data-session-selector-modal]");
+          const sessionSelectorTrigger = document.querySelector("[data-session-selector-trigger]");
+          const sessionSelectorCloses = Array.from(document.querySelectorAll("[data-session-selector-close]"));
+          const sessionSelectorAvailableEventsUrl = sessionSelectorModal ? sessionSelectorModal.getAttribute("data-available-events-url") : "";
+          const modalYearSelect = document.getElementById("modal-year");
+          const modalGpSelect = document.getElementById("modal-gp");
+          const modalSubmitButton = sessionSelectorModal ? sessionSelectorModal.querySelector('button[type="submit"]') : null;
+          const viewLinks = document.querySelectorAll(".view-link");
 
           const closeSessionToggle = (toggle, trigger) => {
             if (!toggle || !trigger) {
@@ -2371,42 +2666,211 @@
             }, 420);
           };
 
+          const openSessionSelector = () => {
+            if (!sessionSelectorModal) {
+              return;
+            }
+            sessionSelectorModal.hidden = false;
+            sessionSelectorModal.setAttribute("aria-hidden", "false");
+            window.requestAnimationFrame(() => {
+              sessionSelectorModal.classList.add("open");
+            });
+            document.body.style.overflow = "hidden";
+          };
+
+          const setModalGpOptions = (events, selectedValue) => {
+            if (!modalGpSelect) {
+              return;
+            }
+
+            modalGpSelect.innerHTML = "";
+            if (!events || !events.length) {
+              const emptyOption = document.createElement("option");
+              emptyOption.value = "";
+              emptyOption.textContent = "No available Grand Prixs";
+              emptyOption.disabled = true;
+              emptyOption.selected = true;
+              modalGpSelect.appendChild(emptyOption);
+              modalGpSelect.disabled = true;
+              if (modalSubmitButton) {
+                modalSubmitButton.disabled = true;
+              }
+              return;
+            }
+
+            let matchFound = false;
+            events.forEach((event, index) => {
+              const option = document.createElement("option");
+              option.value = event.value || "";
+              option.textContent = event.label || event.value || "Grand Prix";
+              const shouldSelect = selectedValue && option.value === selectedValue;
+              if (shouldSelect) {
+                matchFound = true;
+              }
+              if (shouldSelect || (!selectedValue && index === 0)) {
+                option.selected = true;
+                matchFound = true;
+              }
+              modalGpSelect.appendChild(option);
+            });
+
+            if (!matchFound) {
+              modalGpSelect.selectedIndex = 0;
+            }
+
+            modalGpSelect.disabled = false;
+            if (modalSubmitButton) {
+              modalSubmitButton.disabled = false;
+            }
+          };
+
+          const refreshModalGrandPrix = async (year, preserveSelection = true) => {
+            if (!sessionSelectorAvailableEventsUrl || !modalGpSelect) {
+              return;
+            }
+
+            const previousValue = preserveSelection ? modalGpSelect.value : "";
+            modalGpSelect.disabled = true;
+            if (modalSubmitButton) {
+              modalSubmitButton.disabled = true;
+            }
+
+            try {
+              const response = await fetch(`${sessionSelectorAvailableEventsUrl}?year=${encodeURIComponent(year)}`, { cache: "no-store" });
+              if (!response.ok) {
+                throw new Error("Failed to fetch available events");
+              }
+              const payload = await response.json();
+              const events = Array.isArray(payload.events) ? payload.events : [];
+              setModalGpOptions(events, previousValue);
+            } catch (error) {
+              modalGpSelect.disabled = false;
+              if (modalSubmitButton) {
+                modalSubmitButton.disabled = false;
+              }
+            }
+          };
+
+          const closeSessionSelector = () => {
+            if (!sessionSelectorModal) {
+              return;
+            }
+            sessionSelectorModal.classList.remove("open");
+            sessionSelectorModal.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+            window.setTimeout(() => {
+              if (!sessionSelectorModal.classList.contains("open")) {
+                sessionSelectorModal.hidden = true;
+              }
+            }, 260);
+          };
+
+          if (sessionSelectorTrigger) {
+            sessionSelectorTrigger.addEventListener("click", (event) => {
+              event.preventDefault();
+              openSessionSelector();
+              if (modalYearSelect && modalGpSelect) {
+                refreshModalGrandPrix(modalYearSelect.value, true);
+              }
+            });
+          }
+
+          if (modalYearSelect && modalGpSelect) {
+            modalYearSelect.addEventListener("change", () => {
+              refreshModalGrandPrix(modalYearSelect.value, false);
+            });
+          }
+
+          sessionSelectorCloses.forEach((closeButton) => {
+            closeButton.addEventListener("click", (event) => {
+              event.preventDefault();
+              closeSessionSelector();
+            });
+          });
+
+          if (sessionSelectorModal) {
+            sessionSelectorModal.addEventListener("keydown", (event) => {
+              if (event.key === "Escape") {
+                closeSessionSelector();
+              }
+            });
+          }
+
+          const resultsSidebar = document.querySelector(".results-sidebar");
+          const resultsSidebarEdgeTrigger = document.querySelector(".results-sidebar-edge-trigger");
+          if (resultsSidebar) {
+            let sidebarHover = false;
+            let edgeHover = false;
+            let sidebarPinned = false;
+
+            const syncResultsSidebar = () => {
+              resultsSidebar.classList.toggle("open", edgeHover || sidebarPinned || sidebarHover);
+              resultsSidebar.classList.toggle("pinned", sidebarPinned);
+            };
+
+            if (resultsSidebarEdgeTrigger) {
+              resultsSidebarEdgeTrigger.addEventListener("mouseenter", () => {
+                edgeHover = true;
+                syncResultsSidebar();
+              });
+
+              resultsSidebarEdgeTrigger.addEventListener("mouseleave", () => {
+                edgeHover = false;
+                syncResultsSidebar();
+              });
+            }
+
+            resultsSidebar.addEventListener("mouseenter", () => {
+              sidebarHover = true;
+              syncResultsSidebar();
+            });
+
+            resultsSidebar.addEventListener("mouseleave", () => {
+              sidebarHover = false;
+              syncResultsSidebar();
+            });
+
+            resultsSidebar.addEventListener("click", (event) => {
+              if (event.target.closest("a, button, input, select, textarea, label")) {
+                return;
+              }
+              sidebarPinned = !sidebarPinned;
+              syncResultsSidebar();
+            });
+
+            window.addEventListener("blur", () => {
+              sidebarHover = false;
+              edgeHover = false;
+              sidebarPinned = false;
+              syncResultsSidebar();
+            });
+          }
+
           const syncHeaderSpacing = () => {
             if (!headerBadges) {
               return;
             }
             const open = Boolean(
               (qualifyingToggle && qualifyingToggle.classList.contains("open")) ||
+              (sprintQualifyingToggle && sprintQualifyingToggle.classList.contains("open")) ||
               (practiceToggle && practiceToggle.classList.contains("open")),
             );
             headerBadges.classList.toggle("open-menus", open);
           };
 
-          const activateMenu = (activeToggle, activeTrigger, activeMenu, inactiveToggle, inactiveTrigger, inactiveMenu) => {
+          const closeMenuPair = (toggle, trigger, menu) => {
+            closeSessionToggle(toggle, trigger);
+            setExpansionMenu(menu, false);
+          };
+
+          const activateMenu = (activeToggle, activeTrigger, activeMenu, inactivePairs) => {
             if (activeToggle.classList.contains("open")) {
-              closeSessionToggle(activeToggle, activeTrigger);
-              setExpansionMenu(activeMenu, false);
+              closeMenuPair(activeToggle, activeTrigger, activeMenu);
               syncHeaderSpacing();
               return;
             }
 
-            const inactiveIsOpen = inactiveToggle && inactiveToggle.classList.contains("open");
-            if (inactiveIsOpen) {
-              closeSessionToggle(inactiveToggle, inactiveTrigger);
-              setExpansionMenu(inactiveMenu, false);
-              syncHeaderSpacing();
-              window.setTimeout(() => {
-                setExpansionMenu(activeMenu, false);
-                window.requestAnimationFrame(() => {
-                  activeToggle.classList.add("open");
-                  activeTrigger.setAttribute("aria-expanded", "true");
-                  setExpansionMenu(activeMenu, true);
-                  syncHeaderSpacing();
-                });
-              }, 520);
-              return;
-            }
-
+            inactivePairs.forEach(([toggle, trigger, menu]) => closeMenuPair(toggle, trigger, menu));
             activeToggle.classList.add("open");
             activeTrigger.setAttribute("aria-expanded", "true");
             setExpansionMenu(activeMenu, true);
@@ -2416,22 +2880,48 @@
           if (qualifyingToggle && qualifyingTrigger) {
             qualifyingTrigger.addEventListener("click", (event) => {
               event.preventDefault();
-              activateMenu(qualifyingToggle, qualifyingTrigger, qualifyingMenu, practiceToggle, practiceTrigger, practiceMenu);
+              activateMenu(qualifyingToggle, qualifyingTrigger, qualifyingMenu, [
+                [sprintQualifyingToggle, sprintQualifyingTrigger, sprintQualifyingMenu],
+                [practiceToggle, practiceTrigger, practiceMenu],
+              ]);
+            });
+          }
+
+          if (sprintQualifyingToggle && sprintQualifyingTrigger) {
+            sprintQualifyingTrigger.addEventListener("click", (event) => {
+              event.preventDefault();
+              activateMenu(sprintQualifyingToggle, sprintQualifyingTrigger, sprintQualifyingMenu, [
+                [qualifyingToggle, qualifyingTrigger, qualifyingMenu],
+                [practiceToggle, practiceTrigger, practiceMenu],
+              ]);
             });
           }
 
           if (practiceToggle && practiceTrigger) {
             practiceTrigger.addEventListener("click", (event) => {
               event.preventDefault();
-              activateMenu(practiceToggle, practiceTrigger, practiceMenu, qualifyingToggle, qualifyingTrigger, qualifyingMenu);
+              activateMenu(practiceToggle, practiceTrigger, practiceMenu, [
+                [qualifyingToggle, qualifyingTrigger, qualifyingMenu],
+                [sprintQualifyingToggle, sprintQualifyingTrigger, sprintQualifyingMenu],
+              ]);
             });
           }
 
-          const savedScroll = sessionStorage.getItem(scrollKey);
-          if (savedScroll !== null) {
-            sessionStorage.removeItem(scrollKey);
-            window.scrollTo(0, Number(savedScroll) || 0);
-          }
+          viewLinks.forEach((link) => {
+            link.addEventListener("click", (event) => {
+              const href = link.getAttribute("href");
+              if (!href || href === window.location.pathname + window.location.search) {
+                return;
+              }
+
+              event.preventDefault();
+              document.body.classList.add("page-transitioning");
+              window.setTimeout(() => {
+                window.location.assign(href);
+              }, 160);
+            });
+          });
+
         })();
       </script>
       {% if selected_stint_data %}
@@ -2910,12 +3400,27 @@
             window.location.assign(href);
           };
 
+          const clearStints = () => {
+            stintBars.forEach((item) => {
+              item.classList.remove("is-hovered");
+              item.style.opacity = "";
+            });
+          };
+
+          const activateStint = (bar) => {
+            stintBars.forEach((item) => {
+              const active = item === bar;
+              item.classList.toggle("is-hovered", active);
+              item.style.opacity = active ? "1" : "0.26";
+            });
+          };
+
           stintBars.forEach((bar) => {
             bar.addEventListener("mouseenter", () => {
-              stintBars.forEach((item) => item.classList.toggle("is-hovered", item === bar));
+              activateStint(bar);
             });
             bar.addEventListener("mouseleave", () => {
-              stintBars.forEach((item) => item.classList.remove("is-hovered"));
+              clearStints();
             });
             bar.addEventListener("click", (event) => {
               event.preventDefault();
@@ -2928,6 +3433,8 @@
               }
             });
           });
+
+          svg.addEventListener("mouseleave", clearStints);
         })();
       </script>
       {% endif %}
@@ -3349,51 +3856,46 @@
         <div class="loading-card">
           <svg class="loading-wheel" viewBox="0 0 160 160" aria-hidden="true">
             <defs>
-              <radialGradient id="tire-fill" cx="50%" cy="50%" r="60%">
-                <stop offset="0%" stop-color="#2d3542"></stop>
-                <stop offset="48%" stop-color="#12161e"></stop>
-                <stop offset="100%" stop-color="#05070b"></stop>
+              <radialGradient id="tire-fill" cx="50%" cy="46%" r="66%">
+                <stop offset="0%" stop-color="#242a33"></stop>
+                <stop offset="52%" stop-color="#11161d"></stop>
+                <stop offset="100%" stop-color="#050608"></stop>
               </radialGradient>
-              <radialGradient id="wheel-face" cx="50%" cy="45%" r="62%">
-                <stop offset="0%" stop-color="#cfd4da"></stop>
-                <stop offset="52%" stop-color="#9ca3af"></stop>
-                <stop offset="100%" stop-color="#6b7280"></stop>
+              <radialGradient id="rim-fill" cx="50%" cy="42%" r="66%">
+                <stop offset="0%" stop-color="#f5f7fa"></stop>
+                <stop offset="52%" stop-color="#b9c0c8"></stop>
+                <stop offset="100%" stop-color="#7b838d"></stop>
               </radialGradient>
-              <linearGradient id="wheel-spoke" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#dbe1e7"></stop>
-                <stop offset="100%" stop-color="#8c949f"></stop>
+              <linearGradient id="spoke-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#eef2f7"></stop>
+                <stop offset="100%" stop-color="#8b93a0"></stop>
               </linearGradient>
               <linearGradient id="tire-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="rgba(255,255,255,0.16)"></stop>
-                <stop offset="58%" stop-color="rgba(255,255,255,0.04)"></stop>
+                <stop offset="0%" stop-color="rgba(255,255,255,0.22)"></stop>
+                <stop offset="60%" stop-color="rgba(255,255,255,0.05)"></stop>
                 <stop offset="100%" stop-color="rgba(255,255,255,0)"></stop>
               </linearGradient>
             </defs>
-            <circle cx="80" cy="80" r="60" fill="url(#tire-fill)" stroke="#020305" stroke-width="7"></circle>
-            <circle cx="80" cy="80" r="52" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2"></circle>
-            <g fill="#b8bec6" opacity="0.72">
-              <rect x="77" y="16" width="6" height="16" rx="2.5"></rect>
-              <rect x="77" y="128" width="6" height="16" rx="2.5"></rect>
-              <rect x="16" y="77" width="16" height="6" rx="2.5"></rect>
-              <rect x="128" y="77" width="16" height="6" rx="2.5"></rect>
+            <circle cx="80" cy="80" r="61" fill="url(#tire-fill)" stroke="#050608" stroke-width="6"></circle>
+            <path d="M 123.3 47.7 A 58 58 0 0 1 123.3 112.3" fill="none" stroke="#ff2020" stroke-width="5.5" stroke-linecap="round"></path>
+            <path d="M 36.7 112.3 A 58 58 0 0 1 36.7 47.7" fill="none" stroke="#ff2020" stroke-width="5.5" stroke-linecap="round"></path>
+            <circle cx="80" cy="80" r="39" fill="url(#rim-fill)" stroke="#707985" stroke-width="2.5"></circle>
+            <circle cx="80" cy="80" r="26" fill="#aab2bb" stroke="#f2f4f7" stroke-width="1.5"></circle>
+            <circle cx="80" cy="80" r="16.5" fill="#8f98a3" stroke="#dfe4ea" stroke-width="1.25"></circle>
+            <g fill="#75808d">
+              <circle cx="80" cy="44" r="2.2"></circle>
+              <circle cx="108" cy="60" r="2.2"></circle>
+              <circle cx="108" cy="100" r="2.2"></circle>
+              <circle cx="80" cy="116" r="2.2"></circle>
+              <circle cx="52" cy="100" r="2.2"></circle>
+              <circle cx="52" cy="60" r="2.2"></circle>
             </g>
-            <g fill="url(#wheel-spoke)">
-              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(0 80 80)"></rect>
-              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(30 80 80)"></rect>
-              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(60 80 80)"></rect>
-              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(90 80 80)"></rect>
-              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(120 80 80)"></rect>
-              <rect x="77" y="31" width="6" height="50" rx="2.5" transform="rotate(150 80 80)"></rect>
-            </g>
-            <circle cx="80" cy="80" r="41" fill="url(#wheel-face)" stroke="#6b7280" stroke-width="3"></circle>
-            <circle cx="80" cy="80" r="23" fill="#8f96a1" stroke="#e5e7eb" stroke-width="2"></circle>
-            <circle cx="80" cy="80" r="13" fill="#6b7280" stroke="#d1d5db" stroke-width="1.5"></circle>
-            <circle cx="80" cy="80" r="60" fill="none" stroke="#ff2d2d" stroke-width="5" stroke-dasharray="18 72" stroke-linecap="round" transform="rotate(-12 80 80)"></circle>
-            <circle cx="80" cy="80" r="60" fill="none" stroke="#ff2d2d" stroke-width="5" stroke-dasharray="18 72" stroke-linecap="round" transform="rotate(168 80 80)"></circle>
-            <path d="M41 71c8-22 25-36 39-36 14 0 31 11 40 31" fill="none" stroke="url(#tire-highlight)" stroke-width="9" stroke-linecap="round" opacity="0.9"></path>
-            <text x="80" y="24" text-anchor="middle" font-size="16" font-weight="900" fill="#ff2d2d" letter-spacing="0.06em">PIRELLI</text>
-            <text x="80" y="142" text-anchor="middle" font-size="16" font-weight="900" fill="#ff2d2d" letter-spacing="0.06em" transform="rotate(180 80 142)">PIRELLI</text>
-            <text x="80" y="85" text-anchor="middle" font-size="10" font-weight="800" fill="#1f2937" letter-spacing="0.16em">SOFT</text>
+            <path d="M39 69c9-24 26-37 41-37 14 0 31 11 40 31" fill="none" stroke="url(#tire-highlight)" stroke-width="8" stroke-linecap="round" opacity="0.85"></path>
+            <text x="80" y="31" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="900" fill="#ff2020" letter-spacing="0.08em">PIRELLI</text>
+            <text x="80" y="126" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="900" fill="#ff2020" letter-spacing="0.08em" transform="rotate(180 80 126)">
+              <tspan dy="0.08em">P</tspan>
+              <tspan dy="0.01em"> ZERO</tspan>
+            </text>
           </svg>
           <h2 class="loading-title">FastF1 is loading</h2>
           <p class="loading-copy">{{ loading_stage|default("Session data is being fetched") }} · {{ loading_progress|default(0) }}%</p>
