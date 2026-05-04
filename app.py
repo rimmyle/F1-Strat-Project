@@ -231,6 +231,39 @@ def _format_lap_time(value):
     return f"{whole_seconds}.{millis:03d}" if millis else f"{whole_seconds}"
 
 
+def _format_race_result_time(value, position=None):
+    if value in (None, "", "-"):
+        return "-"
+
+    try:
+        duration = pd.to_timedelta(value)
+    except Exception:
+        return _clean_value(value)
+
+    total_seconds = float(duration.total_seconds())
+    sign = "+" if str(position).strip() != "1" else ""
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    seconds = total_seconds % 60
+    whole_seconds = int(seconds)
+    millis = int(round((seconds - whole_seconds) * 1000))
+    if millis == 1000:
+        whole_seconds += 1
+        millis = 0
+        if whole_seconds == 60:
+            minutes += 1
+            whole_seconds = 0
+        if minutes == 60:
+            hours += 1
+            minutes = 0
+
+    if hours > 0:
+        return f"{sign}{hours}:{minutes:02d}:{whole_seconds:02d}.{millis:03d}"
+    if minutes > 0:
+        return f"{sign}{minutes}:{whole_seconds:02d}.{millis:03d}"
+    return f"{sign}{whole_seconds}.{millis:03d}"
+
+
 def _session_rows(session):
     results = getattr(session, "results", None)
     if results is None or results.empty:
@@ -442,6 +475,7 @@ def _driver_options(session, results=None):
         abbreviation = _clean_value(row.get("Abbreviation", driver_number))
         full_name = _clean_value(row.get("FullName", abbreviation))
         team_name = _clean_value(row.get("TeamName", "-"))
+        result_time = _format_race_result_time(row.get("Time", "-"), row.get("Position", "-"))
         headshot_url = _driver_headshot_url(driver_id, row.get("HeadshotUrl", ""))
         team_badge_text, team_badge_color = _team_badge(team_name)
         options.append(
@@ -456,8 +490,52 @@ def _driver_options(session, results=None):
                 "team_logo_url": _team_logo_url(team_name),
                 "headshot_url": headshot_url,
                 "label": f"{abbreviation} - {full_name}",
+                "result_time": result_time,
             }
         )
+    seen = set()
+    deduped = []
+    for option in options:
+        if option["value"] in seen:
+            continue
+        seen.add(option["value"])
+        deduped.append(option)
+    return deduped
+
+
+def _pit_strategy_driver_options(pit_strategy_graph):
+    if not pit_strategy_graph:
+        return []
+
+    drivers = pit_strategy_graph.get("drivers", [])
+    if not drivers:
+        return []
+
+    options = []
+    for driver in drivers:
+        driver_number = _clean_value(driver.get("driver_number", "")).strip()
+        abbreviation = _clean_value(driver.get("abbreviation", "")).strip()
+        full_name = _clean_value(driver.get("driver", "")).strip()
+        team_name = _clean_value(driver.get("team", "-")).strip()
+        driver_id = _clean_value(driver.get("driver_id", driver_number)).strip() or driver_number
+        headshot_url = _driver_headshot_url(driver_id, driver.get("headshot_url", ""))
+        team_badge_text, team_badge_color = _team_badge(team_name)
+        options.append(
+            {
+                "value": driver_number,
+                "driver_id": driver_id,
+                "abbreviation": abbreviation,
+                "full_name": full_name,
+                "team_name": team_name,
+                "team_badge_text": team_badge_text,
+                "team_badge_color": team_badge_color,
+                "team_logo_url": _team_logo_url(team_name),
+                "headshot_url": headshot_url,
+                "label": f"{abbreviation} - {full_name}" if abbreviation and full_name else full_name or abbreviation or driver_number,
+                "result_time": _clean_value(driver.get("time_label", "-")).strip() or "-",
+            }
+        )
+
     seen = set()
     deduped = []
     for option in options:
@@ -851,6 +929,31 @@ def _normalize_driver_number(driver_number):
         return driver_number
 
 
+def _wait_for_session_laps(session, attempts=20, delay=0.5):
+    if not session:
+        return None
+
+    laps = None
+    for attempt in range(attempts):
+        try:
+            laps = session.laps
+            if laps is not None:
+                return laps
+        except Exception:
+            laps = None
+
+        if attempt == 0:
+            try:
+                session.load(laps=True)
+            except Exception:
+                pass
+
+        if attempt < attempts - 1:
+            time.sleep(delay)
+
+    return laps
+
+
 def _safe_driver_laps(session, driver_number):
     if not session or not driver_number:
         return None
@@ -867,7 +970,7 @@ def _safe_driver_laps(session, driver_number):
         pass
 
     try:
-        driver_laps = session.laps
+        driver_laps = _wait_for_session_laps(session)
     except Exception:
         return None
 
@@ -894,7 +997,7 @@ def _safe_session_laps(session):
         return None
 
     try:
-        laps = session.laps
+        laps = _wait_for_session_laps(session)
         if laps is not None:
             return laps
     except Exception:
@@ -902,7 +1005,7 @@ def _safe_session_laps(session):
 
     try:
         session.load(laps=True)
-        return session.laps
+        return _wait_for_session_laps(session, attempts=10, delay=0.5)
     except Exception:
         return None
 
@@ -1032,70 +1135,110 @@ def _lap_record(lap, telemetry):
 
 
 def _race_stints(session, driver_number, session_code):
-    if not session or not driver_number or str(session_code).strip().upper() != "R":
+    if not session or not driver_number or str(session_code).strip().upper() not in {"R", "S"}:
         return None
 
     driver_laps = _safe_driver_laps(session, driver_number)
-    if driver_laps is None or driver_laps.empty:
-        return None
-
-    if "Stint" not in driver_laps.columns:
-        return None
-
+    driver_name = _clean_value(driver_number)
     stints = []
-    ordered = driver_laps[driver_laps["LapNumber"].notna()].copy()
-    if ordered.empty:
-        return None
 
-    ordered = ordered.sort_values(by=["LapNumber", "Time"])
-    for stint_number, stint_laps in ordered.groupby("Stint", dropna=True):
-        stint_laps = stint_laps.sort_values(by=["LapNumber", "Time"])
-        if stint_laps.empty:
-            continue
+    if driver_laps is not None and not driver_laps.empty:
+        if "Driver" in driver_laps.columns:
+            driver_name = _clean_value(driver_laps.iloc[0].get("Driver", driver_name))
 
-        compound_series = stint_laps["Compound"].dropna().astype(str) if "Compound" in stint_laps.columns else pd.Series([], dtype=str)
-        compound = compound_series[compound_series.str.strip() != ""].iloc[0] if not compound_series.empty else "-"
+        ordered = driver_laps[driver_laps["LapNumber"].notna()].copy() if "LapNumber" in driver_laps.columns else pd.DataFrame()
+        if not ordered.empty and "Stint" in ordered.columns:
+            ordered = ordered.sort_values(by=["LapNumber", "Time"])
+            for stint_number, stint_laps in ordered.groupby("Stint", dropna=True):
+                stint_laps = stint_laps.sort_values(by=["LapNumber", "Time"])
+                if stint_laps.empty:
+                    continue
 
-        fresh_series = stint_laps["FreshTyre"].dropna() if "FreshTyre" in stint_laps.columns else pd.Series([], dtype=object)
-        fresh_tyre = bool(fresh_series.iloc[0]) if not fresh_series.empty and pd.notna(fresh_series.iloc[0]) else False
+                compound_series = stint_laps["Compound"].dropna().astype(str) if "Compound" in stint_laps.columns else pd.Series([], dtype=str)
+                compound = compound_series[compound_series.str.strip() != ""].iloc[0] if not compound_series.empty else "-"
 
-        lap_numbers = stint_laps["LapNumber"].dropna().astype(int).tolist()
-        laps = []
-        for _, lap_row in stint_laps.iterrows():
-            lap_number = lap_row.get("LapNumber")
-            if pd.isna(lap_number):
-                continue
-            lap_number_int = int(lap_number)
-            lap_time = lap_row.get("LapTime")
-            lap_time_seconds = _lap_time_seconds(lap_time)
-            laps.append(
-                {
-                    "lap_number": lap_number_int,
-                    "lap_time": _clean_value(lap_time),
-                    "lap_time_seconds": lap_time_seconds,
-                    "value": f"{_clean_value(driver_number)}:{lap_number_int}",
-                    "compound": _clean_value(lap_row.get("Compound", "-")),
-                    "fresh_tyre": bool(lap_row.get("FreshTyre", False)) if pd.notna(lap_row.get("FreshTyre", False)) else False,
-                }
-            )
-        stints.append(
-            {
-                "stint": int(stint_number) if pd.notna(stint_number) else 0,
-                "start_lap": min(lap_numbers) if lap_numbers else None,
-                "end_lap": max(lap_numbers) if lap_numbers else None,
-                "lap_count": len(stint_laps),
-                "compound": compound,
-                "tyre_color": _tyre_color(compound),
-                "fresh_tyre": fresh_tyre,
-                "laps": laps,
-            }
-        )
+                fresh_series = stint_laps["FreshTyre"].dropna() if "FreshTyre" in stint_laps.columns else pd.Series([], dtype=object)
+                fresh_tyre = bool(fresh_series.iloc[0]) if not fresh_series.empty and pd.notna(fresh_series.iloc[0]) else False
+
+                lap_numbers = stint_laps["LapNumber"].dropna().astype(int).tolist()
+                laps = []
+                for _, lap_row in stint_laps.iterrows():
+                    lap_number = lap_row.get("LapNumber")
+                    if pd.isna(lap_number):
+                        continue
+                    lap_number_int = int(lap_number)
+                    lap_time = lap_row.get("LapTime")
+                    lap_time_seconds = _lap_time_seconds(lap_time)
+                    laps.append(
+                        {
+                            "lap_number": lap_number_int,
+                            "lap_time": _clean_value(lap_time),
+                            "lap_time_seconds": lap_time_seconds,
+                            "value": f"{_clean_value(driver_number)}:{lap_number_int}",
+                            "compound": _clean_value(lap_row.get("Compound", "-")),
+                            "fresh_tyre": bool(lap_row.get("FreshTyre", False)) if pd.notna(lap_row.get("FreshTyre", False)) else False,
+                        }
+                    )
+                stints.append(
+                    {
+                        "stint": int(stint_number) if pd.notna(stint_number) else 0,
+                        "start_lap": min(lap_numbers) if lap_numbers else None,
+                        "end_lap": max(lap_numbers) if lap_numbers else None,
+                        "lap_count": len(stint_laps),
+                        "compound": compound,
+                        "tyre_color": _tyre_color(compound),
+                        "fresh_tyre": fresh_tyre,
+                        "laps": laps,
+                    }
+                )
 
     if not stints:
-        return None
+        results = getattr(session, "results", None)
+        if results is None or results.empty:
+            return None
+
+        result_row = results[results["DriverNumber"].astype(str).str.strip() == str(driver_number).strip()]
+        if result_row.empty:
+            return None
+
+        row = result_row.iloc[0]
+        lap_total = int(float(row.get("Laps", 0) or 0))
+        if lap_total <= 0:
+            return None
+
+        driver_name = _clean_value(row.get("FullName", driver_name))
+        inferred_compound = "-"
+        if driver_laps is not None and not driver_laps.empty and "Compound" in driver_laps.columns:
+            compound_series = driver_laps["Compound"].dropna().astype(str)
+            compound_series = compound_series[compound_series.str.strip() != ""]
+            if not compound_series.empty:
+                inferred_compound = compound_series.iloc[0]
+        placeholder_laps = [
+            {
+                "lap_number": lap_number,
+                "lap_time": "-",
+                "lap_time_seconds": None,
+                "value": f"{_clean_value(driver_number)}:{lap_number}",
+                "compound": _clean_value(inferred_compound),
+                "fresh_tyre": False,
+            }
+            for lap_number in range(1, lap_total + 1)
+        ]
+        stints = [
+            {
+                "stint": 1,
+                "start_lap": 1,
+                "end_lap": lap_total,
+                "lap_count": lap_total,
+                "compound": _clean_value(inferred_compound),
+                "tyre_color": _tyre_color(inferred_compound),
+                "fresh_tyre": False,
+                "laps": placeholder_laps,
+            }
+        ]
 
     return {
-        "driver": _clean_value(driver_laps.iloc[0].get("Driver", "-")),
+        "driver": driver_name,
         "stints": stints,
         "lap_total": int(sum(item["lap_count"] for item in stints)),
     }
@@ -1140,7 +1283,7 @@ def _pit_strategy_graph(session):
             return "DNF"
         if "lapped" in status_text or driver_laps < leader_laps:
             laps_down = max(leader_laps - driver_laps, 1)
-            return f"+{laps_down} Laps"
+            return f"+{laps_down} Lap" if laps_down == 1 else f"+{laps_down} Laps"
         return format_session_time(result_row.get("Time", ""), prefix_plus=True)
 
     for driver in driver_meta:
@@ -2076,6 +2219,18 @@ def _load_session_data(year, gp, session_code):
     session = event.get_session(session_code)
     session.load(laps=True)
     rows = _session_rows(session)
+    race_position_graph = None
+    pit_strategy_graph = None
+    if str(session_code).strip().upper() == "R":
+        try:
+            race_position_graph = _race_position_graph(session)
+        except Exception:
+            race_position_graph = None
+        try:
+            pit_strategy_graph = _pit_strategy_graph(session)
+        except Exception:
+            pit_strategy_graph = None
+    stint_cache = _build_session_stint_cache(session, session_code)
     return {
         "status": "ready",
         "year": int(year),
@@ -2091,7 +2246,37 @@ def _load_session_data(year, gp, session_code):
         "session_title": f"{int(year)} {getattr(session.event, 'EventName', gp)}",
         "session": session,
         "rows": rows,
+        "race_position_graph": race_position_graph,
+        "pit_strategy_graph": pit_strategy_graph,
+        "stint_cache": stint_cache,
     }
+
+
+def _stint_cache_key(session_code, driver_number):
+    return f"{str(session_code).strip().upper()}:{_normalize_driver_number(driver_number)}"
+
+
+def _build_session_stint_cache(session, session_code):
+    if not session or str(session_code).strip().upper() not in {"R", "S"}:
+        return {}
+
+    cache = {}
+    results = getattr(session, "results", None)
+    if results is None or results.empty or "DriverNumber" not in results.columns:
+        return cache
+
+    driver_numbers = [
+        _normalize_driver_number(value)
+        for value in results["DriverNumber"].dropna().astype(str).tolist()
+    ]
+    for driver_number in driver_numbers:
+        if not driver_number or driver_number in cache:
+            continue
+        try:
+            cache[driver_number] = _race_stints(session, driver_number, session_code)
+        except Exception:
+            cache[driver_number] = None
+    return cache
 
 
 def _start_session_load(year, gp, session_code):
@@ -2237,22 +2422,26 @@ def results():
     session_code = str(ctx["session_code"]).strip().upper()
     session_is_race = session_code == "R"
     session_is_qualifying = session_code in {"Q", "SQ"}
-    session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"]) if data and (session_is_race or session_is_qualifying) else None
+    session = data.get("session") if data and data.get("session") is not None else None
+    if session is None and data and (session_is_race or session_is_qualifying):
+        session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
     driver_number = request.args.get("driver", "").strip()
     qualifying_phase = request.args.get("phase", "Q1").strip().upper() if session_is_qualifying else ""
     if qualifying_phase not in {"Q1", "Q2", "Q3"}:
         qualifying_phase = "Q1"
-    race_position_graph = None
-    pit_strategy_graph = None
+    race_position_graph = data.get("race_position_graph") if data else None
+    pit_strategy_graph = data.get("pit_strategy_graph") if data else None
     if session_is_race and session:
-        try:
-            race_position_graph = _race_position_graph(session)
-        except Exception:
-            race_position_graph = None
-        try:
-            pit_strategy_graph = _pit_strategy_graph(session)
-        except Exception:
-            pit_strategy_graph = None
+        if race_position_graph is None:
+            try:
+                race_position_graph = _race_position_graph(session)
+            except Exception:
+                race_position_graph = None
+        if pit_strategy_graph is None:
+            try:
+                pit_strategy_graph = _pit_strategy_graph(session)
+            except Exception:
+                pit_strategy_graph = None
     qualifying_results = _qualifying_driver_results(session, qualifying_phase) if session_is_qualifying else None
     qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_phase) if session_is_qualifying else []
     driver_options = _driver_options(session, results=qualifying_results) if session else []
@@ -2328,7 +2517,9 @@ def data():
         error = ctx["schedule_error"]
     if not data_state and not loading and not error:
         error = "Session not available for this selection."
-    session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"]) if data_state else None
+    session = data_state.get("session") if data_state and data_state.get("session") is not None else None
+    if session is None and data_state:
+        session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
     driver_number = request.args.get("driver", "").strip()
     driver_requested = bool(driver_number)
     lap_key = request.args.get("lap", "")
@@ -2344,38 +2535,7 @@ def data():
 
     qualifying_results = _qualifying_driver_results(session, qualifying_phase) if session_is_qualifying else None
     qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_phase) if session_is_qualifying else []
-    driver_options = _driver_options(session, results=qualifying_results) if session else []
-    driver_groups = _driver_groups(session, results=qualifying_results) if session else []
-    if driver_requested:
-        driver_number = _resolve_driver(session, driver_number, driver_options) if session else driver_number
-    else:
-        driver_number = None
-    selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
-    if selected_driver_data is None and driver_requested and driver_options:
-        selected_driver_data = next((option for option in driver_options if option["value"] == request.args.get("driver", "").strip()), None)
-    qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
-    qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
-    driver_lap_options = _lap_options(session, driver_number) if session and driver_number else []
     race_stints = None
-    if session and driver_number:
-        race_stints = _qualifying_phases(session, driver_number, ctx["session_code"]) if session_is_qualifying else _race_stints(session, driver_number, ctx["session_code"])
-    selected_stint = _parse_stint_value(stint_key)
-    selected_lap_value = lap_key if lap_requested else ""
-    selected_lap_data = None
-    if session and driver_number:
-        if lap_requested:
-            selected_lap_data = _resolve_lap(session, driver_number, lap_key)
-            if selected_lap_data is not None:
-                selected_lap_value = f"{_clean_value(driver_number)}:{_clean_value(selected_lap_data.get('LapNumber', ''))}"
-                if selected_stint is None:
-                    selected_stint = _parse_stint_value(selected_lap_data.get("Stint", None))
-    selected_stint_data = None
-    if race_stints and race_stints.get("stints") and selected_stint is not None:
-        selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
-    selected_qualifying_run = None
-    if session_is_qualifying and qualifying_run_laps and lap_requested:
-        selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
-
     telemetry_columns = []
     telemetry_rows = []
     telemetry_summary = None
@@ -2384,6 +2544,10 @@ def data():
     track_map = None
     race_position_graph = None
     pit_strategy_graph = None
+    selected_stint = _parse_stint_value(stint_key)
+    selected_lap_value = lap_key if lap_requested else ""
+    selected_lap_data = None
+    stint_cache = data_state.get("stint_cache", {}) if data_state else {}
     if session_is_race and session:
         try:
             race_position_graph = _race_position_graph(session)
@@ -2406,6 +2570,67 @@ def data():
     session_badge = ctx["session_badge"]
     if data_state:
         session_badge = f"{data_state['year']} {data_state['event_name']} - {data_state['session_name']}"
+
+    if session_is_race and session:
+        driver_options = _driver_options(session, results=getattr(session, "results", None))
+    else:
+        driver_options = _driver_options(session, results=qualifying_results) if session else []
+    driver_groups = _driver_groups(session, results=qualifying_results) if session else []
+
+    driver_result_times = {}
+    if pit_strategy_graph and pit_strategy_graph.get("drivers"):
+        for driver in pit_strategy_graph["drivers"]:
+            result_time = _clean_value(driver.get("time_label", "-")).strip()
+            if not result_time or result_time == "-":
+                continue
+            driver_number_key = _clean_value(driver.get("driver_number", "")).strip()
+            full_name_key = _clean_value(driver.get("driver", "")).strip()
+            abbreviation_key = _clean_value(driver.get("abbreviation", "")).strip()
+            if driver_number_key:
+                driver_result_times[driver_number_key] = result_time
+            if full_name_key:
+                driver_result_times[full_name_key] = result_time
+            if abbreviation_key:
+                driver_result_times[abbreviation_key] = result_time
+    elif data_state and not session_is_qualifying:
+        for row in data_state.get("rows", []):
+            result_time = _format_race_result_time(row.get("Time", "-"), row.get("Position", "-"))
+            if result_time and result_time != "-":
+                driver_result_times[_clean_value(row.get("FullName", "")).strip()] = result_time
+                driver_result_times[_clean_value(row.get("Abbreviation", "")).strip()] = result_time
+
+    if driver_requested:
+        driver_number = _resolve_driver(session, driver_number, driver_options) if session else driver_number
+    else:
+        driver_number = None
+    selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
+    if selected_driver_data is None and driver_requested and driver_options:
+        selected_driver_data = next((option for option in driver_options if option["value"] == request.args.get("driver", "").strip()), None)
+    qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
+    qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
+    driver_lap_options = _lap_options(session, driver_number) if session and driver_number else []
+    if session and driver_number:
+        if session_is_qualifying:
+            race_stints = _qualifying_phases(session, driver_number, ctx["session_code"])
+        else:
+            cache_key = _normalize_driver_number(driver_number)
+            race_stints = stint_cache.get(cache_key) if cache_key in stint_cache else None
+            if race_stints is None and cache_key:
+                race_stints = _race_stints(session, driver_number, ctx["session_code"])
+                stint_cache[cache_key] = race_stints
+    if session and driver_number:
+        if lap_requested:
+            selected_lap_data = _resolve_lap(session, driver_number, lap_key)
+            if selected_lap_data is not None:
+                selected_lap_value = f"{_clean_value(driver_number)}:{_clean_value(selected_lap_data.get('LapNumber', ''))}"
+                if selected_stint is None:
+                    selected_stint = _parse_stint_value(selected_lap_data.get("Stint", None))
+    selected_stint_data = None
+    if race_stints and race_stints.get("stints") and selected_stint is not None:
+        selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
+    selected_qualifying_run = None
+    if session_is_qualifying and qualifying_run_laps and lap_requested:
+        selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
 
     return render_template(
         "index.html",
@@ -2448,6 +2673,7 @@ def data():
         },
         drivers=driver_options,
         driver_groups=driver_groups,
+        driver_result_times=driver_result_times,
         selected_driver=driver_number,
         selected_driver_data=selected_driver_data,
         driver_lap_options=driver_lap_options,
