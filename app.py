@@ -13,6 +13,11 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+FASTF1_CACHE_DIR = Path(__file__).with_name(".fastf1-cache")
+try:
+    fastf1.Cache.enable_cache(str(FASTF1_CACHE_DIR))
+except Exception:
+    pass
 YEAR_MIN = 2018
 YEAR_MAX = datetime.now().year
 SESSION_CHOICES = [
@@ -420,8 +425,8 @@ def _driver_headshot_url(driver_id, headshot_url=""):
         local_name = f"{driver_id}.png"
         local_path = DRIVER_HEADSHOT_DIR / local_name
         if local_path.exists():
-            return url_for("static", filename=f"driver-headshots/{local_name}")
-    return _clean_value(headshot_url) if headshot_url else url_for("static", filename=TEAM_DEFAULT_LOGO)
+            return f"/static/driver-headshots/{local_name}"
+    return _clean_value(headshot_url) if headshot_url else f"/static/{TEAM_DEFAULT_LOGO}"
 
 
 def _tyre_color(compound):
@@ -579,7 +584,7 @@ def _qualifying_driver_results(session, phase):
     if phase_code not in results.columns:
         return results
 
-    ordered = results.copy()
+    ordered = results.copy() if phase_code == "Q1" else results[results[phase_code].notna()].copy()
     return ordered.sort_values(by=phase_code, na_position="last")
 
 
@@ -593,29 +598,10 @@ def _qualifying_driver_key(row):
 
 def _qualifying_driver_rows(session):
     results = getattr(session, "results", None)
-    laps = _cached_session_laps(session)
-    frames = []
-
-    if results is not None and not results.empty:
-        frames.append(results)
-    if laps is not None and not laps.empty and "DriverNumber" in laps.columns:
-        lap_drivers = laps.copy()
-        if "LapNumber" in lap_drivers.columns:
-            lap_drivers = lap_drivers[lap_drivers["LapNumber"].notna()].copy()
-        if not lap_drivers.empty:
-            group_columns = [column for column in ["DriverNumber", "Driver", "DriverId", "HeadshotUrl", "Abbreviation", "FullName", "TeamName", "Position"] if column in lap_drivers.columns]
-            if group_columns:
-                lap_drivers = lap_drivers.loc[:, group_columns].copy()
-                lap_drivers["_DriverKey"] = lap_drivers.apply(_qualifying_driver_key, axis=1)
-                lap_drivers = lap_drivers[lap_drivers["_DriverKey"].astype(str).str.strip() != ""].copy()
-                if not lap_drivers.empty:
-                    lap_drivers = lap_drivers.drop_duplicates(subset=["_DriverKey"]).copy()
-                frames.append(lap_drivers)
-
-    if not frames:
+    if results is None or results.empty:
         return None
 
-    combined = pd.concat(frames, ignore_index=True, sort=False)
+    combined = results.copy()
     combined["_DriverKey"] = combined.apply(_qualifying_driver_key, axis=1)
     combined = combined[combined["_DriverKey"].astype(str).str.strip() != ""].copy()
     combined = combined.drop_duplicates(subset=["_DriverKey"], keep="first")
@@ -654,6 +640,51 @@ def _qualifying_finalize_run_laps(run_laps):
             lap["lap_type"] = "Flying Lap"
 
 
+def _qualifying_phase_windows(session):
+    phase_windows = {}
+    if not session:
+        return phase_windows
+
+    event = getattr(session, "event", None)
+    session_code = "SQ" if "sprint" in str(getattr(session, "name", "")).strip().lower() else "Q"
+    session_start = None
+    if event is not None:
+        if session_code == "SQ":
+            session_start = getattr(event, "Session2Date", None)
+        else:
+            session_start = getattr(event, "Session4Date", None)
+    if session_start is None:
+        session_start = getattr(session, "date", None)
+    if session_start is None:
+        return phase_windows
+
+    try:
+        messages = getattr(session, "race_control_messages", None)
+    except Exception:
+        messages = None
+    if messages is None or messages.empty or "Message" not in messages.columns:
+        return phase_windows
+
+    pattern = re.compile(r"\b(Q[23])\s+WILL\s+START\s+AT\s+(\d{1,2}):(\d{2})\b", re.IGNORECASE)
+    session_start_ts = pd.Timestamp(session_start)
+    for message in messages["Message"].astype(str):
+        match = pattern.search(message)
+        if not match:
+            continue
+        phase_code = match.group(1).upper()
+        hour = int(match.group(2))
+        minute = int(match.group(3))
+        try:
+            phase_start_ts = session_start_ts.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        except Exception:
+            continue
+        if phase_start_ts < session_start_ts:
+            phase_start_ts += pd.Timedelta(days=1)
+        phase_windows[phase_code] = max(0.0, float((phase_start_ts - session_start_ts).total_seconds()))
+
+    return phase_windows
+
+
 def _qualifying_phase_rows(session, phase):
     results = _qualifying_driver_rows(session)
     if results is None or results.empty:
@@ -664,7 +695,7 @@ def _qualifying_phase_rows(session, phase):
         phase_code = "Q1"
 
     rows = []
-    ordered = results.copy()
+    ordered = results.copy() if phase_code == "Q1" else results[results[phase_code].notna()].copy() if phase_code in results.columns else results.copy()
     if phase_code in ordered.columns:
         ordered = ordered.sort_values(by=phase_code, na_position="last")
     for _, row in ordered.iterrows():
@@ -676,6 +707,25 @@ def _qualifying_phase_rows(session, phase):
         team_name = _clean_value(row.get("TeamName", "-"))
         phase_time = _format_lap_time(row.get(phase_code, None))
         phase_seconds = _lap_time_seconds(row.get(phase_code, None))
+        if phase_code == "Q1" and phase_seconds is None and driver_number:
+            try:
+                driver_runs = _qualifying_run_laps(session, driver_number)
+                phase_windows = _qualifying_phase_windows(session)
+                q2_start = phase_windows.get("Q2")
+            except Exception:
+                driver_runs = []
+                q2_start = None
+            q1_run_seconds = [
+                run.get("flying_time_seconds")
+                for run in driver_runs
+                if run.get("flying_time_seconds") is not None
+                and run.get("start_seconds") is not None
+                and run.get("end_seconds") is not None
+                and (q2_start is None or float(run.get("start_seconds")) < float(q2_start))
+            ]
+            if q1_run_seconds:
+                phase_seconds = min(q1_run_seconds)
+                phase_time = _format_lap_time(pd.to_timedelta(phase_seconds, unit="s"))
         if phase_seconds is None:
             phase_time = "No Time"
         headshot_url = _driver_headshot_url(driver_id, row.get("HeadshotUrl", ""))
@@ -886,6 +936,8 @@ def _qualifying_run_laps(session, driver_number):
         if not run or not run["laps"]:
             return None
         _qualifying_finalize_run_laps(run["laps"])
+        start_seconds = next((lap.get("lap_start_seconds") for lap in run["laps"] if lap.get("lap_start_seconds") is not None), None)
+        end_seconds = next((lap.get("lap_end_seconds") for lap in reversed(run["laps"]) if lap.get("lap_end_seconds") is not None), None)
         return {
             "run_number": run["run_number"],
             "laps": run["laps"],
@@ -901,6 +953,9 @@ def _qualifying_run_laps(session, driver_number):
                 (lap["value"] for lap in run["laps"] if lap["lap_type"] == "Flying Lap" and lap["lap_time_seconds"] is not None),
                 next((lap["value"] for lap in run["laps"] if lap["lap_time_seconds"] is not None), run["laps"][0]["value"]),
             ),
+            "start_seconds": start_seconds,
+            "end_seconds": end_seconds,
+            "duration_seconds": max((end_seconds or 0) - (start_seconds or 0), 1.0) if start_seconds is not None and end_seconds is not None else None,
         }
 
     for _, row in valid.iterrows():
@@ -940,6 +995,10 @@ def _qualifying_run_laps(session, driver_number):
                 "lap_number": _clean_value(lap_number),
                 "lap_time": lap_time_text,
                 "lap_time_seconds": lap_time_seconds,
+                "lap_start_seconds": _lap_time_seconds(row.get("LapStartTime", None)),
+                "lap_end_seconds": _lap_time_seconds(row.get("Time", None)),
+                "pit_out_seconds": _lap_time_seconds(row.get("PitOutTime", None)),
+                "pit_in_seconds": _lap_time_seconds(row.get("PitInTime", None)),
                 "compound": compound,
                 "lap_type": lap_role,
                 "is_flying": lap_role == "Flying Lap",
@@ -958,224 +1017,305 @@ def _qualifying_run_laps(session, driver_number):
     return runs
 
 
-def _qualifying_timeline_graph(session, phase):
-    results = _qualifying_driver_rows(session)
-    if results is None or results.empty:
+def _qualifying_timeline_graph(session, phase=None, split_sections=True):
+    cache_key = "_codex_qualifying_timeline_split" if split_sections else "_codex_qualifying_timeline_combined"
+    cached_graph = getattr(session, cache_key, None) if session else None
+    if cached_graph is not None:
+        return cached_graph
+
+    event = getattr(session, "event", None)
+    session_year = getattr(getattr(event, "EventDate", None), "year", None)
+    event_name = getattr(event, "EventName", None)
+    session_code = "SQ" if "sprint" in str(getattr(session, "name", "")).strip().lower() else "Q"
+    timing_session = session
+    if session_year and event_name:
+        try:
+            timing_session = fastf1.get_session(session_year, event_name, session_code)
+            timing_session.load(laps=True, telemetry=False, weather=False, messages=True)
+        except Exception:
+            timing_session = session
+
+    driver_rows_source = _qualifying_driver_rows(timing_session)
+    if driver_rows_source is None or driver_rows_source.empty:
+        driver_rows_source = _qualifying_driver_rows(session)
+    if driver_rows_source is None or driver_rows_source.empty:
         return None
 
-    phase_code = str(phase or "Q1").strip().upper()
-    if phase_code not in {"Q1", "Q2", "Q3"}:
-        phase_code = "Q1"
-    if phase_code in results.columns:
-        results = results.sort_values(by=phase_code, na_position="last")
+    use_phase_sections = split_sections
+    driver_phase_reference_cache = {}
 
-    phase_window_seconds = 0
-
-    drivers = []
-    for _, row in results.iterrows():
-        driver_number = _clean_value(row.get("DriverNumber", "")).strip()
-        abbreviation = _clean_value(row.get("Abbreviation", "")).strip()
-        driver_key = driver_number or abbreviation or _clean_value(row.get("Driver", "")).strip() or _clean_value(row.get("FullName", "")).strip()
+    def driver_phase_references(driver_number):
+        driver_key = _normalize_driver_number(driver_number)
         if not driver_key:
-            continue
+            return {}
+        cached = driver_phase_reference_cache.get(driver_key)
+        if cached is not None:
+            return cached
 
-        driver_laps = _safe_driver_laps(session, driver_key)
-        valid = driver_laps.copy().sort_values(by=["LapNumber", "Time"]) if driver_laps is not None and not driver_laps.empty else pd.DataFrame()
-        runs = []
-        current_run = None
-        run_number = 0
+        references = {}
+        row_match = None
+        if driver_rows_source is not None and not driver_rows_source.empty:
+            try:
+                row_match = driver_rows_source[driver_rows_source["DriverNumber"].astype(str).str.strip() == driver_key]
+            except Exception:
+                row_match = None
+            if row_match is None or row_match.empty:
+                try:
+                    row_match = driver_rows_source[driver_rows_source["Abbreviation"].astype(str).str.strip().str.upper() == driver_key.upper()]
+                except Exception:
+                    row_match = None
+        if row_match is None or row_match.empty:
+            driver_phase_reference_cache[driver_key] = references
+            return references
 
-        def finish_run(run):
-            if not run or not run["laps"]:
-                return None
-            _qualifying_finalize_run_laps(run["laps"])
-            start_seconds = run.get("start_seconds")
-            end_seconds = run.get("end_seconds")
-            if start_seconds is None or end_seconds is None or end_seconds <= start_seconds:
-                return None
+        row = row_match.iloc[0]
+        for phase_code in ("Q1", "Q2", "Q3"):
+            phase_seconds = _lap_time_seconds(row.get(phase_code, None))
+            if phase_seconds is None:
+                continue
+            references[phase_code] = float(phase_seconds)
 
-            flying_laps = [lap for lap in run["laps"] if lap["is_flying"] and lap["lap_time_seconds"] is not None]
-            if flying_laps:
-                representative = min(flying_laps, key=lambda lap: lap["lap_time_seconds"])
-            else:
-                representative = next(
-                    (lap for lap in run["laps"] if lap["lap_time_seconds"] is not None),
-                    run["laps"][0],
+        if "Q1" not in references and driver_key:
+            try:
+                driver_runs = _qualifying_run_laps(timing_session, driver_key)
+                phase_windows = _qualifying_phase_windows(timing_session)
+                q2_start = phase_windows.get("Q2")
+            except Exception:
+                driver_runs = []
+                q2_start = None
+            q1_run_seconds = [
+                run.get("flying_time_seconds")
+                for run in driver_runs
+                if run.get("flying_time_seconds") is not None
+                and run.get("start_seconds") is not None
+                and run.get("end_seconds") is not None
+                and (q2_start is None or float(run.get("start_seconds")) < float(q2_start))
+            ]
+            if q1_run_seconds:
+                references["Q1"] = float(min(q1_run_seconds))
+
+        driver_phase_reference_cache[driver_key] = references
+        return references
+
+    def run_phase_code(run, driver_number):
+        phase_references = driver_phase_references(driver_number)
+        run_seconds = run.get("flying_time_seconds")
+        if run_seconds is None:
+            run_seconds = next(
+                (
+                    lap.get("lap_time_seconds")
+                    for lap in run.get("laps", [])
+                    if lap.get("lap_type") == "Flying Lap" and lap.get("lap_time_seconds") is not None
+                ),
+                None,
+            )
+        if run_seconds is not None and phase_references:
+            candidates = sorted(
+                (
+                    abs(float(run_seconds) - float(phase_seconds)),
+                    phase_code,
                 )
+                for phase_code, phase_seconds in phase_references.items()
+                if phase_seconds is not None
+            )
+            if candidates:
+                return candidates[0][1]
 
-            flying_seconds = [lap["lap_time_seconds"] for lap in flying_laps if lap["lap_time_seconds"] is not None]
-            baseline_flying = min(flying_seconds) if flying_seconds else None
-            if baseline_flying is not None:
-                for lap in run["laps"]:
-                    if lap.get("lap_type") in {"Flying Lap", "Out Lap", "In Lap", "Out / In Lap"}:
-                        continue
-                    lap_time_seconds = lap.get("lap_time_seconds")
-                    if lap_time_seconds is not None and lap_time_seconds > baseline_flying * 1.12:
-                        lap["lap_type"] = "Cool Lap"
+        if "Q3" in phase_references:
+            return "Q3"
+        if "Q2" in phase_references:
+            return "Q2"
+        return "Q1"
 
-            segments = []
-            for lap in run["laps"]:
-                segment_start = lap.get("start_seconds")
-                segment_end = lap.get("end_seconds")
-                if segment_start is None or segment_end is None or segment_end <= segment_start:
-                    continue
-                segments.append(
-                    {
-                        "start_seconds": segment_start,
-                        "end_seconds": segment_end,
-                        "duration_seconds": segment_end - segment_start,
-                        "lap_type": lap.get("lap_type", "Flying Lap"),
-                        "lap_number": lap.get("lap_number"),
-                    }
-                )
+    def assign_run_phase(run, driver_number):
+        return {**run, "phase_code": run_phase_code(run, driver_number)}
 
-            return {
-                "run_number": run["run_number"],
-                "lap_count": len(run["laps"]),
-                "start_seconds": start_seconds,
-                "end_seconds": end_seconds,
-                "duration_seconds": end_seconds - start_seconds,
-                "representative": representative["value"],
-                "representative_lap_time": representative["lap_time"],
-                "representative_lap_number": representative["lap_number"],
-                "compound": representative["compound"],
-                "segments": segments,
-            }
+    def segment_from_lap(lap):
+        start_seconds = lap.get("lap_start_seconds")
+        end_seconds = lap.get("lap_end_seconds")
+        pit_out_seconds = lap.get("pit_out_seconds")
+        pit_in_seconds = lap.get("pit_in_seconds")
+        lap_type = str(lap.get("lap_type", "Flying Lap"))
+        if pit_out_seconds is not None and lap_type in {"Out Lap", "Out / In Lap"}:
+            start_seconds = pit_out_seconds
+        if pit_in_seconds is not None and lap_type in {"In Lap", "Out / In Lap"}:
+            end_seconds = pit_in_seconds
+        if start_seconds is None or end_seconds is None:
+            return None
+        start_seconds = max(0.0, float(start_seconds))
+        end_seconds = max(start_seconds + 0.5, float(end_seconds))
+        return {
+            "start_seconds": start_seconds,
+            "end_seconds": end_seconds,
+            "duration_seconds": max(end_seconds - start_seconds, 0.5),
+            "lap_type": lap_type,
+            "lap_number": lap.get("lap_number", "1"),
+        }
 
-        for _, lap_row in valid.iterrows():
-            lap_number = lap_row.get("LapNumber")
-            if pd.isna(lap_number):
+    def build_driver_row(row, phase_code, runs):
+        driver_number = _clean_value(row.get("driver_number", "")).strip()
+        if not driver_number:
+            driver_number = _clean_value(row.get("DriverNumber", "")).strip()
+        if not driver_number:
+            return None
+
+        rendered_runs = []
+        for index, run in enumerate(runs, start=1):
+            laps = run.get("laps", [])
+            if not laps:
                 continue
 
-            pit_out = pd.notna(lap_row.get("PitOutTime", None))
-            pit_in = pd.notna(lap_row.get("PitInTime", None))
-            lap_start_seconds = _lap_time_seconds(lap_row.get("LapStartTime", None))
-            lap_end_seconds = _lap_time_seconds(lap_row.get("Time", None))
-            lap_time = lap_row.get("LapTime")
-            lap_time_text = _format_lap_time(lap_time)
-            lap_time_seconds = _lap_time_seconds(lap_time)
-            compound = _clean_value(lap_row.get("Compound", "-"))
+            segments = [segment_from_lap(lap) for lap in laps]
+            segments = [segment for segment in segments if segment is not None]
+            run_start = run.get("start_seconds")
+            run_end = run.get("end_seconds")
+            if run_start is None and segments:
+                run_start = min(segment["start_seconds"] for segment in segments)
+            if run_end is None and segments:
+                run_end = max(segment["end_seconds"] for segment in segments)
+            if run_start is None or run_end is None:
+                continue
 
-            if pit_out and current_run is not None and current_run["laps"]:
-                run_item = finish_run(current_run)
-                if run_item is not None:
-                    runs.append(run_item)
-                current_run = None
+            run_start = max(0.0, float(run_start))
+            run_end = max(run_start + 0.5, float(run_end))
+            if not segments:
+                segments = [
+                    {
+                        "start_seconds": run_start,
+                        "end_seconds": run_end,
+                        "duration_seconds": max(run_end - run_start, 0.5),
+                        "lap_type": "Flying Lap",
+                        "lap_number": "1",
+                    }
+                ]
 
-            if current_run is None:
-                run_number += 1
-                current_run = {"run_number": run_number, "laps": [], "start_seconds": None, "end_seconds": None}
+            rendered_runs.append(
+                {
+                    "run_number": index,
+                    "phase_code": phase_code,
+                    "lap_count": len(laps),
+                    "start_seconds": run_start,
+                    "end_seconds": run_end,
+                    "duration_seconds": max(run_end - run_start, 0.5),
+                    "representative": run.get("representative", f"{driver_number}:{index}"),
+                    "representative_lap_time": run.get("flying_time", "-"),
+                    "representative_lap_number": str(run.get("representative", f"{driver_number}:{index}")).split(":", 1)[-1],
+                    "compound": next((lap.get("compound") for lap in laps if lap.get("compound")), "-"),
+                    "segments": segments,
+                }
+            )
 
-            run_start_seconds = _lap_time_seconds(lap_row.get("PitOutTime", None))
-            if run_start_seconds is None:
-                run_start_seconds = lap_start_seconds if lap_start_seconds is not None else lap_end_seconds
-            if run_start_seconds is None:
-                run_start_seconds = 0
-            run_end_seconds = _lap_time_seconds(lap_row.get("PitInTime", None))
-            if run_end_seconds is None:
-                run_end_seconds = lap_end_seconds if lap_end_seconds is not None else run_start_seconds
-            if run_end_seconds is None:
-                run_end_seconds = run_start_seconds + max(lap_time_seconds or 0, 1)
-
-            if lap_start_seconds is not None and lap_end_seconds is not None:
-                if lap_end_seconds < 0:
-                    continue
-
-            run_start_seconds = max(0, run_start_seconds)
-            run_end_seconds = max(run_start_seconds + 0.5, run_end_seconds)
-
-            if run_start_seconds is not None:
-                if current_run["start_seconds"] is None or run_start_seconds < current_run["start_seconds"]:
-                    current_run["start_seconds"] = run_start_seconds
-            if run_end_seconds is not None:
-                current_run["end_seconds"] = run_end_seconds if current_run["end_seconds"] is None else max(current_run["end_seconds"], run_end_seconds)
-
-            if pit_out and pit_in:
-                lap_role = "Out / In Lap"
-            elif pit_out:
-                lap_role = "Out Lap"
-            elif pit_in:
-                lap_role = "In Lap"
+        time_label = _clean_value(row.get("time_label", row.get("result_time", "-"))).strip() or "-"
+        if phase_code != "ALL":
+            phase_time = _clean_value(row.get("phase_time", "-")).strip() or "-"
+            phase_seconds = row.get("phase_seconds")
+            position = str(row.get("position", "")).strip()
+            if position == "1":
+                time_label = phase_time
+            elif phase_seconds is not None and phase_seconds != "-":
+                leader_seconds = row.get("_leader_seconds")
+                if leader_seconds is not None:
+                    gap = max(float(phase_seconds) - float(leader_seconds), 0.0)
+                    time_label = f"+{_format_lap_time(pd.to_timedelta(gap, unit='s'))}"
+                else:
+                    time_label = phase_time
             else:
-                lap_role = "Flying Lap"
+                time_label = phase_time
 
-            current_run["laps"].append(
+        return {
+            "value": row.get("value", row.get("DriverNumber", driver_number)),
+            "driver_number": driver_number,
+            "driver": row.get("full_name", row.get("driver", row.get("FullName", ""))),
+            "abbreviation": row.get("abbreviation", row.get("Abbreviation", driver_number)),
+            "team": row.get("team_name", row.get("TeamName", "-")),
+            "color": _team_color(row.get("team_name", row.get("TeamName", "-"))),
+            "time_label": time_label,
+            "runs": rendered_runs,
+        }
+
+    sections = []
+    run_ends = []
+    if use_phase_sections:
+        for phase_code in ("Q1", "Q2", "Q3"):
+            rows_source = _qualifying_phase_rows(timing_session, phase_code)
+            if not rows_source:
+                continue
+            leader_seconds = next((row.get("phase_seconds") for row in rows_source if str(row.get("position", "")).strip() == "1" and row.get("phase_seconds") is not None), None)
+            phase_drivers = []
+            for row in rows_source:
+                row = dict(row)
+                row["_leader_seconds"] = leader_seconds
+                driver_number = _clean_value(row.get("driver_number", "")).strip()
+                if not driver_number:
+                    driver_number = _clean_value(row.get("DriverNumber", "")).strip()
+                if not driver_number:
+                    continue
+                runs = _qualifying_run_laps(timing_session, driver_number)
+                phase_runs = [assign_run_phase(run, driver_number) for run in runs if run_phase_code(run, driver_number) == phase_code]
+                if phase_code != "Q1" and not phase_runs and row.get("phase_seconds") is None:
+                    continue
+                driver_row = build_driver_row(row, phase_code, phase_runs)
+                if driver_row is not None:
+                    phase_drivers.append(driver_row)
+                    run_ends.extend(run["end_seconds"] for run in phase_runs if run.get("end_seconds") is not None)
+
+            sections.append(
                 {
-                    "value": f"{driver_key}:{_clean_value(lap_number)}",
-                    "lap_number": _clean_value(lap_number),
-                    "lap_time": lap_time_text,
-                    "lap_time_seconds": lap_time_seconds,
-                    "compound": compound,
-                    "lap_type": lap_role,
-                    "is_flying": lap_role == "Flying Lap",
-                    "start_seconds": run_start_seconds,
-                    "end_seconds": run_end_seconds,
+                    "phase_code": phase_code,
+                    "title": phase_code,
+                    "participant_count": len(phase_drivers),
+                    "eliminated_count": 0,
+                    "max_time": 0.0,
+                    "drivers": phase_drivers,
                 }
             )
-
-        run_item = finish_run(current_run)
-        if run_item is not None:
-            runs.append(run_item)
-
-        if not runs:
-            phase_time_seconds = _lap_time_seconds(row.get(phase_code, None))
-            synthetic_end = phase_time_seconds if phase_time_seconds is not None and phase_time_seconds > 0 else 60.0
-            runs.append(
-                {
-                    "run_number": 1,
-                    "lap_count": 1,
-                    "start_seconds": 0,
-                    "end_seconds": synthetic_end,
-                    "duration_seconds": synthetic_end,
-                    "representative": driver_key,
-                    "representative_lap_time": _format_lap_time(row.get(phase_code, None)),
-                    "representative_lap_number": "1",
-                    "compound": _clean_value(row.get("Compound", "-")) if "Compound" in row else "-",
-                    "segments": [
-                        {
-                            "start_seconds": 0,
-                            "end_seconds": synthetic_end,
-                            "duration_seconds": synthetic_end,
-                            "lap_type": "Flying Lap",
-                            "lap_number": "1",
-                        }
-                    ],
-                }
-            )
-
-        drivers.append(
+    else:
+        combined_drivers = []
+        for _, row in driver_rows_source.iterrows():
+            row_data = row.to_dict()
+            row_data["_leader_seconds"] = None
+            driver_number = _clean_value(row_data.get("driver_number", "")).strip()
+            if not driver_number:
+                driver_number = _clean_value(row_data.get("DriverNumber", "")).strip()
+            if not driver_number:
+                continue
+            runs = _qualifying_run_laps(timing_session, driver_number)
+            phase_runs = [assign_run_phase(run, driver_number) for run in runs]
+            driver_row = build_driver_row(row_data, "ALL", phase_runs)
+            if driver_row is not None:
+                combined_drivers.append(driver_row)
+                run_ends.extend(run["end_seconds"] for run in phase_runs if run.get("end_seconds") is not None)
+        sections.append(
             {
-                "value": driver_key,
-                "driver_number": driver_number or driver_key,
-                "driver": _clean_value(row.get("FullName", "-")),
-                "abbreviation": _clean_value(row.get("Abbreviation", "-")),
-                "team": _clean_value(row.get("TeamName", "-")),
-                "color": _team_color(row.get("TeamName", "-")),
-                "time_label": _format_lap_time(row.get(phase_code, None)),
-                "runs": runs,
+                "phase_code": "ALL",
+                "title": "Qualifying",
+                "participant_count": len(combined_drivers),
+                "eliminated_count": 0,
+                "max_time": 0.0,
+                "drivers": combined_drivers,
             }
         )
 
+    drivers = [driver for section in sections for driver in (section.get("drivers") or [])]
     if not drivers:
         return None
 
-    run_end_values = [
-        run["end_seconds"]
-        for driver in drivers
-        for run in driver["runs"]
-        if run.get("end_seconds") is not None
-    ]
-    max_time = 60.0
-    if run_end_values:
-        max_time = max(max_time, max(run_end_values))
-    if max_time <= 0:
-        return None
-
-    return {
+    section_max_time = max([max(run_ends) if run_ends else 0.0, 75 * 60.0])
+    for section in sections:
+        section["max_time"] = section_max_time
+    graph = {
         "title": "Qualifying run timeline",
-        "max_time": max_time,
+        "phase_code": "ALL" if use_phase_sections else "ALL",
+        "max_time": section_max_time,
+        "sections": sections,
         "drivers": drivers,
     }
+    try:
+        setattr(session, cache_key, graph)
+    except Exception:
+        pass
+
+    return graph
 
 
 def _qualifying_driver_results(session, phase):
@@ -1250,7 +1390,7 @@ def _wait_for_session_laps(session, attempts=20, delay=0.5):
     return laps
 
 
-def _load_session_with_timeout(session, timeout_seconds=_SESSION_LOAD_TIMEOUT_SECONDS):
+def _load_session_with_timeout(session, timeout_seconds=_SESSION_LOAD_TIMEOUT_SECONDS, load_laps=True):
     if not session:
         return False
 
@@ -1259,7 +1399,7 @@ def _load_session_with_timeout(session, timeout_seconds=_SESSION_LOAD_TIMEOUT_SE
 
     def worker():
         try:
-            session.load(laps=True)
+            session.load(laps=load_laps, telemetry=False, weather=False, messages=False)
         except Exception as exc:
             load_error["exc"] = exc
         finally:
@@ -1281,6 +1421,17 @@ def _cached_session_laps(session):
     cached = getattr(session, "_codex_cached_laps", None)
     if cached is not None:
         return cached
+
+    try:
+        existing_laps = session.laps
+    except Exception:
+        existing_laps = None
+    if existing_laps is not None and not getattr(existing_laps, "empty", True):
+        try:
+            setattr(session, "_codex_cached_laps", existing_laps)
+        except Exception:
+            pass
+        return existing_laps
 
     if not _load_session_with_timeout(session):
         return None
@@ -2581,7 +2732,9 @@ def _load_session_data(year, gp, session_code):
         raise ValueError(f"No event schedule found for {year}")
 
     session = event.get_session(session_code)
-    if not _load_session_with_timeout(session):
+    session_code = str(session_code).strip().upper()
+    load_laps = True
+    if not _load_session_with_timeout(session, load_laps=load_laps):
         raise TimeoutError(f"Timed out loading session data for {year} {gp} {session_code}")
     rows = _session_rows(session)
     race_position_graph = None
@@ -2750,7 +2903,8 @@ def _session_object(year, gp, session_code):
 
     try:
         session = event.get_session(session_code)
-        if not _load_session_with_timeout(session):
+        load_laps = True
+        if not _load_session_with_timeout(session, load_laps=load_laps):
             return None
         return session
     except Exception:
@@ -2817,7 +2971,8 @@ def results():
                 pit_strategy_graph = None
     qualifying_results = _qualifying_driver_results(session, qualifying_phase) if session_is_qualifying else None
     qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_phase) if session_is_qualifying else []
-    qualifying_timeline_graph = _qualifying_timeline_graph(session, qualifying_phase) if session_is_qualifying else None
+    qualifying_timeline_graph = _qualifying_timeline_graph(session, qualifying_phase, split_sections=True) if session_is_qualifying else None
+    qualifying_timeline_combined_graph = _qualifying_timeline_graph(session, qualifying_phase, split_sections=False) if session_is_qualifying else None
     driver_options = _driver_options(session, results=qualifying_results) if session else []
     driver_number = _resolve_driver(session, driver_number, driver_options) if session and driver_number else None
     selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
@@ -2860,6 +3015,7 @@ def results():
         qualifying_phase=qualifying_phase,
         qualifying_phase_rows=qualifying_phase_rows,
         qualifying_timeline_graph=qualifying_timeline_graph,
+        qualifying_timeline_combined_graph=qualifying_timeline_combined_graph,
         qualifying_run_options=qualifying_run_options,
         qualifying_run_laps=qualifying_run_laps,
         selected_driver=driver_number,
@@ -2910,6 +3066,8 @@ def data():
 
     qualifying_results = _qualifying_driver_results(session, qualifying_phase) if session_is_qualifying else None
     qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_phase) if session_is_qualifying else []
+    qualifying_timeline_graph = _qualifying_timeline_graph(session, qualifying_phase, split_sections=True) if session_is_qualifying else None
+    qualifying_timeline_combined_graph = _qualifying_timeline_graph(session, qualifying_phase, split_sections=False) if session_is_qualifying else None
     race_stints = None
     telemetry_columns = []
     telemetry_rows = []
@@ -3036,6 +3194,8 @@ def data():
         session_options=ctx["session_options"],
         qualifying_phase=qualifying_phase,
         qualifying_phase_rows=qualifying_phase_rows,
+        qualifying_timeline_graph=qualifying_timeline_graph,
+        qualifying_timeline_combined_graph=qualifying_timeline_combined_graph,
         qualifying_run_options=qualifying_run_options,
         qualifying_run_laps=qualifying_run_laps,
         selected_qualifying_run=selected_qualifying_run,

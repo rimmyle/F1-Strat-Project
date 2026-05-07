@@ -2108,7 +2108,7 @@
               {% for session in ns.race_sessions + ns.other_sessions %}
                 <a
                   class="session-chip {% if session.value == 'R' %}race-session-chip{% endif %} {% if session.value == form.session %}active{% endif %}"
-                  href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}{% if form.phase %}&phase={{ form.phase }}{% endif %}"
+                  href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
                 >
                   {{ session.label }}
                 </a>
@@ -2164,22 +2164,22 @@
           <div class="header-divider" role="separator" aria-hidden="true">
             <div class="header-divider-line"></div>
             <div class="header-divider-center">
-              <div class="session-badge-expansion-band" data-qualifying-session-menu hidden>
-                {% for phase in ['Q1', 'Q2', 'Q3'] %}
-                  <a
-                    class="session-chip qualifying-session-chip {% if form.session == 'Q' and form.phase == phase %}active{% endif %}"
-                    href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=Q&phase={{ phase }}"
-                  >
-                    Qualifying {{ phase[-1] }}
-                  </a>
-                {% endfor %}
+                <div class="session-badge-expansion-band" data-qualifying-session-menu hidden>
+                  {% for phase in ['Q1', 'Q2', 'Q3'] %}
+                    <a
+                      class="session-chip qualifying-session-chip {% if form.session == 'Q' and form.phase == phase %}active{% endif %}"
+                      href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=Q&phase={{ phase }}"
+                    >
+                      Qualifying {{ phase[-1] }}
+                    </a>
+                  {% endfor %}
               </div>
               {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
                 <div class="session-badge-expansion-band" data-sprint-qualifying-session-menu hidden>
                   {% for phase in ['Q1', 'Q2', 'Q3'] %}
                     <a
                       class="session-chip sprint-qualifying-session-chip {% if form.session == 'SQ' and form.phase == phase %}active{% endif %}"
-                      href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=SQ&phase={{ phase }}"
+                      href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=SQ&phase={{ phase }}"
                     >
                       Sprint Qualifying {{ phase[-1] }}
                     </a>
@@ -2191,7 +2191,7 @@
                   {% for session in ns.practice_sessions %}
                     <a
                       class="session-chip practice-session-chip {% if session.value == form.session %}active{% endif %}"
-                      href="/{{ view }}?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
+                      href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
                     >
                       Free {{ session.label }}
                     </a>
@@ -2360,6 +2360,24 @@
                     </div>
                   {% endfor %}
                 </div>
+              {% endif %}
+              {% if session_is_qualifying and qualifying_timeline_graph %}
+                <section class="qualifying-timeline-panel qualifying-data-panel">
+                  <header>
+                    <h2>{{ qualifying_phase }} Timeline</h2>
+                    <p class="subtle">This view shows the full qualifying session.</p>
+                  </header>
+                  <div class="qualifying-timeline-viewport">
+                    <svg
+                      class="qualifying-timeline-svg"
+                      id="qualifying-timeline-svg"
+                      viewBox="0 0 1600 980"
+                      role="img"
+                      aria-label="Qualifying run timeline"
+                    ></svg>
+                  </div>
+                  <script id="qualifying-timeline-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
+                </section>
               {% endif %}
               {% if session_is_qualifying and selected_lap and selected_driver %}
                 <div class="qualifying-telemetry-strip">
@@ -2541,27 +2559,55 @@
           <section class="qualifying-fullpage">
             <header class="qualifying-timeline-header">
               <div>
-                <h2>{{ qualifying_phase }} Results</h2>
+                <h2>Qualifying Results</h2>
                 <p class="subtle">Qualifying overview timeline.</p>
               </div>
             </header>
-            <div class="qualifying-timeline-panel">
-              <div class="qualifying-timeline-viewport">
-                {% if qualifying_timeline_graph %}
-                  <svg
-                    class="qualifying-timeline-svg"
-                    id="qualifying-timeline-svg"
-                    viewBox="0 0 1600 980"
-                    role="img"
-                    aria-label="Qualifying run timeline"
-                  ></svg>
-                {% else %}
-                  <div class="empty">No qualifying run timeline available.</div>
+            <div class="results-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
+              <section class="qualifying-timeline-panel">
+                <header>
+                  <h2>Combined</h2>
+                  <p class="subtle">Original run timeline.</p>
+                </header>
+                <div class="qualifying-timeline-viewport">
+                  {% if qualifying_timeline_combined_graph %}
+                    <svg
+                      class="qualifying-timeline-svg"
+                      id="qualifying-timeline-combined-svg"
+                      viewBox="0 0 1600 980"
+                      role="img"
+                      aria-label="Combined qualifying run timeline"
+                    ></svg>
+                  {% else %}
+                    <div class="empty">No combined qualifying timeline available.</div>
+                  {% endif %}
+                </div>
+                {% if qualifying_timeline_combined_graph %}
+                  <script id="qualifying-timeline-combined-json" type="application/json">{{ qualifying_timeline_combined_graph | tojson }}</script>
                 {% endif %}
-              </div>
-              {% if qualifying_timeline_graph %}
-                <script id="qualifying-timeline-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
-              {% endif %}
+              </section>
+              <section class="qualifying-timeline-panel">
+                <header>
+                  <h2>Phase Split</h2>
+                  <p class="subtle">Split by Q1, Q2, and Q3.</p>
+                </header>
+                <div class="qualifying-timeline-viewport">
+                  {% if qualifying_timeline_graph %}
+                    <svg
+                      class="qualifying-timeline-svg"
+                      id="qualifying-timeline-split-svg"
+                      viewBox="0 0 1600 980"
+                      role="img"
+                      aria-label="Split qualifying run timeline"
+                    ></svg>
+                  {% else %}
+                    <div class="empty">No qualifying run timeline available.</div>
+                  {% endif %}
+                </div>
+                {% if qualifying_timeline_graph %}
+                  <script id="qualifying-timeline-split-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
+                {% endif %}
+              </section>
             </div>
           </section>
         {% endif %}
@@ -3176,182 +3222,237 @@
         })();
       </script>
       {% endif %}
-      {% if qualifying_timeline_graph %}
+      {% if qualifying_timeline_graph or qualifying_timeline_combined_graph %}
       <script>
         (() => {
-          const svg = document.getElementById("qualifying-timeline-svg");
-          const dataEl = document.getElementById("qualifying-timeline-json");
-          if (!svg || !dataEl) {
-            return;
-          }
-
-          const graph = JSON.parse(dataEl.textContent || "null");
-          if (!graph || !graph.drivers || !graph.drivers.length || !graph.max_time) {
-            svg.innerHTML = "";
-            return;
-          }
-
-          const plotWidth = 1000;
-          const labelColumnWidth = 118;
-          const width = plotWidth + labelColumnWidth;
-          const pad = { top: 34, right: 8, bottom: 42, left: 64 };
-          const availableHeight = Math.max(420, (window.innerHeight || 900) - 260);
-          const rowStep = Math.max(18, Math.min(24, Math.floor((availableHeight - pad.top - pad.bottom) / graph.drivers.length)));
-          const rowHeight = Math.max(10, Math.min(12, Math.floor(rowStep * 0.5)));
-          const height = pad.top + pad.bottom + (graph.drivers.length * rowStep);
-          const innerWidth = plotWidth - pad.left - pad.right;
-          const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
-          const timeLabelX = plotWidth + (labelColumnWidth / 2);
-
-          const escapeHtml = (value) => String(value)
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;");
-
-          const toX = (seconds) => pad.left + Math.max(0, Number(seconds) || 0) * scale;
-          const formatAxisTime = (seconds) => {
-            const total = Math.max(0, Number(seconds) || 0);
-            const minutes = Math.floor(total / 60);
-            const secs = Math.floor(total % 60);
-            return `${minutes}:${String(secs).padStart(2, "0")}`;
-          };
-          const labelForRun = (run) => `Run ${run.run_number} ${run.representative_lap_time || ""}`.trim();
-          const segmentLabel = (lapType) => {
-            const normalized = String(lapType || "").toLowerCase();
-            if (normalized === "out lap" || normalized === "out / in lap") {
-              return "OUT";
+          const renderQualifyingTimeline = (svgId, dataId) => {
+            const svg = document.getElementById(svgId);
+            const dataEl = document.getElementById(dataId);
+            if (!svg || !dataEl) {
+              return;
             }
-            if (normalized === "in lap") {
-              return "IN";
-            }
-            if (normalized === "cool lap") {
-              return "COOL";
-            }
-            return "FLY";
-          };
-          const segmentPattern = (lapType) => {
-            const normalized = String(lapType || "").toLowerCase();
-            if (normalized === "out lap" || normalized === "out / in lap") {
-              return "qualifying-out";
-            }
-            if (normalized === "in lap") {
-              return "qualifying-in";
-            }
-            if (normalized === "cool lap") {
-              return "qualifying-cool";
-            }
-            return "qualifying-fly";
-          };
 
-          const defs = `
-            <defs>
-              <pattern id="qualifying-fly" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-                <path d="M 0 0 L 0 10" stroke="rgba(7,16,29,0.36)" stroke-width="3"></path>
-              </pattern>
-              <pattern id="qualifying-out" patternUnits="userSpaceOnUse" width="12" height="12">
-                <path d="M 0 6 L 12 6" stroke="rgba(7,16,29,0.38)" stroke-width="2.5"></path>
-              </pattern>
-              <pattern id="qualifying-in" patternUnits="userSpaceOnUse" width="12" height="12">
-                <path d="M 6 0 L 6 12" stroke="rgba(7,16,29,0.38)" stroke-width="2.5"></path>
-              </pattern>
-              <pattern id="qualifying-cool" patternUnits="userSpaceOnUse" width="12" height="12">
-                <circle cx="3" cy="3" r="1.5" fill="rgba(7,16,29,0.42)"></circle>
-                <circle cx="9" cy="9" r="1.5" fill="rgba(7,16,29,0.42)"></circle>
-              </pattern>
-            </defs>
-          `;
+            const graph = JSON.parse(dataEl.textContent || "null");
+            if (!graph || !graph.drivers || !graph.drivers.length || !graph.max_time) {
+              svg.innerHTML = "";
+              return;
+            }
 
-          let grid = "";
-          for (let i = 0; i <= 5; i += 1) {
-            const seconds = (Number(graph.max_time || 0) / 5) * i;
-            const x = toX(seconds);
-            grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-            grid += `<text x="${x.toFixed(2)}" y="${height - 16}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="10" font-weight="800">${formatAxisTime(seconds)}</text>`;
-          }
-          grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+            const plotWidth = 1000;
+            const labelColumnWidth = 118;
+            const width = plotWidth + labelColumnWidth;
+            const pad = { top: 34, right: 8, bottom: 42, left: 64 };
+            const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
+              phase_code: graph.phase_code || "ALL",
+              title: graph.title || "Qualifying run timeline",
+              participant_count: (graph.drivers || []).length,
+              eliminated_count: 0,
+              drivers: graph.drivers || [],
+            }];
+            const sectionHeaderHeight = 28;
+            const sectionGap = 14;
+            const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
+            const availableHeight = Math.max(420, (window.innerHeight || 900) - 260);
+            const rowStep = Math.max(
+              18,
+              Math.min(
+                24,
+                Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionHeaderHeight) - ((sections.length - 1) * sectionGap)) / totalRows),
+              ),
+            );
+            const rowHeight = Math.max(10, Math.min(12, Math.floor(rowStep * 0.5)));
+            const height = pad.top + pad.bottom + sections.reduce(
+              (total, section, index) => total
+                + sectionHeaderHeight
+                + ((section.drivers || []).length * rowStep)
+                + (index < sections.length - 1 ? sectionGap : 0),
+              0,
+            );
+            const innerWidth = plotWidth - pad.left - pad.right;
+            const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
+            const timeLabelX = plotWidth + (labelColumnWidth / 2);
 
-          const rows = graph.drivers.map((driver, index) => {
-            const y = pad.top + index * rowStep + rowHeight;
-            const rowTop = - (rowHeight / 2);
-            const runsData = driver.runs || [];
-            const runs = runsData.length ? runsData.map((run) => {
-              const segments = (run.segments || []).length ? run.segments : [{
-                start_seconds: run.start_seconds,
-                end_seconds: run.end_seconds,
-                lap_type: "Flying Lap",
-              }];
-              const runStart = Math.min(...segments.map((segment) => Number(segment.start_seconds) || 0));
-              const runEnd = Math.max(...segments.map((segment) => Number(segment.end_seconds) || 0));
-              const barX = toX(runStart);
-              const barW = Math.max(6, toX(runEnd) - barX - 2);
-              const label = String(run.representative_lap_time || "").trim();
-              const labelWidth = Math.max(48, ((label || "").length * 6.4) + 16);
-              const labelX = barX + Math.max(10, (barW - labelWidth) / 2);
-              return `
-                <g class="qualifying-timeline-run" aria-label="${escapeHtml(labelForRun(run))}">
-                  <rect x="${(barX + 1).toFixed(2)}" y="${(rowTop).toFixed(2)}" width="${barW.toFixed(2)}" height="20" rx="6" ry="6" fill="${driver.color || "#44c2ff"}" opacity="0.92" stroke="rgba(7,16,29,0.72)" stroke-width="1"></rect>
-                  ${segments.map((segment) => {
-                    const segmentStart = toX(segment.start_seconds);
-                    const segmentEnd = toX(segment.end_seconds);
-                    const segmentW = Math.max(6, segmentEnd - segmentStart);
-                    const patternId = segmentPattern(segment.lap_type);
-                    const segmentText = segmentLabel(segment.lap_type);
-                    return `
-                      <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="20" fill="url(#${patternId})" opacity="0.95"></rect>
-                      <text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="4" fill="#07101d" font-size="9" font-weight="900" text-anchor="middle">${escapeHtml(segmentText)}</text>
-                    `;
-                  }).join("")}
-                  <g class="pit-stint-length" aria-hidden="true">
-                    <rect x="${labelX.toFixed(2)}" y="${(rowTop + 1).toFixed(2)}" width="${labelWidth.toFixed(2)}" height="13" rx="6.5" fill="rgba(7,16,29,0.78)"></rect>
-                    <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="10.5" text-anchor="middle" fill="#f8fafc" font-size="9" font-weight="900">${escapeHtml(label || "0.000")}</text>
+            const escapeHtml = (value) => String(value)
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;");
+
+            const toX = (seconds) => pad.left + Math.max(0, Number(seconds) || 0) * scale;
+            const formatAxisTime = (seconds) => {
+              const total = Math.max(0, Number(seconds) || 0);
+              const minutes = Math.floor(total / 60);
+              const secs = Math.floor(total % 60);
+              return `${minutes}:${String(secs).padStart(2, "0")}`;
+            };
+            const labelForRun = (run) => `Run ${run.run_number} ${run.representative_lap_time || ""}`.trim();
+            const segmentLabel = (lapType) => {
+              const normalized = String(lapType || "").toLowerCase();
+              if (normalized === "out lap" || normalized === "out / in lap") {
+                return "OUT";
+              }
+              if (normalized === "in lap") {
+                return "IN";
+              }
+              if (normalized === "cool lap") {
+                return "COOL";
+              }
+              return "FLY";
+            };
+            const segmentPattern = (lapType) => {
+              const normalized = String(lapType || "").toLowerCase();
+              if (normalized === "out lap" || normalized === "out / in lap") {
+                return "qualifying-out";
+              }
+              if (normalized === "in lap") {
+                return "qualifying-in";
+              }
+              if (normalized === "cool lap") {
+                return "qualifying-cool";
+              }
+              return "qualifying-fly";
+            };
+            const isFlyingSegment = (lapType) => String(lapType || "").toLowerCase() === "flying lap";
+            const buildDriverMarkup = (driver, y) => {
+              const rowTop = - (rowHeight / 2);
+              const runsData = driver.runs || [];
+              const runs = runsData.length ? runsData.map((run) => {
+                const segments = (run.segments || []).length ? run.segments : [{
+                  start_seconds: run.start_seconds,
+                  end_seconds: run.end_seconds,
+                  lap_type: "Flying Lap",
+                }];
+                const runStart = Math.min(...segments.map((segment) => Number(segment.start_seconds) || 0));
+                const runEnd = Math.max(...segments.map((segment) => Number(segment.end_seconds) || 0));
+                const barX = toX(runStart);
+                const barW = Math.max(6, toX(runEnd) - barX - 2);
+                const label = String(run.representative_lap_time || "").trim();
+                const labelWidth = Math.max(48, ((label || "").length * 6.4) + 16);
+                const labelX = barX + Math.max(10, (barW - labelWidth) / 2);
+                return `
+                  <g class="qualifying-timeline-run" aria-label="${escapeHtml(labelForRun(run))}">
+                    <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="20" rx="6" ry="6" fill="${driver.color || "#44c2ff"}" opacity="0.92" stroke="rgba(7,16,29,0.72)" stroke-width="1"></rect>
+                    ${segments.map((segment) => {
+                      const segmentStart = toX(segment.start_seconds);
+                      const segmentEnd = toX(segment.end_seconds);
+                      const actualWidth = Math.max(6, segmentEnd - segmentStart);
+                      const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(18, Math.min(actualWidth, 64));
+                      const patternId = segmentPattern(segment.lap_type);
+                      const segmentText = segmentLabel(segment.lap_type);
+                      return `
+                        <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="20" rx="4" ry="4" fill="url(#${patternId})" opacity="0.95"></rect>
+                        <text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="4" fill="#07101d" font-size="9" font-weight="900" text-anchor="middle">${escapeHtml(segmentText)}</text>
+                      `;
+                    }).join("")}
+                    <g class="pit-stint-length" aria-hidden="true">
+                      <rect x="${labelX.toFixed(2)}" y="${(rowTop + 1).toFixed(2)}" width="${labelWidth.toFixed(2)}" height="13" rx="6.5" fill="rgba(7,16,29,0.78)"></rect>
+                      <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="10.5" text-anchor="middle" fill="#f8fafc" font-size="9" font-weight="900">${escapeHtml(label || "0.000")}</text>
+                    </g>
                   </g>
+                `;
+              }).join("") : `
+                <text x="${pad.left + 8}" y="4" fill="rgba(151,167,194,0.7)" font-size="9.5">No timed run</text>
+              `;
+
+              return `
+                <g class="qualifying-timeline-driver" data-driver="${escapeHtml(driver.value || driver.driver || '')}" transform="translate(0 ${y})">
+                  <line x1="${pad.left}" y1="12" x2="${plotWidth - pad.right}" y2="12" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
+                  <text x="${(pad.left - 4).toFixed(2)}" y="4" fill="${driver.color || '#cbd5e1'}" font-size="11" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
+                  ${runs}
+                  <text x="${timeLabelX.toFixed(2)}" y="4" fill="rgba(226,232,240,0.96)" font-size="12" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
                 </g>
               `;
-            }).join("") : `
-              <text x="${pad.left + 8}" y="${(y + 4).toFixed(2)}" fill="rgba(151,167,194,0.7)" font-size="9.5">No timed run</text>
+            };
+            const renderSection = (section, index, cursorY) => {
+              const drivers = section.drivers || [];
+              const headerLabel = `${section.title || section.phase_code || "Q"} Results`;
+              const eliminatedLabel = Number(section.eliminated_count || 0) > 0 ? ` · ${section.eliminated_count} eliminated` : "";
+              const header = `
+                <g class="qualifying-timeline-section" transform="translate(0 ${cursorY})">
+                  <line x1="${pad.left}" y1="0" x2="${plotWidth - pad.right}" y2="0" stroke="rgba(148,163,184,0.18)" stroke-width="1.2"></line>
+                  <text x="${pad.left}" y="18" fill="rgba(226,232,240,0.98)" font-size="12" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
+                  <text x="${plotWidth - pad.right}" y="18" fill="rgba(151,167,194,0.92)" font-size="10" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
+                </g>
+              `;
+              const driversMarkup = drivers.map((driver, driverIndex) => buildDriverMarkup(driver, cursorY + sectionHeaderHeight + (driverIndex * rowStep) + rowHeight)).join("");
+              const sectionBottom = cursorY + sectionHeaderHeight + (drivers.length * rowStep);
+              const separator = index < sections.length - 1 ? `<line x1="${pad.left}" y1="${(sectionBottom + 6).toFixed(2)}" x2="${plotWidth - pad.right}" y2="${(sectionBottom + 6).toFixed(2)}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>` : "";
+              return {
+                markup: `${header}${driversMarkup}${separator}`,
+                endY: sectionBottom + (index < sections.length - 1 ? sectionGap : 0),
+              };
+            };
+            const defs = `
+              <defs>
+                <pattern id="qualifying-fly" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
+                  <path d="M 0 0 L 0 10" stroke="rgba(7,16,29,0.36)" stroke-width="3"></path>
+                </pattern>
+                <pattern id="qualifying-out" patternUnits="userSpaceOnUse" width="12" height="12">
+                  <path d="M 0 6 L 12 6" stroke="rgba(7,16,29,0.38)" stroke-width="2.5"></path>
+                </pattern>
+                <pattern id="qualifying-in" patternUnits="userSpaceOnUse" width="12" height="12">
+                  <path d="M 6 0 L 6 12" stroke="rgba(7,16,29,0.38)" stroke-width="2.5"></path>
+                </pattern>
+                <pattern id="qualifying-cool" patternUnits="userSpaceOnUse" width="12" height="12">
+                  <circle cx="3" cy="3" r="1.5" fill="rgba(7,16,29,0.42)"></circle>
+                  <circle cx="9" cy="9" r="1.5" fill="rgba(7,16,29,0.42)"></circle>
+                </pattern>
+              </defs>
             `;
 
-            return `
-              <g class="qualifying-timeline-driver" data-driver="${escapeHtml(driver.value || driver.driver || '')}" transform="translate(0 ${y})">
-                <line x1="${pad.left}" y1="12" x2="${plotWidth - pad.right}" y2="12" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
-                <text x="${(pad.left - 4).toFixed(2)}" y="4" fill="${driver.color || '#cbd5e1'}" font-size="11" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
-                ${runs}
-                <text x="${timeLabelX.toFixed(2)}" y="4" fill="rgba(226,232,240,0.96)" font-size="12" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
-              </g>
+            let grid = "";
+            for (let i = 0; i <= 5; i += 1) {
+              const seconds = (Number(graph.max_time || 0) / 5) * i;
+              const x = toX(seconds);
+              grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+              grid += `<text x="${x.toFixed(2)}" y="${height - 16}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="10" font-weight="800">${formatAxisTime(seconds)}</text>`;
+            }
+            grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+
+            let cursorY = pad.top;
+            const rowBlocks = [];
+            sections.forEach((section, sectionIndex) => {
+              const rendered = renderSection(section, sectionIndex, cursorY);
+              rowBlocks.push(rendered.markup);
+              cursorY = rendered.endY;
+            });
+            const rows = rowBlocks.join("");
+
+            svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            svg.style.height = `${height}px`;
+            svg.innerHTML = `
+              <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+              ${defs}
+              <g class="qualifying-timeline-axis">${grid}</g>
+              ${rows}
             `;
-          }).join("");
 
-          svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-          svg.style.height = `${height}px`;
-          svg.innerHTML = `
-            <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-            ${defs}
-            <g class="qualifying-timeline-axis">${grid}</g>
-            ${rows}
-          `;
+            const runBars = Array.from(svg.querySelectorAll(".qualifying-timeline-run"));
+            const clearRuns = () => {
+              runBars.forEach((item) => {
+                item.classList.remove("is-hovered");
+                item.style.opacity = "";
+              });
+            };
+            const activateRun = (bar) => {
+              runBars.forEach((item) => {
+                const active = item === bar;
+                item.classList.toggle("is-hovered", active);
+                item.style.opacity = active ? "1" : "0.26";
+              });
+            };
 
-          const runBars = Array.from(svg.querySelectorAll(".qualifying-timeline-run"));
-          const clearRuns = () => {
-            runBars.forEach((item) => {
-              item.classList.remove("is-hovered");
-              item.style.opacity = "";
+            runBars.forEach((bar) => {
+              bar.addEventListener("mouseenter", () => activateRun(bar));
+              bar.addEventListener("mouseleave", clearRuns);
             });
-          };
-          const activateRun = (bar) => {
-            runBars.forEach((item) => {
-              const active = item === bar;
-              item.classList.toggle("is-hovered", active);
-              item.style.opacity = active ? "1" : "0.26";
-            });
+
+            svg.addEventListener("mouseleave", clearRuns);
           };
 
-          runBars.forEach((bar) => {
-            bar.addEventListener("mouseenter", () => activateRun(bar));
-            bar.addEventListener("mouseleave", clearRuns);
-          });
-
-          svg.addEventListener("mouseleave", clearRuns);
+          renderQualifyingTimeline("qualifying-timeline-combined-svg", "qualifying-timeline-combined-json");
+          renderQualifyingTimeline("qualifying-timeline-split-svg", "qualifying-timeline-split-json");
+          renderQualifyingTimeline("qualifying-timeline-svg", "qualifying-timeline-json");
         })();
       </script>
       {% endif %}
