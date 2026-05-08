@@ -667,6 +667,12 @@
         box-shadow: 0 0 0 2px rgba(68, 194, 255, 0.18);
       }
 
+      .qualifying-run-badge.pending-selected,
+      .qualifying-lap-badge.pending-selected {
+        border-color: rgba(68, 194, 255, 0.6);
+        box-shadow: 0 0 0 2px rgba(68, 194, 255, 0.18);
+      }
+
       .qualifying-run-badge-copy {
         display: grid;
         gap: 2px;
@@ -2266,7 +2272,7 @@
             <label for="driver">{% if session_is_qualifying and selected_lap %}Qualifying laps{% elif session_is_qualifying %}{{ qualifying_phase }} Results{% elif not selected_driver %}Driver{% elif selected_stint_data and selected_lap %}Stint laps{% elif selected_stint_data and session_is_qualifying %}Phase pace{% elif selected_stint_data %}Stint pace{% endif %}</label>
             <div class="driver-picker" data-driver-picker>
               <input type="hidden" name="driver" value="{{ selected_driver or '' }}" data-driver-input />
-              {% if session_is_qualifying %}
+              {% if session_is_qualifying and not selected_lap %}
                 <div class="qualifying-results-list" role="listbox" aria-label="{{ qualifying_phase }} driver results">
                   {% if qualifying_phase_rows %}
                     {% for row in qualifying_phase_rows %}
@@ -2361,7 +2367,7 @@
                   {% endfor %}
                 </div>
               {% endif %}
-              {% if session_is_qualifying and qualifying_timeline_graph %}
+              {% if session_is_qualifying and qualifying_timeline_graph and not selected_lap %}
                 <section class="qualifying-timeline-panel qualifying-data-panel">
                   <header>
                     <h2>{{ qualifying_phase }} Timeline</h2>
@@ -2389,7 +2395,10 @@
                         <small>{{ selected_driver_data.team_name }}</small>
                       </span>
                     </div>
-                    <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase=Q1">Back to Q1 results</a>
+                    <div class="qualifying-telemetry-actions">
+                      <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}">Back to driver list</a>
+                      <a class="workflow-back" href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}">Back to {{ qualifying_phase }} timeline</a>
+                    </div>
                   </div>
                   <div class="qualifying-telemetry-divider"></div>
                   <div class="qualifying-telemetry-phases">
@@ -2559,56 +2568,41 @@
           <section class="qualifying-fullpage">
             <header class="qualifying-timeline-header">
               <div>
-                <h2>Qualifying Results</h2>
-                <p class="subtle">Qualifying overview timeline.</p>
+                <h2>{{ qualifying_phase }} Overview</h2>
+                <p class="subtle">{{ qualifying_phase }} qualifying overview timeline.</p>
               </div>
             </header>
-            <div class="results-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
-              <section class="qualifying-timeline-panel">
-                <header>
-                  <h2>Combined</h2>
-                  <p class="subtle">Original run timeline.</p>
-                </header>
-                <div class="qualifying-timeline-viewport">
-                  {% if qualifying_timeline_combined_graph %}
-                    <svg
-                      class="qualifying-timeline-svg"
-                      id="qualifying-timeline-combined-svg"
-                      viewBox="0 0 1600 980"
-                      role="img"
-                      aria-label="Combined qualifying run timeline"
-                    ></svg>
-                  {% else %}
-                    <div class="empty">No combined qualifying timeline available.</div>
-                  {% endif %}
+            <section class="qualifying-timeline-panel">
+              <header>
+                <div class="qualifying-telemetry-phases">
+                  {% for phase_code in ['ALL', 'Q1', 'Q2', 'Q3'] %}
+                    <a
+                      class="session-chip qualifying-phase-chip {% if phase_code == qualifying_phase %}active{% endif %}"
+                      href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ phase_code }}"
+                    >
+                      {% if phase_code == 'ALL' %}All{% else %}{{ phase_code }}{% endif %}
+                    </a>
+                  {% endfor %}
                 </div>
-                {% if qualifying_timeline_combined_graph %}
-                  <script id="qualifying-timeline-combined-json" type="application/json">{{ qualifying_timeline_combined_graph | tojson }}</script>
-                {% endif %}
-              </section>
-              <section class="qualifying-timeline-panel">
-                <header>
-                  <h2>Phase Split</h2>
-                  <p class="subtle">Split by Q1, Q2, and Q3.</p>
-                </header>
-                <div class="qualifying-timeline-viewport">
-                  {% if qualifying_timeline_graph %}
-                    <svg
-                      class="qualifying-timeline-svg"
-                      id="qualifying-timeline-split-svg"
-                      viewBox="0 0 1600 980"
-                      role="img"
-                      aria-label="Split qualifying run timeline"
-                    ></svg>
-                  {% else %}
-                    <div class="empty">No qualifying run timeline available.</div>
-                  {% endif %}
-                </div>
+                <p class="subtle">{% if qualifying_phase == 'ALL' %}Showing all qualifying runs.{% else %}Showing runs for {{ qualifying_phase }} only.{% endif %}</p>
+              </header>
+              <div class="qualifying-timeline-viewport">
                 {% if qualifying_timeline_graph %}
-                  <script id="qualifying-timeline-split-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
+                  <svg
+                    class="qualifying-timeline-svg"
+                    id="qualifying-timeline-svg"
+                    viewBox="0 0 1600 980"
+                    role="img"
+                    aria-label="Qualifying run timeline"
+                  ></svg>
+                {% else %}
+                  <div class="empty">No qualifying run timeline available.</div>
                 {% endif %}
-              </section>
-            </div>
+              </div>
+              {% if qualifying_timeline_graph %}
+                <script id="qualifying-timeline-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
+              {% endif %}
+            </section>
           </section>
         {% endif %}
         {% if view == 'results' and data %}
@@ -3100,6 +3094,15 @@
             });
           });
 
+          document.querySelectorAll(".qualifying-run-badge, .qualifying-lap-badge").forEach((badge) => {
+            badge.addEventListener("pointerdown", () => {
+              badge.classList.add("pending-selected");
+            });
+            badge.addEventListener("click", () => {
+              badge.classList.add("pending-selected");
+            });
+          });
+
         })();
       </script>
       {% if selected_stint_data %}
@@ -3222,7 +3225,7 @@
         })();
       </script>
       {% endif %}
-      {% if qualifying_timeline_graph or qualifying_timeline_combined_graph %}
+      {% if qualifying_timeline_graph %}
       <script>
         (() => {
           const renderQualifyingTimeline = (svgId, dataId) => {
@@ -3241,7 +3244,7 @@
             const plotWidth = 1000;
             const labelColumnWidth = 118;
             const width = plotWidth + labelColumnWidth;
-            const pad = { top: 34, right: 8, bottom: 42, left: 64 };
+            const pad = { top: 34, right: 8, bottom: 70, left: 64 };
             const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
               phase_code: graph.phase_code || "ALL",
               title: graph.title || "Qualifying run timeline",
@@ -3271,6 +3274,16 @@
             const innerWidth = plotWidth - pad.left - pad.right;
             const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
             const timeLabelX = plotWidth + (labelColumnWidth / 2);
+            const timeOffset = Number(graph.time_offset || 0);
+            const isAllGraph = String(graph.phase_code || "").toUpperCase() === "ALL";
+            const phaseCountdownSeconds = {
+              Q1: 18 * 60,
+              Q2: 15 * 60,
+              Q3: 12 * 60,
+            }[String(graph.phase_code || "").toUpperCase()] || null;
+            const phaseWindows = graph.phase_windows && typeof graph.phase_windows === "object" ? graph.phase_windows : {};
+            const selectedPhaseCode = String(graph.phase_code || "").toUpperCase();
+            const selectedPhaseWindow = phaseWindows[selectedPhaseCode] || null;
 
             const escapeHtml = (value) => String(value)
               .replaceAll("&", "&amp;")
@@ -3278,14 +3291,32 @@
               .replaceAll(">", "&gt;")
               .replaceAll('"', "&quot;");
 
-            const toX = (seconds) => pad.left + Math.max(0, Number(seconds) || 0) * scale;
+            const toX = (seconds) => pad.left + Math.max(0, (Number(seconds) || 0) - timeOffset) * scale;
             const formatAxisTime = (seconds) => {
               const total = Math.max(0, Number(seconds) || 0);
               const minutes = Math.floor(total / 60);
               const secs = Math.floor(total % 60);
               return `${minutes}:${String(secs).padStart(2, "0")}`;
             };
+            const formatCountdownTime = (seconds) => {
+              const total = Math.max(0, Number(seconds) || 0);
+              const minutes = Math.floor(total / 60);
+              const secs = Math.floor(total % 60);
+              return `${minutes}:${String(secs).padStart(2, "0")}`;
+            };
             const labelForRun = (run) => `Run ${run.run_number} ${run.representative_lap_time || ""}`.trim();
+            const runHref = (driverValue, run) => {
+              const params = new URLSearchParams();
+              params.set("year", "{{ form.year }}");
+              params.set("gp", "{{ form.gp|urlencode }}");
+              params.set("session", "{{ form.session }}");
+              if (graph.phase_code && graph.phase_code !== "ALL") {
+                params.set("phase", graph.phase_code);
+              }
+              params.set("driver", driverValue || "");
+              params.set("lap", run.representative || "");
+              return `/data?${params.toString()}`;
+            };
             const segmentLabel = (lapType) => {
               const normalized = String(lapType || "").toLowerCase();
               if (normalized === "out lap" || normalized === "out / in lap") {
@@ -3313,6 +3344,9 @@
               return "qualifying-fly";
             };
             const isFlyingSegment = (lapType) => String(lapType || "").toLowerCase() === "flying lap";
+            const fastestRun = graph.fastest_run && Number.isFinite(Number(graph.fastest_run.start_seconds))
+              ? graph.fastest_run
+              : null;
             const buildDriverMarkup = (driver, y) => {
               const rowTop = - (rowHeight / 2);
               const runsData = driver.runs || [];
@@ -3329,26 +3363,33 @@
                 const label = String(run.representative_lap_time || "").trim();
                 const labelWidth = Math.max(48, ((label || "").length * 6.4) + 16);
                 const labelX = barX + Math.max(10, (barW - labelWidth) / 2);
+                const isFastestRun = Boolean(
+                  fastestRun
+                  && Number(fastestRun.start_seconds) === Number(run.representative_start_seconds)
+                  && Number(fastestRun.time_seconds) === Number(run.representative_lap_time_seconds),
+                );
                 return `
-                  <g class="qualifying-timeline-run" aria-label="${escapeHtml(labelForRun(run))}">
-                    <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="20" rx="6" ry="6" fill="${driver.color || "#44c2ff"}" opacity="0.92" stroke="rgba(7,16,29,0.72)" stroke-width="1"></rect>
-                    ${segments.map((segment) => {
-                      const segmentStart = toX(segment.start_seconds);
-                      const segmentEnd = toX(segment.end_seconds);
-                      const actualWidth = Math.max(6, segmentEnd - segmentStart);
-                      const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(18, Math.min(actualWidth, 64));
-                      const patternId = segmentPattern(segment.lap_type);
-                      const segmentText = segmentLabel(segment.lap_type);
-                      return `
-                        <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="20" rx="4" ry="4" fill="url(#${patternId})" opacity="0.95"></rect>
-                        <text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="4" fill="#07101d" font-size="9" font-weight="900" text-anchor="middle">${escapeHtml(segmentText)}</text>
-                      `;
-                    }).join("")}
-                    <g class="pit-stint-length" aria-hidden="true">
-                      <rect x="${labelX.toFixed(2)}" y="${(rowTop + 1).toFixed(2)}" width="${labelWidth.toFixed(2)}" height="13" rx="6.5" fill="rgba(7,16,29,0.78)"></rect>
-                      <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="10.5" text-anchor="middle" fill="#f8fafc" font-size="9" font-weight="900">${escapeHtml(label || "0.000")}</text>
+                  <a class="qualifying-timeline-run" href="${escapeHtml(runHref(driver.value || driver.driver || '', run))}" aria-label="${escapeHtml(labelForRun(run))}">
+                    <g>
+                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="20" rx="6" ry="6" fill="${driver.color || "#44c2ff"}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.6' : '1'}"></rect>
+                      ${segments.map((segment) => {
+                        const segmentStart = toX(segment.start_seconds);
+                        const segmentEnd = toX(segment.end_seconds);
+                        const actualWidth = Math.max(6, segmentEnd - segmentStart);
+                        const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(18, Math.min(actualWidth, 64));
+                        const patternId = segmentPattern(segment.lap_type);
+                        const segmentText = segmentLabel(segment.lap_type);
+                        return `
+                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="20" rx="4" ry="4" fill="url(#${patternId})" opacity="0.95"></rect>
+                          <text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="4" fill="#07101d" font-size="9" font-weight="900" text-anchor="middle">${escapeHtml(segmentText)}</text>
+                        `;
+                      }).join("")}
+                      <g class="pit-stint-length" aria-hidden="true">
+                        <rect x="${labelX.toFixed(2)}" y="${(rowTop + 1).toFixed(2)}" width="${labelWidth.toFixed(2)}" height="13" rx="6.5" fill="rgba(7,16,29,0.78)"></rect>
+                        <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="10.5" text-anchor="middle" fill="#f8fafc" font-size="9" font-weight="900">${escapeHtml(label || "0.000")}</text>
+                      </g>
                     </g>
-                  </g>
+                  </a>
                 `;
               }).join("") : `
                 <text x="${pad.left + 8}" y="4" fill="rgba(151,167,194,0.7)" font-size="9.5">No timed run</text>
@@ -3405,9 +3446,50 @@
               const seconds = (Number(graph.max_time || 0) / 5) * i;
               const x = toX(seconds);
               grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-              grid += `<text x="${x.toFixed(2)}" y="${height - 16}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="10" font-weight="800">${formatAxisTime(seconds)}</text>`;
             }
             grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+            const phaseBandMarkup = isAllGraph ? (() => {
+              const q1Start = 0;
+              const q2Start = Number(phaseWindows.Q2 || (18 * 60));
+              const q3Start = Number(phaseWindows.Q3 || (q2Start + (15 * 60)));
+              const q1End = q2Start > 0 ? q2Start : 18 * 60;
+              const q2End = q3Start > q2Start ? q3Start : (q2Start + (15 * 60));
+              const q3End = Number(graph.max_time || 0) > q3Start ? Number(graph.max_time || 0) : (q3Start + (12 * 60));
+              const bands = [
+                { code: "Q1", start: q1Start, end: q1End, label: "Q1 18:00", fill: "rgba(99,230,178,0.12)", stroke: "rgba(99,230,178,0.32)" },
+                { code: "Q2", start: q2Start, end: q2End, label: "Q2 15:00", fill: "rgba(68,194,255,0.12)", stroke: "rgba(68,194,255,0.32)" },
+                { code: "Q3", start: q3Start, end: q3End, label: "Q3 12:00", fill: "rgba(255,191,105,0.12)", stroke: "rgba(255,191,105,0.34)" },
+              ];
+              return bands.map((band) => {
+                const x1 = toX(band.start);
+                const x2 = toX(band.end);
+                const left = Math.min(x1, x2);
+                const widthBand = Math.max(8, Math.abs(x2 - x1));
+                const labelX = band.code === "Q1" ? left + 18 : left + (widthBand / 2);
+                const labelAnchor = band.code === "Q1" ? "start" : "middle";
+                return `
+                  <g>
+                    <rect x="${left.toFixed(2)}" y="${(height - 28).toFixed(2)}" width="${widthBand.toFixed(2)}" height="12" rx="6" fill="${band.fill}" stroke="${band.stroke}" stroke-width="1"></rect>
+                    <text x="${labelX.toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="${labelAnchor}" fill="rgba(248,250,252,0.98)" font-size="10" font-weight="900">${band.label}</text>
+                  </g>
+                `;
+              }).join("");
+            })() : (phaseCountdownSeconds && selectedPhaseWindow ? (() => {
+              const phaseStart = Number(selectedPhaseWindow.start || 0);
+              const phaseEnd = Number(selectedPhaseWindow.end || phaseStart + phaseCountdownSeconds);
+              const x1 = toX(phaseStart);
+              const x2 = toX(phaseEnd);
+              const left = Math.min(x1, x2);
+              const widthBand = Math.max(8, Math.abs(x2 - x1));
+              return `
+                <g>
+                  <rect x="${left.toFixed(2)}" y="${(height - 28).toFixed(2)}" width="${widthBand.toFixed(2)}" height="12" rx="6" fill="rgba(99,230,178,0.12)" stroke="rgba(99,230,178,0.32)" stroke-width="1"></rect>
+                  <text x="${(left + 14).toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="start" fill="rgba(248,250,252,0.98)" font-size="10" font-weight="900">${formatCountdownTime(phaseCountdownSeconds)}</text>
+                  <text x="${(left + (widthBand / 2)).toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="middle" fill="rgba(151,167,194,0.88)" font-size="10" font-weight="800">${selectedPhaseCode} Countdown</text>
+                  <text x="${(left + widthBand - 2).toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="end" fill="rgba(99,230,178,0.98)" font-size="10" font-weight="900">0:00</text>
+                </g>
+              `;
+            })() : "");
 
             let cursorY = pad.top;
             const rowBlocks = [];
@@ -3423,6 +3505,7 @@
             svg.innerHTML = `
               <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
               ${defs}
+              ${phaseBandMarkup}
               <g class="qualifying-timeline-axis">${grid}</g>
               ${rows}
             `;
@@ -3450,8 +3533,6 @@
             svg.addEventListener("mouseleave", clearRuns);
           };
 
-          renderQualifyingTimeline("qualifying-timeline-combined-svg", "qualifying-timeline-combined-json");
-          renderQualifyingTimeline("qualifying-timeline-split-svg", "qualifying-timeline-split-json");
           renderQualifyingTimeline("qualifying-timeline-svg", "qualifying-timeline-json");
         })();
       </script>
