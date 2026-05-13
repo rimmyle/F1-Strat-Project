@@ -685,6 +685,13 @@ def _qualifying_phase_windows(session):
     return phase_windows
 
 
+def _qualifying_phase_durations(session):
+    session_name = str(getattr(session, "name", "")).strip().lower()
+    if "sprint" in session_name:
+        return {"Q1": 12, "Q2": 10, "Q3": 8}
+    return {"Q1": 18, "Q2": 15, "Q3": 12}
+
+
 def _qualifying_phase_rows(session, phase):
     results = _qualifying_driver_rows(session)
     if results is None or results.empty:
@@ -936,7 +943,14 @@ def _qualifying_run_laps(session, driver_number):
         if not run or not run["laps"]:
             return None
         _qualifying_finalize_run_laps(run["laps"])
-        start_seconds = next((lap.get("lap_start_seconds") for lap in run["laps"] if lap.get("lap_start_seconds") is not None), None)
+        start_seconds = next(
+            (
+                lap.get("pit_out_seconds")
+                for lap in run["laps"]
+                if lap.get("lap_type") in {"Out Lap", "Out / In Lap"} and lap.get("pit_out_seconds") is not None
+            ),
+            next((lap.get("lap_start_seconds") for lap in run["laps"] if lap.get("lap_start_seconds") is not None), None),
+        )
         end_seconds = next((lap.get("lap_end_seconds") for lap in reversed(run["laps"]) if lap.get("lap_end_seconds") is not None), None)
         return {
             "run_number": run["run_number"],
@@ -1045,16 +1059,7 @@ def _qualifying_run_flying_seconds(run):
 
 def _qualifying_timeline_graph(session, phase=None, split_sections=True):
     event = getattr(session, "event", None)
-    session_year = getattr(getattr(event, "EventDate", None), "year", None)
-    event_name = getattr(event, "EventName", None)
-    session_code = "SQ" if "sprint" in str(getattr(session, "name", "")).strip().lower() else "Q"
     timing_session = session
-    if session_year and event_name:
-        try:
-            timing_session = fastf1.get_session(session_year, event_name, session_code)
-            timing_session.load(laps=True, telemetry=False, weather=False, messages=True)
-        except Exception:
-            timing_session = session
 
     driver_rows_source = _qualifying_driver_rows(timing_session)
     if driver_rows_source is None or driver_rows_source.empty:
@@ -1062,22 +1067,32 @@ def _qualifying_timeline_graph(session, phase=None, split_sections=True):
     if driver_rows_source is None or driver_rows_source.empty:
         return None
 
-    use_phase_sections = split_sections
     requested_phase = str(phase or "Q1").strip().upper()
     if requested_phase not in {"Q1", "Q2", "Q3"}:
         requested_phase = "Q1"
+    use_phase_sections = split_sections
+    phase_durations = _qualifying_phase_durations(timing_session)
 
     def run_outlap_seconds(run):
-        start_seconds = next(
-            (
-                lap.get("lap_start_seconds")
-                for lap in run.get("laps", [])
-                if lap.get("lap_type") in {"Out Lap", "Out / In Lap"} and lap.get("lap_start_seconds") is not None
-            ),
-            None,
-        )
+        start_seconds = run.get("start_seconds")
         if start_seconds is None:
-            start_seconds = run.get("start_seconds")
+            start_seconds = next(
+                (
+                    lap.get("pit_out_seconds")
+                    for lap in run.get("laps", [])
+                    if lap.get("lap_type") in {"Out Lap", "Out / In Lap"} and lap.get("pit_out_seconds") is not None
+                ),
+                None,
+            )
+        if start_seconds is None:
+            start_seconds = next(
+                (
+                    lap.get("lap_start_seconds")
+                    for lap in run.get("laps", [])
+                    if lap.get("lap_type") in {"Out Lap", "Out / In Lap"} and lap.get("lap_start_seconds") is not None
+                ),
+                None,
+            )
         if start_seconds is None:
             start_seconds = next(
                 (
@@ -1103,53 +1118,107 @@ def _qualifying_timeline_graph(session, phase=None, split_sections=True):
             for run in _qualifying_run_laps(timing_session, driver_number):
                 outlap_start = run_outlap_seconds(run)
                 flying_start = _qualifying_run_flying_seconds(run)
+                inlap_start = next(
+                    (
+                        lap.get("lap_start_seconds")
+                        for lap in run.get("laps", [])
+                        if lap.get("lap_type") == "In Lap" and lap.get("lap_start_seconds") is not None
+                    ),
+                    None,
+                )
                 if outlap_start is None or flying_start is None:
                     continue
                 try:
                     outlap_start = float(outlap_start)
                     flying_start = float(flying_start)
+                    inlap_start = float(inlap_start) if inlap_start is not None else None
                 except (TypeError, ValueError):
                     continue
                 run_records.append(
                     {
+                        "driver_number": driver_number,
+                        "run_ref": run.get("representative", f"{driver_number}:{run.get('run_number', '')}"),
                         "outlap_start": outlap_start,
                         "flying_start": flying_start,
+                        "inlap_start": inlap_start,
                         "end_seconds": float(run.get("end_seconds")) if run.get("end_seconds") is not None else None,
                     }
                 )
         if not run_records:
             return {}
 
-        run_records.sort(key=lambda item: item["outlap_start"])
-        q1_start = run_records[0]["outlap_start"]
-        q1_end = q1_start + (18 * 60.0)
-        q1_runs = [record for record in run_records if record["flying_start"] < q1_end]
-        q1_last_end = max((record["end_seconds"] for record in q1_runs if record.get("end_seconds") is not None), default=q1_end)
-        q2_anchor = next((record for record in run_records if record["outlap_start"] >= q1_last_end), None)
-        q2_start = q2_anchor["outlap_start"] if q2_anchor is not None else None
-        q2_end = q2_start + (15 * 60.0) if q2_start is not None else None
-        q2_runs = [record for record in run_records if q2_start is not None and q2_start <= record["flying_start"] < q2_end]
-        q2_last_end = max((record["end_seconds"] for record in q2_runs if record.get("end_seconds") is not None), default=q2_end)
-        q3_anchor = next((record for record in run_records if q2_last_end is not None and record["outlap_start"] >= q2_last_end), None)
-        q3_start = q3_anchor["outlap_start"] if q3_anchor is not None else None
-        q3_end = q3_start + (12 * 60.0) if q3_start is not None else None
+        def run_sort_key(record):
+            outlap_start = record.get("outlap_start")
+            flying_start = record.get("flying_start")
+            return (
+                float(outlap_start) if outlap_start is not None else float("inf"),
+                float(flying_start) if flying_start is not None else float("inf"),
+            )
+
+        def phase_marker(record):
+            marker = record.get("flying_start")
+            if marker is None:
+                marker = record.get("inlap_start")
+            return marker
+
+        def select_phase(runs, duration_minutes):
+            if not runs:
+                return None, [], [], None, None
+
+            ordered_runs = sorted(runs, key=run_sort_key)
+            anchor = ordered_runs[0]
+            phase_start = anchor["outlap_start"]
+            phase_end = phase_start + (duration_minutes * 60.0)
+            selected = [anchor]
+            remaining = []
+
+            for record in ordered_runs[1:]:
+                marker = phase_marker(record)
+                if marker is None:
+                    remaining.append(record)
+                    continue
+
+                marker_value = float(marker)
+                if float(phase_start) <= marker_value < float(phase_end):
+                    selected.append(record)
+                else:
+                    remaining.append(record)
+
+            return anchor, selected, remaining, phase_end, phase_start
+
+        def run_ref_set(records):
+            return {record.get("run_ref") for record in records if record.get("run_ref")}
+
+        run_records.sort(key=run_sort_key)
+        q1_duration = phase_durations.get("Q1", 18)
+        q2_duration = phase_durations.get("Q2", 15)
+        q3_duration = phase_durations.get("Q3", 12)
+
+        q1_anchor, q1_runs, remaining_after_q1, q1_end_marker, q1_start_phase = select_phase(run_records, q1_duration)
+        q1_start = q1_start_phase if q1_start_phase is not None else (q1_anchor["outlap_start"] if q1_anchor is not None else None)
+        q1_end = q1_start + (q1_duration * 60.0) if q1_start is not None else None
+
+        q2_window_anchor, q2_window_runs, remaining_after_q2, q2_end_marker, q2_start_phase = select_phase(remaining_after_q1, q2_duration)
+        q2_start = q2_start_phase if q2_start_phase is not None else (q2_window_anchor["outlap_start"] if q2_window_anchor is not None else None)
+        q2_end = q2_start + (q2_duration * 60.0) if q2_start is not None else None
+
+        q3_anchor, q3_runs, _, _, q3_start_phase = select_phase(remaining_after_q2, q3_duration)
+        q3_start = q3_start_phase if q3_start_phase is not None else (q3_anchor["outlap_start"] if q3_anchor is not None else q2_end)
+        q3_end = q3_start + (q3_duration * 60.0) if q3_start is not None else None
         return {
-            "Q1": {"start": q1_start, "end": q1_end, "anchor": run_records[0]},
-            "Q2": {"start": q2_start, "end": q2_end, "anchor": q2_anchor},
-            "Q3": {"start": q3_start, "end": q3_end, "anchor": q3_anchor},
+            "Q1": {"start": q1_start, "end": q1_end, "anchor": q1_anchor, "runs": list(run_ref_set(q1_runs))},
+            "Q2": {"start": q2_start, "end": q2_end, "anchor": q2_window_anchor, "runs": list(run_ref_set(q2_window_runs))},
+            "Q3": {"start": q3_start, "end": q3_end, "anchor": q3_anchor, "runs": list(run_ref_set(q3_runs))},
         }
 
     phase_windows = infer_qualifying_phase_windows_from_runs()
     phase_window = phase_windows.get(requested_phase, {}) if isinstance(phase_windows, dict) else {}
     phase_start = phase_window.get("start")
     phase_end = phase_window.get("end")
-    phase_anchor = phase_window.get("anchor")
-
+    phase_run_refs = set(phase_window.get("runs") or [])
     def run_phase_code(run, driver_number=None):
-        flying_start = _qualifying_run_flying_seconds(run)
-        if flying_start is None or phase_start is None or phase_end is None:
-            return None
-        if float(phase_start) <= float(flying_start) < float(phase_end):
+        run_ref = run.get("representative", "")
+        if run_ref and run_ref in phase_run_refs:
             return requested_phase
         return None
 
@@ -1287,25 +1356,10 @@ def _qualifying_timeline_graph(session, phase=None, split_sections=True):
                         all_run_starts.append(run["start_seconds"])
                     if run.get("end_seconds") is not None:
                         all_run_ends.append(run["end_seconds"])
-                    flying_start = _qualifying_run_flying_seconds(run)
                     run_start = run.get("start_seconds")
                     run_end = run.get("end_seconds")
-                    overlaps_phase = (
-                        phase_start is not None
-                        and phase_end is not None
-                        and run_start is not None
-                        and run_end is not None
-                        and float(run_start) < float(phase_end)
-                        and float(run_end) > float(phase_start)
-                    )
-                    in_phase = (
-                        flying_start is not None
-                        and phase_start is not None
-                        and phase_end is not None
-                        and float(phase_start) <= float(flying_start) < float(phase_end)
-                    )
-                    include_no_flying_run = overlaps_phase and flying_start is None
-                    if in_phase or include_no_flying_run:
+                    run_ref = run.get("representative", f"{driver_number}:{run.get('run_number', '')}")
+                    if run_ref in phase_run_refs:
                         phase_run = assign_run_phase(run, driver_number)
                         phase_runs.append(phase_run)
                 if not phase_runs and row.get("phase_seconds") is None:
@@ -1383,6 +1437,13 @@ def _qualifying_timeline_graph(session, phase=None, split_sections=True):
 
     timeline_start = min(all_run_starts) if all_run_starts else (min(run_starts) if run_starts else 0.0)
     session_end = max(all_run_ends) if all_run_ends else (max(run_ends) if run_ends else timeline_start + 1.0)
+    if use_phase_sections:
+        phase_start_value = phase_start if phase_start is not None else timeline_start
+        phase_end_value = phase_end if phase_end is not None else session_end
+        visible_end = max(run_ends) if run_ends else session_end
+        if phase_end_value > phase_start_value:
+            timeline_start = float(phase_start_value)
+            session_end = float(max(phase_end_value, visible_end))
     section_max_time = session_end - timeline_start
     section_max_time = max(float(section_max_time), 1.0)
     for section in sections:
@@ -2995,11 +3056,11 @@ def _session_object(year, gp, session_code):
         return session
 
     schedule, event = _event_from_session_data(year, gp)
-    if event is None:
-        return None
-
     try:
-        session = event.get_session(session_code)
+        if event is not None:
+            session = event.get_session(session_code)
+        else:
+            session = fastf1.get_session(year, gp, session_code)
         load_laps = True
         if not _load_session_with_timeout(session, load_laps=load_laps):
             return None
@@ -3049,6 +3110,12 @@ def results():
     session = data.get("session") if data and data.get("session") is not None else None
     if session is None and data and (session_is_race or session_is_qualifying):
         session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
+    if session is None and session_is_qualifying:
+        try:
+            session = fastf1.get_session(int(ctx["year"]), ctx["gp"], ctx["session_code"])
+            session.load(laps=True, telemetry=False, weather=False, messages=True)
+        except Exception:
+            session = None
     driver_number = request.args.get("driver", "").strip()
     qualifying_phase = request.args.get("phase", "Q1").strip().upper() if session_is_qualifying else ""
     if qualifying_phase not in {"Q1", "Q2", "Q3", "ALL"}:
@@ -3161,6 +3228,12 @@ def data():
     session_is_race = str(ctx["session_code"]).strip().upper() == "R"
     if session is None and (data_state or lap_requested or driver_requested or session_is_race or session_is_qualifying):
         session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
+    if session is None and session_is_qualifying:
+        try:
+            session = fastf1.get_session(int(ctx["year"]), ctx["gp"], ctx["session_code"])
+            session.load(laps=True, telemetry=False, weather=False, messages=True)
+        except Exception:
+            session = None
     if session_is_qualifying:
         qualifying_phase = qualifying_phase if qualifying_phase in {"Q1", "Q2", "Q3"} else "Q1"
     else:

@@ -1873,6 +1873,9 @@
 
       .qualifying-timeline-viewport {
         padding: 0 0 20px;
+        display: flex;
+        justify-content: center;
+        overflow-x: auto;
       }
 
       .qualifying-timeline-svg {
@@ -1934,8 +1937,13 @@
         min-height: 0;
         overflow-x: auto;
         overflow-y: visible;
+        justify-content: center;
         scrollbar-width: none;
         -ms-overflow-style: none;
+      }
+
+      .qualifying-fullpage .qualifying-timeline-svg {
+        margin: 0 auto;
       }
 
       .qualifying-fullpage .qualifying-timeline-viewport::-webkit-scrollbar {
@@ -3241,10 +3249,10 @@
               return;
             }
 
-            const plotWidth = 1000;
-            const labelColumnWidth = 118;
+            const plotWidth = Math.max(760, Math.ceil((Number(graph.max_time || 0) * 0.62) + 48));
+            const labelColumnWidth = 96;
             const width = plotWidth + labelColumnWidth;
-            const pad = { top: 34, right: 8, bottom: 70, left: 64 };
+            const pad = { top: 28, right: 8, bottom: 56, left: 52 };
             const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
               phase_code: graph.phase_code || "ALL",
               title: graph.title || "Qualifying run timeline",
@@ -3252,18 +3260,18 @@
               eliminated_count: 0,
               drivers: graph.drivers || [],
             }];
-            const sectionHeaderHeight = 28;
-            const sectionGap = 14;
+            const sectionHeaderHeight = 22;
+            const sectionGap = 10;
             const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
             const availableHeight = Math.max(420, (window.innerHeight || 900) - 260);
             const rowStep = Math.max(
-              18,
+              15,
               Math.min(
-                24,
+                20,
                 Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionHeaderHeight) - ((sections.length - 1) * sectionGap)) / totalRows),
               ),
             );
-            const rowHeight = Math.max(10, Math.min(12, Math.floor(rowStep * 0.5)));
+            const rowHeight = Math.max(7, Math.min(9, Math.floor(rowStep * 0.44)));
             const height = pad.top + pad.bottom + sections.reduce(
               (total, section, index) => total
                 + sectionHeaderHeight
@@ -3276,14 +3284,12 @@
             const timeLabelX = plotWidth + (labelColumnWidth / 2);
             const timeOffset = Number(graph.time_offset || 0);
             const isAllGraph = String(graph.phase_code || "").toUpperCase() === "ALL";
-            const phaseCountdownSeconds = {
-              Q1: 18 * 60,
-              Q2: 15 * 60,
-              Q3: 12 * 60,
-            }[String(graph.phase_code || "").toUpperCase()] || null;
-            const phaseWindows = graph.phase_windows && typeof graph.phase_windows === "object" ? graph.phase_windows : {};
             const selectedPhaseCode = String(graph.phase_code || "").toUpperCase();
-            const selectedPhaseWindow = phaseWindows[selectedPhaseCode] || null;
+            const phaseWindows = graph.phase_windows && typeof graph.phase_windows === "object" ? graph.phase_windows : {};
+            const selectedPhaseWindow = selectedPhaseCode && selectedPhaseCode !== "ALL"
+              ? phaseWindows[selectedPhaseCode] || null
+              : null;
+            const graphEnd = pad.left + Math.max(0, Number(graph.max_time || 0) || 0) * scale;
 
             const escapeHtml = (value) => String(value)
               .replaceAll("&", "&amp;")
@@ -3292,13 +3298,14 @@
               .replaceAll('"', "&quot;");
 
             const toX = (seconds) => pad.left + Math.max(0, (Number(seconds) || 0) - timeOffset) * scale;
-            const formatAxisTime = (seconds) => {
-              const total = Math.max(0, Number(seconds) || 0);
-              const minutes = Math.floor(total / 60);
-              const secs = Math.floor(total % 60);
-              return `${minutes}:${String(secs).padStart(2, "0")}`;
+            const clampSeconds = (seconds) => {
+              const value = Number(seconds);
+              if (!Number.isFinite(value)) {
+                return timeOffset;
+              }
+              return Math.min(Math.max(value, timeOffset), timeOffset + Number(graph.max_time || 0));
             };
-            const formatCountdownTime = (seconds) => {
+            const formatAxisTime = (seconds) => {
               const total = Math.max(0, Number(seconds) || 0);
               const minutes = Math.floor(total / 60);
               const secs = Math.floor(total % 60);
@@ -3356,13 +3363,13 @@
                   end_seconds: run.end_seconds,
                   lap_type: "Flying Lap",
                 }];
-                const runStart = Math.min(...segments.map((segment) => Number(segment.start_seconds) || 0));
-                const runEnd = Math.max(...segments.map((segment) => Number(segment.end_seconds) || 0));
+                const runStart = clampSeconds(Math.min(...segments.map((segment) => Number(segment.start_seconds) || 0)));
+                const runEnd = clampSeconds(Math.max(...segments.map((segment) => Number(segment.end_seconds) || 0)));
                 const barX = toX(runStart);
                 const barW = Math.max(6, toX(runEnd) - barX - 2);
                 const label = String(run.representative_lap_time || "").trim();
-                const labelWidth = Math.max(48, ((label || "").length * 6.4) + 16);
-                const labelX = barX + Math.max(10, (barW - labelWidth) / 2);
+                const labelWidth = Math.max(36, ((label || "").length * 5.0) + 12);
+                const labelX = barX + Math.max(7, (barW - labelWidth) / 2);
                 const isFastestRun = Boolean(
                   fastestRun
                   && Number(fastestRun.start_seconds) === Number(run.representative_start_seconds)
@@ -3371,22 +3378,22 @@
                 return `
                   <a class="qualifying-timeline-run" href="${escapeHtml(runHref(driver.value || driver.driver || '', run))}" aria-label="${escapeHtml(labelForRun(run))}">
                     <g>
-                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="20" rx="6" ry="6" fill="${driver.color || "#44c2ff"}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.6' : '1'}"></rect>
+                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="14" rx="4.5" ry="4.5" fill="${driver.color || "#44c2ff"}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
                       ${segments.map((segment) => {
-                        const segmentStart = toX(segment.start_seconds);
-                        const segmentEnd = toX(segment.end_seconds);
+                        const segmentStart = toX(clampSeconds(segment.start_seconds));
+                        const segmentEnd = toX(clampSeconds(segment.end_seconds));
                         const actualWidth = Math.max(6, segmentEnd - segmentStart);
                         const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(18, Math.min(actualWidth, 64));
                         const patternId = segmentPattern(segment.lap_type);
                         const segmentText = segmentLabel(segment.lap_type);
                         return `
-                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="20" rx="4" ry="4" fill="url(#${patternId})" opacity="0.95"></rect>
-                          <text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="4" fill="#07101d" font-size="9" font-weight="900" text-anchor="middle">${escapeHtml(segmentText)}</text>
+                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="14" rx="3.5" ry="3.5" fill="url(#${patternId})" opacity="0.95"></rect>
+                          <text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="2.5" fill="#07101d" font-size="7.5" font-weight="900" text-anchor="middle">${escapeHtml(segmentText)}</text>
                         `;
                       }).join("")}
                       <g class="pit-stint-length" aria-hidden="true">
-                        <rect x="${labelX.toFixed(2)}" y="${(rowTop + 1).toFixed(2)}" width="${labelWidth.toFixed(2)}" height="13" rx="6.5" fill="rgba(7,16,29,0.78)"></rect>
-                        <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="10.5" text-anchor="middle" fill="#f8fafc" font-size="9" font-weight="900">${escapeHtml(label || "0.000")}</text>
+                        <rect x="${labelX.toFixed(2)}" y="${(rowTop + 1).toFixed(2)}" width="${labelWidth.toFixed(2)}" height="10" rx="5" fill="rgba(7,16,29,0.78)"></rect>
+                        <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="8.4" text-anchor="middle" fill="#f8fafc" font-size="7.5" font-weight="900">${escapeHtml(label || "0.000")}</text>
                       </g>
                     </g>
                   </a>
@@ -3398,9 +3405,9 @@
               return `
                 <g class="qualifying-timeline-driver" data-driver="${escapeHtml(driver.value || driver.driver || '')}" transform="translate(0 ${y})">
                   <line x1="${pad.left}" y1="12" x2="${plotWidth - pad.right}" y2="12" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
-                  <text x="${(pad.left - 4).toFixed(2)}" y="4" fill="${driver.color || '#cbd5e1'}" font-size="11" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
+                  <text x="${(pad.left - 4).toFixed(2)}" y="2.5" fill="${driver.color || '#cbd5e1'}" font-size="9.5" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
                   ${runs}
-                  <text x="${timeLabelX.toFixed(2)}" y="4" fill="rgba(226,232,240,0.96)" font-size="12" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
+                  <text x="${timeLabelX.toFixed(2)}" y="2.5" fill="rgba(226,232,240,0.96)" font-size="10" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
                 </g>
               `;
             };
@@ -3411,8 +3418,8 @@
               const header = `
                 <g class="qualifying-timeline-section" transform="translate(0 ${cursorY})">
                   <line x1="${pad.left}" y1="0" x2="${plotWidth - pad.right}" y2="0" stroke="rgba(148,163,184,0.18)" stroke-width="1.2"></line>
-                  <text x="${pad.left}" y="18" fill="rgba(226,232,240,0.98)" font-size="12" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
-                  <text x="${plotWidth - pad.right}" y="18" fill="rgba(151,167,194,0.92)" font-size="10" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
+                  <text x="${pad.left}" y="15" fill="rgba(226,232,240,0.98)" font-size="10.5" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
+                  <text x="${plotWidth - pad.right}" y="15" fill="rgba(151,167,194,0.92)" font-size="8.5" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
                 </g>
               `;
               const driversMarkup = drivers.map((driver, driverIndex) => buildDriverMarkup(driver, cursorY + sectionHeaderHeight + (driverIndex * rowStep) + rowHeight)).join("");
@@ -3446,51 +3453,29 @@
               const seconds = (Number(graph.max_time || 0) / 5) * i;
               const x = toX(seconds);
               grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+              grid += `<text x="${x.toFixed(2)}" y="${height - 15}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="8.5" font-weight="800">${formatAxisTime(seconds + timeOffset)}</text>`;
             }
             grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-            const phaseBandMarkup = isAllGraph ? (() => {
-              const q1Start = 0;
-              const q2Start = Number(phaseWindows.Q2 || (18 * 60));
-              const q3Start = Number(phaseWindows.Q3 || (q2Start + (15 * 60)));
-              const q1End = q2Start > 0 ? q2Start : 18 * 60;
-              const q2End = q3Start > q2Start ? q3Start : (q2Start + (15 * 60));
-              const q3End = Number(graph.max_time || 0) > q3Start ? Number(graph.max_time || 0) : (q3Start + (12 * 60));
-              const bands = [
-                { code: "Q1", start: q1Start, end: q1End, label: "Q1 18:00", fill: "rgba(99,230,178,0.12)", stroke: "rgba(99,230,178,0.32)" },
-                { code: "Q2", start: q2Start, end: q2End, label: "Q2 15:00", fill: "rgba(68,194,255,0.12)", stroke: "rgba(68,194,255,0.32)" },
-                { code: "Q3", start: q3Start, end: q3End, label: "Q3 12:00", fill: "rgba(255,191,105,0.12)", stroke: "rgba(255,191,105,0.34)" },
-              ];
-              return bands.map((band) => {
-                const x1 = toX(band.start);
-                const x2 = toX(band.end);
-                const left = Math.min(x1, x2);
-                const widthBand = Math.max(8, Math.abs(x2 - x1));
-                const labelX = band.code === "Q1" ? left + 18 : left + (widthBand / 2);
-                const labelAnchor = band.code === "Q1" ? "start" : "middle";
-                return `
-                  <g>
-                    <rect x="${left.toFixed(2)}" y="${(height - 28).toFixed(2)}" width="${widthBand.toFixed(2)}" height="12" rx="6" fill="${band.fill}" stroke="${band.stroke}" stroke-width="1"></rect>
-                    <text x="${labelX.toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="${labelAnchor}" fill="rgba(248,250,252,0.98)" font-size="10" font-weight="900">${band.label}</text>
-                  </g>
-                `;
-              }).join("");
-            })() : (phaseCountdownSeconds && selectedPhaseWindow ? (() => {
+            const phaseWindowMarkup = selectedPhaseWindow ? (() => {
               const phaseStart = Number(selectedPhaseWindow.start || 0);
-              const phaseEnd = Number(selectedPhaseWindow.end || phaseStart + phaseCountdownSeconds);
+              const phaseEnd = Number(selectedPhaseWindow.end || phaseStart);
+              if (!Number.isFinite(phaseStart) || !Number.isFinite(phaseEnd) || phaseEnd <= phaseStart) {
+                return "";
+              }
               const x1 = toX(phaseStart);
               const x2 = toX(phaseEnd);
               const left = Math.min(x1, x2);
               const widthBand = Math.max(8, Math.abs(x2 - x1));
+              const label = `${selectedPhaseCode} window`;
               return `
-                <g>
-                  <rect x="${left.toFixed(2)}" y="${(height - 28).toFixed(2)}" width="${widthBand.toFixed(2)}" height="12" rx="6" fill="rgba(99,230,178,0.12)" stroke="rgba(99,230,178,0.32)" stroke-width="1"></rect>
-                  <text x="${(left + 14).toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="start" fill="rgba(248,250,252,0.98)" font-size="10" font-weight="900">${formatCountdownTime(phaseCountdownSeconds)}</text>
-                  <text x="${(left + (widthBand / 2)).toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="middle" fill="rgba(151,167,194,0.88)" font-size="10" font-weight="800">${selectedPhaseCode} Countdown</text>
-                  <text x="${(left + widthBand - 2).toFixed(2)}" y="${(height - 18).toFixed(2)}" text-anchor="end" fill="rgba(99,230,178,0.98)" font-size="10" font-weight="900">0:00</text>
+                <g class="qualifying-timeline-window" opacity="0.95">
+                  <rect x="${left.toFixed(2)}" y="${pad.top.toFixed(2)}" width="${widthBand.toFixed(2)}" height="${(height - pad.top - pad.bottom).toFixed(2)}" fill="rgba(59,130,246,0.07)" stroke="rgba(96,165,250,0.38)" stroke-dasharray="6 6" stroke-width="1.2"></rect>
+                  <line x1="${left.toFixed(2)}" y1="${pad.top.toFixed(2)}" x2="${left.toFixed(2)}" y2="${(height - pad.bottom).toFixed(2)}" stroke="rgba(96,165,250,0.62)" stroke-width="1.4"></line>
+                  <line x1="${(left + widthBand).toFixed(2)}" y1="${pad.top.toFixed(2)}" x2="${(left + widthBand).toFixed(2)}" y2="${(height - pad.bottom).toFixed(2)}" stroke="rgba(96,165,250,0.62)" stroke-width="1.4"></line>
+                  <text x="${(left + 10).toFixed(2)}" y="${(pad.top + 11).toFixed(2)}" fill="rgba(224,242,254,0.98)" font-size="8.5" font-weight="900">${escapeHtml(label)}</text>
                 </g>
               `;
-            })() : "");
-
+            })() : "";
             let cursorY = pad.top;
             const rowBlocks = [];
             sections.forEach((section, sectionIndex) => {
@@ -3501,11 +3486,12 @@
             const rows = rowBlocks.join("");
 
             svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            svg.style.width = `${width}px`;
             svg.style.height = `${height}px`;
             svg.innerHTML = `
               <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
               ${defs}
-              ${phaseBandMarkup}
+              ${phaseWindowMarkup}
               <g class="qualifying-timeline-axis">${grid}</g>
               ${rows}
             `;
