@@ -287,6 +287,7 @@ def _session_rows(session):
 
     preferred_columns = [
         "Position",
+        "DriverNumber",
         "Abbreviation",
         "FullName",
         "TeamName",

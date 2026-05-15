@@ -1307,6 +1307,21 @@
         width: 100%;
       }
 
+      .results-sidebar tbody tr.session-result-row {
+        cursor: pointer;
+        transition: background 140ms ease, box-shadow 140ms ease;
+      }
+
+      .results-sidebar tbody tr.session-result-row:hover,
+      .results-sidebar tbody tr.session-result-row:focus-visible {
+        background: rgba(18, 26, 40, 0.78);
+      }
+
+      .results-sidebar tbody tr.session-result-row:focus-visible {
+        outline: 1px solid rgba(68, 194, 255, 0.55);
+        outline-offset: -1px;
+      }
+
       .driver-name {
         display: inline-flex;
         align-items: center;
@@ -2701,7 +2716,12 @@
                     </thead>
                     <tbody>
                       {% for row in data.rows %}
-                        <tr>
+                        {% set driver_number = row.DriverNumber if row.DriverNumber is defined else row.get('DriverNumber', '') %}
+                        <tr
+                          class="session-result-row {% if driver_number %}has-driver{% endif %}"
+                          {% if driver_number %}data-driver-number="{{ driver_number }}"{% endif %}
+                          {% if driver_number %}tabindex="0" role="link" aria-label="Open lap detail for {{ row.FullName if row.FullName is defined else row.get('FullName', '-') }}"{% endif %}
+                        >
                           <td>{{ row.Position if row.Position is defined else row.get('Position', '-') }}</td>
                           <td>
                             {% set driver_flag = row.CountryFlag if row.CountryFlag is defined else row.get('CountryFlag', '') %}
@@ -2830,6 +2850,35 @@
                 url.searchParams.set("phase", phase);
               }
               window.location.assign(url.toString());
+            });
+          });
+
+          const sessionResultRows = document.querySelectorAll(".session-result-row[data-driver-number]");
+          sessionResultRows.forEach((row) => {
+            const driverNumber = row.getAttribute("data-driver-number") || "";
+            if (!driverNumber) {
+              return;
+            }
+
+            const openDriverLap = () => {
+              const url = new URL(window.location.href);
+              url.pathname = "/lap";
+              url.searchParams.set("driver", driverNumber);
+              url.hash = "lap-stint-panel";
+              window.location.assign(url.toString());
+            };
+
+            row.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openDriverLap();
+            });
+            row.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+                openDriverLap();
+              }
             });
           });
 
@@ -3761,23 +3810,15 @@
             group.addEventListener("mouseleave", clearSeries);
             group.addEventListener("focus", () => activateSeries(group));
             group.addEventListener("blur", clearSeries);
+            group.addEventListener("click", (event) => {
+              event.preventDefault();
+              openDriver(group);
+            });
             group.addEventListener("keydown", (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 openDriver(group);
               }
-            });
-          });
-          svg.querySelectorAll(".race-position-hit").forEach((hit) => {
-            hit.addEventListener("click", (event) => {
-              event.preventDefault();
-              const group = hit.closest(".race-position-series");
-              openDriver(group);
-            });
-            hit.addEventListener("pointerup", (event) => {
-              event.preventDefault();
-              const group = hit.closest(".race-position-series");
-              openDriver(group);
             });
           });
           svg.addEventListener("pointerleave", clearSeries);
