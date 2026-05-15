@@ -211,6 +211,16 @@ def _driver_country_code(row):
     return abbrev_to_code.get(abbreviation, "")
 
 
+def _render_error_page(status_code, title, message):
+    return render_template(
+        "error.html",
+        status_code=status_code,
+        title=title,
+        message=message,
+        session_badge="Strategy Predictor",
+    ), status_code
+
+
 def _format_lap_time(value):
     if pd.isna(value):
         return "-"
@@ -1534,7 +1544,12 @@ def _wait_for_session_laps(session, attempts=20, delay=0.5):
     return laps
 
 
-def _load_session_with_timeout(session, timeout_seconds=_SESSION_LOAD_TIMEOUT_SECONDS, load_laps=True):
+def _load_session_with_timeout(
+    session,
+    timeout_seconds=_SESSION_LOAD_TIMEOUT_SECONDS,
+    load_laps=True,
+    load_telemetry=False,
+):
     if not session:
         return False
 
@@ -1543,7 +1558,12 @@ def _load_session_with_timeout(session, timeout_seconds=_SESSION_LOAD_TIMEOUT_SE
 
     def worker():
         try:
-            session.load(laps=load_laps, telemetry=False, weather=False, messages=False)
+            session.load(
+                laps=load_laps,
+                telemetry=load_telemetry,
+                weather=False,
+                messages=False,
+            )
         except Exception as exc:
             load_error["exc"] = exc
         finally:
@@ -1677,6 +1697,26 @@ def _resolve_lap(session, driver_number, lap_key):
     if not valid.empty:
         return valid.iloc[0]
     return driver_laps.iloc[0]
+
+
+def _default_stint_lap_value(stint_data):
+    laps = (stint_data or {}).get("laps") or []
+    if not laps:
+        return ""
+
+    timed_laps = [lap for lap in laps if lap.get("lap_time_seconds") is not None and lap.get("value")]
+    candidate_laps = timed_laps or [lap for lap in laps if lap.get("value")]
+    if not candidate_laps:
+        return ""
+
+    chosen_lap = min(
+        candidate_laps,
+        key=lambda lap: (
+            float(lap.get("lap_time_seconds") or float("inf")),
+            float(lap.get("lap_number") or float("inf")),
+        ),
+    )
+    return _clean_value(chosen_lap.get("value", ""))
 
 
 def _telemetry_rows(lap, limit=240):
@@ -2884,6 +2924,33 @@ def _event_from_session_data(year, gp):
     return schedule, event
 
 
+def _session_view_base_context(ctx, session_state):
+    data = session_state if session_state.get("status") == "ready" else None
+    loading = session_state.get("status") == "loading"
+    loading_progress = session_state.get("progress", 0) if loading else 0
+    loading_stage = session_state.get("stage", "") if loading else ""
+    error = session_state.get("message") if session_state.get("status") == "error" else None
+    if ctx["schedule_error"] and not error:
+        error = ctx["schedule_error"]
+    if not data and not loading and not error:
+        error = "Session not available for this selection."
+    session_badge = ctx["session_badge"]
+    if data:
+        session_badge = f"{data['year']} {data['event_name']} - {data['session_name']}"
+    return {
+        "data": data,
+        "error": error,
+        "loading": loading,
+        "loading_progress": loading_progress,
+        "loading_stage": loading_stage,
+        "session_badge": session_badge,
+        "session_title": ctx["session_title"],
+        "years": _year_options(),
+        "events": ctx["event_options"],
+        "session_options": ctx["session_options"],
+    }
+
+
 def _load_session_data(year, gp, session_code):
     schedule, event = _event_from_session_data(year, gp)
     if event is None:
@@ -2892,7 +2959,7 @@ def _load_session_data(year, gp, session_code):
     session = event.get_session(session_code)
     session_code = str(session_code).strip().upper()
     load_laps = True
-    if not _load_session_with_timeout(session, load_laps=load_laps):
+    if not _load_session_with_timeout(session, load_laps=load_laps, load_telemetry=True):
         raise TimeoutError(f"Timed out loading session data for {year} {gp} {session_code}")
     rows = _session_rows(session)
     race_position_graph = None
@@ -3062,21 +3129,21 @@ def _session_object(year, gp, session_code):
         else:
             session = fastf1.get_session(year, gp, session_code)
         load_laps = True
-        if not _load_session_with_timeout(session, load_laps=load_laps):
+        if not _load_session_with_timeout(session, load_laps=load_laps, load_telemetry=True):
             return None
         return session
     except Exception:
         return None
 
 
+def _redirect_to_results():
+    return redirect(url_for("results", **dict(request.args)))
+
+
 @app.route("/")
-def index():
-    return redirect(url_for("results", **dict(request.args)))
-
-
 @app.route("/session")
-def session_selector():
-    return redirect(url_for("results", **dict(request.args)))
+def index():
+    return _redirect_to_results()
 
 
 @app.route("/session-status")
@@ -3094,15 +3161,12 @@ def session_status():
 def results():
     ctx = _resolve_context()
     session_state = _get_session_state(ctx["year"], ctx["gp"], ctx["session_code"])
-    data = session_state if session_state.get("status") == "ready" else None
-    loading = session_state.get("status") == "loading"
-    loading_progress = session_state.get("progress", 0) if loading else 0
-    loading_stage = session_state.get("stage", "") if loading else ""
-    error = session_state.get("message") if session_state.get("status") == "error" else None
-    if ctx["schedule_error"] and not error:
-        error = ctx["schedule_error"]
-    if not data and not loading and not error:
-        error = "Session not available for this selection."
+    page_context = _session_view_base_context(ctx, session_state)
+    data = page_context["data"]
+    loading = page_context["loading"]
+    loading_progress = page_context["loading_progress"]
+    loading_stage = page_context["loading_stage"]
+    error = page_context["error"]
     strategy = _strategy_summary(data) if data else None
     session_code = str(ctx["session_code"]).strip().upper()
     session_is_race = session_code == "R"
@@ -3165,18 +3229,10 @@ def results():
                     row["display_time"] = f"+{_format_lap_time(pd.to_timedelta(gap, unit='s'))}"
                 else:
                     row["display_time"] = _format_lap_time(row.get("phase_time"))
-    session_badge = ctx["session_badge"]
-    if data:
-        session_badge = f"{data['year']} {data['event_name']} - {data['session_name']}"
 
     return render_template(
         "index.html",
         page="results",
-        data=data,
-        error=error,
-        loading=loading,
-        loading_progress=loading_progress,
-        loading_stage=loading_stage,
         view="results",
         strategy=strategy,
         race_position_graph=race_position_graph,
@@ -3191,11 +3247,7 @@ def results():
         selected_driver=driver_number,
         selected_driver_data=selected_driver_data,
         focus_driver_list=focus_driver_list,
-        session_badge=session_badge,
-        session_title=ctx["session_title"],
-        years=_year_options(),
-        events=ctx["event_options"],
-        session_options=ctx["session_options"],
+        **page_context,
         form_action="/results",
         form={
             "year": ctx["year"],
@@ -3207,18 +3259,12 @@ def results():
 
 
 @app.route("/data")
+@app.route("/lap")
 def data():
     ctx = _resolve_context()
     session_state = _get_session_state(ctx["year"], ctx["gp"], ctx["session_code"])
-    data_state = session_state if session_state.get("status") == "ready" else None
-    loading = session_state.get("status") == "loading"
-    loading_progress = session_state.get("progress", 0) if loading else 0
-    loading_stage = session_state.get("stage", "") if loading else ""
-    error = session_state.get("message") if session_state.get("status") == "error" else None
-    if ctx["schedule_error"] and not error:
-        error = ctx["schedule_error"]
-    if not data_state and not loading and not error:
-        error = "Session not available for this selection."
+    page_context = _session_view_base_context(ctx, session_state)
+    data_state = page_context["data"]
     session = data_state.get("session") if data_state and data_state.get("session") is not None else None
     driver_number = request.args.get("driver", "").strip()
     driver_requested = bool(driver_number)
@@ -3228,6 +3274,7 @@ def data():
     lap_requested = bool(lap_key)
     session_is_qualifying = str(ctx["session_code"]).strip().upper() in {"Q", "SQ"}
     session_is_race = str(ctx["session_code"]).strip().upper() == "R"
+    lap_page_requested = request.path.rstrip("/").endswith("/lap")
     if session is None and (data_state or lap_requested or driver_requested or session_is_race or session_is_qualifying):
         session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
     if session is None and session_is_qualifying:
@@ -3241,7 +3288,7 @@ def data():
     else:
         qualifying_phase = ""
 
-    if session and lap_requested:
+    if session and (lap_requested or (lap_page_requested and (driver_requested or stint_key))):
         try:
             session.load(laps=True, telemetry=True, weather=False, messages=True)
         except Exception:
@@ -3257,6 +3304,8 @@ def data():
     telemetry_summary = None
     lap_record = []
     telemetry_charts = []
+    primary_telemetry_charts = []
+    secondary_telemetry_charts = []
     track_map = None
     race_position_graph = None
     pit_strategy_graph = None
@@ -3273,9 +3322,6 @@ def data():
             pit_strategy_graph = _pit_strategy_graph(session)
         except Exception:
             pit_strategy_graph = None
-    session_badge = ctx["session_badge"]
-    if data_state:
-        session_badge = f"{data_state['year']} {data_state['event_name']} - {data_state['session_name']}"
 
     if session_is_race and session:
         driver_options = _driver_options(session, results=getattr(session, "results", None))
@@ -3331,11 +3377,30 @@ def data():
                 selected_lap_value = f"{_clean_value(driver_number)}:{_clean_value(selected_lap_data.get('LapNumber', ''))}"
                 if selected_stint is None:
                     selected_stint = _parse_stint_value(selected_lap_data.get("Stint", None))
+    selected_stint_data = None
+    if race_stints and race_stints.get("stints") and selected_stint is not None:
+        selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
+    if lap_page_requested and not selected_lap_value and selected_stint_data is not None:
+        # Default to a representative lap so /lap opens with populated telemetry.
+        selected_lap_value = _default_stint_lap_value(selected_stint_data)
+        if selected_lap_value:
+            selected_lap_data = _resolve_lap(session, driver_number, selected_lap_value)
     if selected_lap_data is not None:
         telemetry_columns, telemetry_rows, telemetry = _telemetry_rows(selected_lap_data)
         telemetry_summary = _lap_summary(selected_lap_data, telemetry)
         lap_record = _lap_record(selected_lap_data, telemetry)
         telemetry_charts = _telemetry_charts(selected_lap_data)
+        primary_telemetry_titles = {"Speed", "Throttle", "Brake"}
+        primary_telemetry_charts = [
+            chart
+            for chart in telemetry_charts
+            if chart.get("title") in primary_telemetry_titles
+        ]
+        secondary_telemetry_charts = [
+            chart
+            for chart in telemetry_charts
+            if chart.get("title") not in primary_telemetry_titles
+        ]
         try:
             lap_duration = _lap_time_seconds(selected_lap_data.get("LapTime", None))
             track_map = _track_map_payload(session, selected_lap_data, lap_duration, telemetry) if session else None
@@ -3350,22 +3415,15 @@ def data():
             len(telemetry_rows),
             track_map is not None,
         )
-    selected_stint_data = None
-    if race_stints and race_stints.get("stints") and selected_stint is not None:
-        selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
     selected_qualifying_run = None
     if session_is_qualifying and qualifying_run_laps and lap_requested:
         selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
     focus_driver_list = str(request.args.get("focus", "")).strip().lower() == "driver-list"
+    page_name = "lap" if request.path.rstrip("/").endswith("/lap") or selected_lap_data is not None else "data"
 
     return render_template(
         "index.html",
-        page="data",
-        data=data_state,
-        error=error,
-        loading=loading,
-        loading_progress=loading_progress,
-        loading_stage=loading_stage,
+        page=page_name,
         view="data",
         strategy=_strategy_summary(data_state) if data_state else None,
         data_summary=_data_summary(data_state) if data_state else None,
@@ -3377,14 +3435,11 @@ def data():
         telemetry_columns=telemetry_columns,
         telemetry_rows=telemetry_rows,
         telemetry_charts=telemetry_charts,
+        primary_telemetry_charts=primary_telemetry_charts,
+        secondary_telemetry_charts=secondary_telemetry_charts,
         race_position_graph=race_position_graph,
         pit_strategy_graph=pit_strategy_graph,
         track_map=track_map,
-        session_badge=session_badge,
-        session_title=ctx["session_title"],
-        years=_year_options(),
-        events=ctx["event_options"],
-        session_options=ctx["session_options"],
         qualifying_phase=qualifying_phase,
         qualifying_phase_rows=qualifying_phase_rows,
         qualifying_timeline_graph=qualifying_timeline_graph,
@@ -3408,6 +3463,7 @@ def data():
         selected_lap=selected_lap_value,
         session_is_qualifying=session_is_qualifying,
         focus_driver_list=focus_driver_list,
+        **page_context,
     )
 
 
@@ -3415,41 +3471,40 @@ def data():
 def strategy():
     ctx = _resolve_context()
     session_state = _get_session_state(ctx["year"], ctx["gp"], ctx["session_code"])
-    data = session_state if session_state.get("status") == "ready" else None
-    loading = session_state.get("status") == "loading"
-    loading_progress = session_state.get("progress", 0) if loading else 0
-    loading_stage = session_state.get("stage", "") if loading else ""
-    error = session_state.get("message") if session_state.get("status") == "error" else None
-    if ctx["schedule_error"] and not error:
-        error = ctx["schedule_error"]
-    if not data and not loading and not error:
-        error = "Session not available for this selection."
+    page_context = _session_view_base_context(ctx, session_state)
+    data = page_context["data"]
     strategy_data = _strategy_summary(data) if data else None
-    session_badge = ctx["session_badge"]
-    if data:
-        session_badge = f"{data['year']} {data['event_name']} - {data['session_name']}"
 
     return render_template(
         "index.html",
         page="strategy",
-        data=data,
-        error=error,
-        loading=loading,
-        loading_progress=loading_progress,
-        loading_stage=loading_stage,
         view="strategy",
         strategy=strategy_data,
-        session_badge=session_badge,
-        session_title=ctx["session_title"],
-        years=_year_options(),
-        events=ctx["event_options"],
-        session_options=ctx["session_options"],
         form_action="/strategy",
         form={
             "year": ctx["year"],
             "gp": ctx["gp"],
             "session": ctx["session_code"],
         },
+        **page_context,
+    )
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return _render_error_page(
+        404,
+        "Page not found",
+        "The page you requested does not exist in this session workspace.",
+    )
+
+
+@app.errorhandler(500)
+def server_error(error):
+    return _render_error_page(
+        500,
+        "Server error",
+        "The app hit an unexpected problem while loading this view.",
     )
 
 
