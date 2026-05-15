@@ -479,25 +479,6 @@
         background: rgba(18, 26, 40, 0.98);
       }
 
-      .qualifying-result-expanded {
-        display: grid;
-        gap: 10px;
-        padding: 2px 0 2px 64px;
-      }
-
-      .qualifying-result-expanded-title {
-        color: #c0cede;
-        font-size: 0.78rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .qualifying-result-expanded-runs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
       .qualifying-result-row {
         display: grid;
         grid-template-columns: 52px 1fr auto;
@@ -1373,33 +1354,6 @@
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       }
 
-      .stint-panel {
-        grid-column: 1 / -1;
-      }
-
-      .stint-lap-picker {
-        margin-top: 14px;
-        padding: 12px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        border-radius: 14px;
-        background: linear-gradient(180deg, rgba(7, 14, 27, 0.95), rgba(12, 19, 34, 0.98));
-      }
-
-      .stint-lap-grid {
-        display: grid;
-        gap: 6px;
-        grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
-      }
-
-      .stint-graph-shell {
-        display: grid;
-        gap: 12px;
-        padding: 12px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.04);
-      }
-
       .stint-graph-viewport {
         padding: 8px 0 0;
       }
@@ -1464,10 +1418,6 @@
         box-shadow: inset 0 0 0 1px rgba(99, 230, 178, 0.14);
       }
 
-      .stint-viewport {
-        padding: 0 20px 20px;
-      }
-
       .stint-graph-panel {
         display: grid;
         gap: 12px;
@@ -1501,69 +1451,6 @@
         padding: 16px;
         border-top: 1px solid rgba(148, 163, 184, 0.16);
         background: rgba(9, 16, 29, 0.96);
-      }
-
-      .stint-chart {
-        display: flex;
-        gap: 2px;
-        padding: 2px;
-        border-top: 1px solid rgba(148, 163, 184, 0.14);
-        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-        border-left: 0;
-        border-right: 0;
-        border-radius: 0;
-        overflow: hidden;
-        align-items: stretch;
-        background: rgba(10, 16, 28, 0.98);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02), inset 0 -1px 0 rgba(255, 255, 255, 0.02);
-      }
-
-      .stint-bar {
-        position: relative;
-        flex: var(--stint-flex, 1) 1 0;
-        min-width: 0;
-        padding: 18px 18px 16px;
-        border: 1px solid rgba(7, 16, 29, 0.18);
-        border-radius: 12px;
-        background: var(--stint-color, rgba(148, 163, 184, 0.75));
-        color: #07101d;
-        text-decoration: none;
-        overflow: hidden;
-      }
-
-      .stint-bar:hover {
-        filter: brightness(1.04);
-      }
-
-      .stint-bar.active {
-        color: #07101d;
-        border-color: rgba(7, 16, 29, 0.38);
-        box-shadow: inset 0 0 0 1px rgba(7, 16, 29, 0.24), 0 0 0 2px rgba(7, 16, 29, 0.14);
-      }
-
-      .stint-bar span {
-        display: block;
-        color: rgba(7, 16, 29, 0.86);
-        font-size: 0.74rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-weight: 700;
-      }
-
-      .stint-bar strong {
-        display: block;
-        margin-top: 6px;
-        font-size: 1.05rem;
-        line-height: 1.25;
-        font-weight: 800;
-      }
-
-      .stint-bar small {
-        display: block;
-        margin-top: 4px;
-        color: rgba(7, 16, 29, 0.75);
-        font-size: 0.74rem;
-        font-weight: 700;
       }
 
       .metric {
@@ -2253,7 +2140,7 @@
     </style>
   </head>
   <body class="{% if loading %}is-loading{% endif %}" aria-busy="{% if loading %}true{% else %}false{% endif %}" style="--loading-progress: {{ loading_progress|default(0) }}%;"{% if loading %} data-loading-status-url="{{ url_for('session_status', year=form.year, gp=form.gp|urlencode, session=form.session, phase=form.phase) }}"{% endif %}>
-      {% macro render_driver_options(drivers, selected_driver, driver_result_times, race_stints, selected_stint, form) %}
+      {% macro render_driver_options(drivers, selected_driver, driver_result_times) %}
         <div class="qualifying-results-list" role="listbox" aria-label="Driver options">
           {% for option in drivers %}
             <div id="driver-row-{{ option.value }}" class="qualifying-result-item {% if option.value == selected_driver %}active{% endif %}" data-driver-row="{{ option.value }}">
@@ -2271,32 +2158,6 @@
                 </span>
                 <span class="qualifying-result-time">{{ driver_result_times[option.full_name] if driver_result_times and option.full_name in driver_result_times else (driver_result_times[option.abbreviation] if driver_result_times and option.abbreviation in driver_result_times else option.result_time) }}</span>
               </button>
-              {% if option.value == selected_driver %}
-                <div id="driver-expanded-{{ option.value }}" class="qualifying-result-expanded">
-                  {% if race_stints and race_stints.stints %}
-                    <div class="stint-viewport">
-                      <div id="driver-stint-{{ option.value }}" class="stint-chart" aria-label="Stint selector">
-                        {% for stint in race_stints.stints %}
-                          <a
-                            class="stint-bar {% if stint.stint == selected_stint %}active{% endif %}"
-                            href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&stint={{ stint.stint }}{% if form.phase %}&phase={{ form.phase }}{% endif %}"
-                            style="--stint-color: {{ stint.tyre_color }}; --stint-flex: {{ stint.lap_count }};"
-                          >
-                            <span>Stint {{ stint.stint }}</span>
-                            <strong>{{ stint.start_lap }} - {{ stint.end_lap }}</strong>
-                            <small>{{ stint.lap_count }} laps · {{ stint.compound }}</small>
-                          </a>
-                        {% endfor %}
-                      </div>
-                    </div>
-                  {% else %}
-                    <div class="metric">
-                      <span>Driver selected</span>
-                      <strong>No stint data is available for this driver yet.</strong>
-                    </div>
-                  {% endif %}
-                </div>
-              {% endif %}
             </div>
           {% endfor %}
         </div>
@@ -2479,7 +2340,7 @@
           <input type="hidden" name="session" value="{{ form.session }}" />
           <input type="hidden" name="phase" value="{{ form.phase }}" />
           <div class="field">
-            <label for="driver">{% if session_is_qualifying and selected_lap %}Qualifying laps{% elif session_is_qualifying %}{{ qualifying_phase }} Results{% elif not selected_driver %}Driver{% elif selected_stint_data and selected_lap %}Stint laps{% elif selected_stint_data and session_is_qualifying %}Phase pace{% elif selected_stint_data %}Stint pace{% endif %}</label>
+            <label for="driver">{% if session_is_qualifying and selected_lap %}Qualifying laps{% elif session_is_qualifying %}{{ qualifying_phase }} Results{% else %}Driver{% endif %}</label>
             <div class="driver-picker" data-driver-picker>
               <input type="hidden" name="driver" value="{{ selected_driver or '' }}" data-driver-input />
               {% if session_is_qualifying and not selected_lap %}
@@ -2509,7 +2370,7 @@
                 </div>
               {% endif %}
               {% if not session_is_qualifying %}
-                {{ render_driver_options(drivers, selected_driver, driver_result_times, race_stints, selected_stint, form) }}
+                {{ render_driver_options(drivers, selected_driver, driver_result_times) }}
               {% endif %}
               {% if session_is_qualifying and qualifying_timeline_graph and not selected_lap %}
                 <section class="qualifying-timeline-panel qualifying-data-panel">
@@ -2701,7 +2562,7 @@
         </section>
       {% elif page == 'lap' and (selected_stint_data or selected_lap) %}
         {% if selected_stint_data %}
-          <section class="stint-graph-panel">
+          <section class="stint-graph-panel" id="lap-stint-panel">
             {% if selected_driver_data %}
               <div class="stint-graph-driver">
                 <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
@@ -2942,8 +2803,6 @@
       <script>
         (() => {
           const picker = document.querySelector("[data-driver-picker]");
-          const focusDriverList = {{ 'true' if focus_driver_list else 'false' }};
-          const selectedDriverValue = "{{ selected_driver or '' }}";
           if (picker) {
             const input = picker.querySelector("[data-driver-input]");
             const form = picker.closest("form");
@@ -2957,36 +2816,6 @@
               input.value = option.getAttribute("data-driver-value") || "";
               form.submit();
             });
-          }
-
-          const stintLinks = document.querySelectorAll(".stint-bar");
-          const stintChart = document.querySelector(".stint-chart");
-          const clearStints = () => {
-            stintLinks.forEach((item) => {
-              item.classList.remove("is-hovered");
-              item.style.opacity = "";
-            });
-          };
-
-          const activateStint = (bar) => {
-            stintLinks.forEach((item) => {
-              const active = item === bar;
-              item.classList.toggle("is-hovered", active);
-              item.style.opacity = active ? "1" : "0.26";
-            });
-          };
-
-          stintLinks.forEach((bar) => {
-            bar.addEventListener("mouseenter", () => {
-              activateStint(bar);
-            });
-            bar.addEventListener("mouseleave", () => {
-              clearStints();
-            });
-          });
-
-          if (stintChart) {
-            stintChart.addEventListener("mouseleave", clearStints);
           }
 
           const qualifyingRows = document.querySelectorAll(".qualifying-result-row");
@@ -3003,25 +2832,6 @@
               window.location.assign(url.toString());
             });
           });
-
-          if (focusDriverList && selectedDriverValue) {
-            window.history.scrollRestoration = "manual";
-            const scrollToSelectedDriver = () => {
-              window.setTimeout(() => {
-                const target = document.getElementById(`driver-stint-${selectedDriverValue}`)
-                  || document.getElementById(`driver-expanded-${selectedDriverValue}`)
-                  || document.getElementById(`driver-row-${selectedDriverValue}`);
-                if (target && typeof target.scrollIntoView === "function") {
-                  target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-                }
-              }, 75);
-            };
-            if (document.readyState === "complete") {
-              scrollToSelectedDriver();
-            } else {
-              window.addEventListener("load", scrollToSelectedDriver, { once: true });
-            }
-          }
 
           const qualifyingToggle = document.querySelector("[data-qualifying-session-toggle]");
           const qualifyingTrigger = qualifyingToggle ? qualifyingToggle.querySelector("[data-qualifying-session-trigger]") : null;
@@ -3895,7 +3705,7 @@
               ? Math.min(width - pad.right - tagWidth, lastX + 10)
               : Math.min(width - pad.right - tagWidth, lastX - tagWidth / 2);
             const driverValue = encodeURIComponent(series.value || "");
-            const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&focus=driver-list#driver-expanded-${driverValue}`;
+            const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}#lap-stint-panel`;
             return `
               <g class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" data-href="${href}" tabindex="0" role="button" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
                 <path class="race-position-hit" d="${d}" data-href="${href}"></path>
@@ -4071,7 +3881,7 @@
               const endX = xForEndLap(stint.end_lap);
               const barWidth = Math.max(6, endX - startX - 2);
               const driverValue = encodeURIComponent(driver.driver_number || "");
-              const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&stint=${encodeURIComponent(stint.stint || "")}{% if form.phase %}&phase={{ form.phase }}{% endif %}`;
+              const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&stint=${encodeURIComponent(stint.stint || "")}{% if form.phase %}&phase={{ form.phase }}{% endif %}#lap-stint-panel`;
               const separatorX = endX - 2;
               const stintLengthLabel = `${stint.lap_count || 0} lap${Number(stint.lap_count || 0) === 1 ? "" : "s"}`;
               const labelWidth = Math.max(48, stintLengthLabel.length * 6.4 + 16);

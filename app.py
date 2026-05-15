@@ -3212,7 +3212,6 @@ def results():
     qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
     qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
     qualifying_phase = qualifying_phase if qualifying_phase in {"Q1", "Q2", "Q3", "ALL"} else "Q1"
-    focus_driver_list = str(request.args.get("focus", "")).strip().lower() == "driver-list"
     if session_is_qualifying and qualifying_phase_rows:
         leader_seconds = None
         for row in qualifying_phase_rows:
@@ -3246,7 +3245,6 @@ def results():
         qualifying_run_laps=qualifying_run_laps,
         selected_driver=driver_number,
         selected_driver_data=selected_driver_data,
-        focus_driver_list=focus_driver_list,
         **page_context,
         form_action="/results",
         form={
@@ -3377,6 +3375,8 @@ def data():
                 selected_lap_value = f"{_clean_value(driver_number)}:{_clean_value(selected_lap_data.get('LapNumber', ''))}"
                 if selected_stint is None:
                     selected_stint = _parse_stint_value(selected_lap_data.get("Stint", None))
+    if lap_page_requested and selected_stint is None and session and driver_number and race_stints and race_stints.get("stints"):
+        selected_stint = _parse_stint_value(race_stints["stints"][0].get("stint", None))
     selected_stint_data = None
     if race_stints and race_stints.get("stints") and selected_stint is not None:
         selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
@@ -3418,7 +3418,6 @@ def data():
     selected_qualifying_run = None
     if session_is_qualifying and qualifying_run_laps and lap_requested:
         selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
-    focus_driver_list = str(request.args.get("focus", "")).strip().lower() == "driver-list"
     page_name = "lap" if request.path.rstrip("/").endswith("/lap") or selected_lap_data is not None else "data"
 
     return render_template(
@@ -3462,7 +3461,6 @@ def data():
         driver_lap_options=driver_lap_options,
         selected_lap=selected_lap_value,
         session_is_qualifying=session_is_qualifying,
-        focus_driver_list=focus_driver_list,
         **page_context,
     )
 

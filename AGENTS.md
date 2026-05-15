@@ -27,8 +27,9 @@ The app depends on FastF1 data and may behave differently when cache files are p
 - `/data` remains the driver and stint selection page, while `/lap` is the dedicated lap detail route.
 - Clicking a stint should open `/lap` for that stint, and `/lap` now defaults to a representative lap when only `driver` and `stint` are present.
 - `/results`, `/data`, and `/strategy` now share the same session-view bootstrap helper so loading state, session badges, and fallback errors stay aligned.
-- The non-qualifying driver picker in `templates/index.html` is collapsed into a single macro, but the `driver-row-*`, `driver-expanded-*`, and `driver-stint-*` IDs still need to be preserved.
+- The non-qualifying driver picker in `templates/index.html` is collapsed to driver rows only; stint graphs now live in the lap view at the top of the page.
 - Pit strategy graph stint bars now link into `/lap` with the selected driver and stint so the representative lap opens immediately on arrival.
+- Race position driver clicks now route into `/lap` as well, landing on the top stint panel for the selected driver.
 - The lap page is currently arranged as a top stint graph, a middle support panel with the track map on the left and primary telemetry on the right, a secondary telemetry block below, and the lap record at the bottom.
 - Telemetry on `/lap` is split into primary charts for Speed, Throttle, and Brake, with the remaining charts rendered in the secondary block.
 - The main page shell is intentionally wider than the original layout so the lap and results panes can use more horizontal space.
