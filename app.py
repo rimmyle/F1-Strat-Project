@@ -228,12 +228,15 @@ def _format_lap_time(value):
         total_seconds = value.total_seconds()
     else:
         try:
-            total_seconds = float(value.total_seconds())
+            total_seconds = float(value)
         except (AttributeError, TypeError, ValueError):
             try:
-                total_seconds = float(pd.to_timedelta(value).total_seconds())
+                total_seconds = float(value.total_seconds())
             except Exception:
-                return _clean_value(value)
+                try:
+                    total_seconds = float(pd.to_timedelta(value).total_seconds())
+                except Exception:
+                    return _clean_value(value)
 
     minutes, seconds = divmod(total_seconds, 60)
     whole_seconds = int(seconds)
@@ -245,6 +248,77 @@ def _format_lap_time(value):
     if minutes > 0:
         return f"{minutes}:{whole_seconds:02d}.{millis:03d}"
     return f"{whole_seconds}.{millis:03d}" if millis else f"{whole_seconds}"
+
+
+def _format_minutes_seconds(value):
+    if pd.isna(value):
+        return "-"
+    if isinstance(value, pd.Timedelta):
+        total_seconds = value.total_seconds()
+    else:
+        try:
+            total_seconds = float(value)
+        except (AttributeError, TypeError, ValueError):
+            try:
+                total_seconds = float(value.total_seconds())
+            except Exception:
+                try:
+                    total_seconds = float(pd.to_timedelta(value).total_seconds())
+                except Exception:
+                    return _clean_value(value)
+
+    total_milliseconds = max(0, int(round(float(total_seconds) * 1000)))
+    minutes, remainder = divmod(total_milliseconds, 60000)
+    seconds, millis = divmod(remainder, 1000)
+    if minutes > 0:
+        return f"{minutes}:{seconds:02d}.{millis:03d}"
+    return f"{seconds}.{millis:03d}" if millis else f"{seconds}"
+
+
+def _format_signed_duration(value):
+    if value is None:
+        return "-"
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        try:
+            numeric = float(value.total_seconds())
+        except (AttributeError, TypeError, ValueError):
+            try:
+                numeric = float(pd.to_timedelta(value).total_seconds())
+            except Exception:
+                return _clean_value(value)
+
+    formatted = _format_minutes_seconds(abs(numeric))
+    if numeric > 0:
+        return f"+{formatted}"
+    if numeric < 0:
+        return f"-{formatted}"
+    return formatted
+
+
+def _format_track_status(value):
+    status = _clean_value(value).strip()
+    if not status or status == "-":
+        return "-"
+
+    code_labels = {
+        "1": "Green",
+        "2": "Yellow Flag",
+        "4": "Safety Car",
+        "5": "Red Flag",
+        "6": "Virtual Safety Car",
+        "7": "Virtual Safety Car",
+    }
+    labels = []
+    seen = set()
+    for code in str(status):
+        label = code_labels.get(code)
+        if label and label not in seen:
+            labels.append(label)
+            seen.add(label)
+
+    return ", ".join(labels) if labels else status
 
 
 def _format_race_result_time(value, position=None):
@@ -1783,15 +1857,9 @@ def _lap_record(lap, telemetry):
             gap_ahead = f"{float(gap_series.iloc[-1]):.3f} m"
 
     fields = [
-        ("stint", "Stint", _clean_value(lap.get("Stint", "-"))),
-        ("speed_i1", "Speed I1", _clean_value(lap.get("SpeedI1", "-"))),
-        ("speed_i2", "Speed I2", _clean_value(lap.get("SpeedI2", "-"))),
-        ("speed_fl", "Speed FL", _clean_value(lap.get("SpeedFL", "-"))),
-        ("speed_st", "Speed ST", _clean_value(lap.get("SpeedST", "-"))),
-        ("compound", "Compound", _clean_value(lap.get("Compound", "-"))),
         ("tyre_life", "Tyre Life", _clean_value(lap.get("TyreLife", "-"))),
         ("fresh_tyre", "Fresh Tyre", _clean_value(lap.get("FreshTyre", "-"))),
-        ("track_status", "Track Status", _clean_value(lap.get("TrackStatus", "-"))),
+        ("track_status", "Track Status", _format_track_status(lap.get("TrackStatus", "-"))),
         ("position", "Position", _clean_value(lap.get("Position", "-"))),
         ("deleted", "Deleted", _clean_value(lap.get("Deleted", "-"))),
         ("deleted_reason", "Deleted Reason", _clean_value(lap.get("DeletedReason", "-"))),
@@ -1840,14 +1908,29 @@ def _race_stints(session, driver_number, session_code):
                     lap_number_int = int(lap_number)
                     lap_time = lap_row.get("LapTime")
                     lap_time_seconds = _lap_time_seconds(lap_time)
+                    pit_out = pd.notna(lap_row.get("PitOutTime", None))
+                    pit_in = pd.notna(lap_row.get("PitInTime", None))
+                    if pit_out and pit_in:
+                        lap_role = "Out / In Lap"
+                    elif pit_out:
+                        lap_role = "Out Lap"
+                    elif pit_in:
+                        lap_role = "In Lap"
+                    else:
+                        lap_role = "Flying Lap"
                     laps.append(
                         {
                             "lap_number": lap_number_int,
                             "lap_time": _clean_value(lap_time),
                             "lap_time_seconds": lap_time_seconds,
+                            "lap_start_seconds": _lap_time_seconds(lap_row.get("LapStartTime", None)),
+                            "lap_end_seconds": _lap_time_seconds(lap_row.get("Time", None)),
                             "value": f"{_clean_value(driver_number)}:{lap_number_int}",
                             "compound": _clean_value(lap_row.get("Compound", "-")),
                             "fresh_tyre": bool(lap_row.get("FreshTyre", False)) if pd.notna(lap_row.get("FreshTyre", False)) else False,
+                            "lap_type": lap_role,
+                            "pit_out_seconds": _lap_time_seconds(lap_row.get("PitOutTime", None)),
+                            "pit_in_seconds": _lap_time_seconds(lap_row.get("PitInTime", None)),
                         }
                     )
                 stints.append(
@@ -1862,6 +1945,53 @@ def _race_stints(session, driver_number, session_code):
                         "laps": laps,
                     }
                 )
+
+        pit_stop_max_seconds = None
+
+        def _pit_stop_seconds(previous_stint, current_stint):
+            previous_laps = previous_stint.get("laps") or []
+            current_laps = current_stint.get("laps") or []
+            if not previous_laps or not current_laps:
+                return None
+
+            previous_lap = previous_laps[-1]
+            current_lap = current_laps[0]
+
+            candidates = []
+            previous_pit_in = previous_lap.get("pit_in_seconds")
+            current_pit_out = current_lap.get("pit_out_seconds")
+            if previous_pit_in is not None and current_pit_out is not None:
+                try:
+                    candidates.append(max(0.0, float(current_pit_out) - float(previous_pit_in)))
+                except (TypeError, ValueError):
+                    pass
+
+            previous_lap_end = previous_lap.get("lap_end_seconds")
+            current_lap_start = current_lap.get("lap_start_seconds")
+            if previous_lap_end is not None and current_lap_start is not None:
+                try:
+                    candidates.append(max(0.0, float(current_lap_start) - float(previous_lap_end)))
+                except (TypeError, ValueError):
+                    pass
+
+            for candidate in candidates:
+                if candidate is not None:
+                    return candidate
+            return None
+
+        for index, stint in enumerate(stints):
+            pit_stop_seconds = _pit_stop_seconds(stints[index - 1], stint) if index > 0 else None
+            stint["pit_stop_seconds"] = pit_stop_seconds
+            stint["pit_stop_time"] = _format_minutes_seconds(pit_stop_seconds) if pit_stop_seconds is not None else "-"
+            if pit_stop_seconds is not None:
+                pit_stop_max_seconds = max(pit_stop_max_seconds or 0.0, float(pit_stop_seconds))
+
+        for stint in stints:
+            pit_stop_seconds = stint.get("pit_stop_seconds")
+            if pit_stop_seconds is None or not pit_stop_max_seconds:
+                stint["pit_stop_fill_percent"] = None if pit_stop_seconds is None else 100.0
+                continue
+            stint["pit_stop_fill_percent"] = max(28.0, min(100.0, (float(pit_stop_seconds) / pit_stop_max_seconds) * 100.0))
 
     if not stints:
         results = getattr(session, "results", None)
@@ -1892,6 +2022,7 @@ def _race_stints(session, driver_number, session_code):
                 "value": f"{_clean_value(driver_number)}:{lap_number}",
                 "compound": _clean_value(inferred_compound),
                 "fresh_tyre": False,
+                "lap_type": "Flying Lap",
             }
             for lap_number in range(1, lap_total + 1)
         ]
@@ -1913,6 +2044,44 @@ def _race_stints(session, driver_number, session_code):
         "stints": stints,
         "lap_total": int(sum(item["lap_count"] for item in stints)),
     }
+
+
+def _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=None):
+    if not stint_cache:
+        return None
+
+    excluded_driver = _normalize_driver_number(exclude_driver_number) if exclude_driver_number else ""
+    driver_averages = []
+    pit_stop_samples = []
+
+    for driver_number, driver_data in stint_cache.items():
+        if excluded_driver and _normalize_driver_number(driver_number) == excluded_driver:
+            continue
+        if not driver_data:
+            continue
+
+        driver_samples = []
+        for stint in driver_data.get("stints", []):
+            pit_stop_seconds = stint.get("pit_stop_seconds")
+            if pit_stop_seconds is None:
+                continue
+            try:
+                numeric = float(pit_stop_seconds)
+            except (TypeError, ValueError):
+                continue
+            if numeric < 0:
+                continue
+            driver_samples.append(numeric)
+
+        if driver_samples:
+            driver_averages.append(sum(driver_samples) / len(driver_samples))
+            pit_stop_samples.extend(driver_samples)
+
+    if driver_averages:
+        return sum(driver_averages) / len(driver_averages)
+    if pit_stop_samples:
+        return sum(pit_stop_samples) / len(pit_stop_samples)
+    return None
 
 
 def _pit_strategy_graph(session):
@@ -2254,33 +2423,6 @@ def _telemetry_charts(lap):
         if not points:
             continue
 
-        max_point = None
-        min_point = None
-        if column == "Speed":
-            speed_series = telemetry[column]
-            if not speed_series.empty:
-                for label_name, selector in (("max", speed_series.idxmax), ("min", speed_series.idxmin)):
-                    peak_index = selector()
-                    if peak_index not in telemetry.index:
-                        continue
-                    peak_row = telemetry.loc[peak_index]
-                    peak_time = peak_row.get("Time", None)
-                    peak_speed = peak_row.get("Speed", None)
-                    if pd.isna(peak_time) or pd.isna(peak_speed):
-                        continue
-                    try:
-                        marker = {
-                            "time": float(peak_time.total_seconds()),
-                            "value": float(peak_speed),
-                            "label": f"{float(peak_speed):.0f} km/h",
-                        }
-                    except Exception:
-                        continue
-                    if label_name == "max":
-                        max_point = marker
-                    else:
-                        min_point = marker
-
         y_values = [point[1] for point in points]
         if column == "nGear":
             y_min = -1
@@ -2316,8 +2458,6 @@ def _telemetry_charts(lap):
                 "y_max": y_max,
                 "y_ticks": y_ticks,
                 "y_tick_labels": y_tick_labels,
-                "max_point": max_point,
-                "min_point": min_point,
             }
         )
 
@@ -2589,17 +2729,104 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
 
     time_series = [float(value * scale) for value in raw_time_series]
 
+    speed_profile = []
+    if telemetry is not None and not telemetry.empty and "Time" in telemetry.columns and "Speed" in telemetry.columns:
+        speed_frame = telemetry.loc[:, ["Time", "Speed"]].dropna(subset=["Time", "Speed"]).copy()
+        if not speed_frame.empty:
+            speed_frame = speed_frame.sort_values(by="Time")
+            for _, speed_row in speed_frame.iterrows():
+                speed_seconds = _lap_time_seconds(speed_row.get("Time", None))
+                if speed_seconds is None:
+                    continue
+                try:
+                    speed_value = float(speed_row.get("Speed", None))
+                except (TypeError, ValueError):
+                    continue
+                speed_profile.append((float(speed_seconds), speed_value))
+
+    def _interpolate_series_value(samples, target_seconds):
+        if not samples:
+            return None
+        if len(samples) == 1:
+            return samples[0][1]
+        if target_seconds <= samples[0][0]:
+            return samples[0][1]
+        if target_seconds >= samples[-1][0]:
+            return samples[-1][1]
+
+        for index in range(1, len(samples)):
+            prev_time, prev_value = samples[index - 1]
+            next_time, next_value = samples[index]
+            if target_seconds > next_time:
+                continue
+
+            span = next_time - prev_time or 1.0
+            ratio = (target_seconds - prev_time) / span
+            return prev_value + (next_value - prev_value) * ratio
+
+        return samples[-1][1]
+
     racing_samples = []
     for index, point in enumerate(racing):
         if index >= len(time_series):
             break
+        sample_time = float(time_series[index])
+        sample_speed = _interpolate_series_value(speed_profile, sample_time)
         racing_samples.append(
             {
                 "x": float(point[0]),
                 "y": float(point[1]),
-                "t": float(time_series[index]),
+                "t": sample_time,
+                "speed": float(sample_speed) if sample_speed is not None else None,
             }
         )
+
+    acceleration_values = []
+    for index, sample in enumerate(racing_samples):
+        current_speed = sample.get("speed")
+        current_time = sample.get("t")
+        if current_speed is None or current_time is None:
+            sample["acceleration"] = None
+            continue
+
+        previous_sample = None
+        for previous_index in range(index - 1, -1, -1):
+            candidate = racing_samples[previous_index]
+            if candidate.get("speed") is not None and candidate.get("t") is not None:
+                previous_sample = candidate
+                break
+
+        next_sample = None
+        for next_index in range(index + 1, len(racing_samples)):
+            candidate = racing_samples[next_index]
+            if candidate.get("speed") is not None and candidate.get("t") is not None:
+                next_sample = candidate
+                break
+
+        acceleration = None
+        if previous_sample is not None and next_sample is not None:
+            dt = float(next_sample["t"]) - float(previous_sample["t"])
+            if dt > 0:
+                acceleration = (((float(next_sample["speed"]) - float(previous_sample["speed"])) / 3.6) / dt)
+        elif next_sample is not None:
+            dt = float(next_sample["t"]) - float(current_time)
+            if dt > 0:
+                acceleration = (((float(next_sample["speed"]) - float(current_speed)) / 3.6) / dt)
+        elif previous_sample is not None:
+            dt = float(current_time) - float(previous_sample["t"])
+            if dt > 0:
+                acceleration = (((float(current_speed) - float(previous_sample["speed"])) / 3.6) / dt)
+
+        sample["acceleration"] = float(acceleration) if acceleration is not None else None
+        if sample["acceleration"] is not None:
+            acceleration_values.append(sample["acceleration"])
+
+    speed_values = [sample.get("speed") for sample in racing_samples if sample.get("speed") is not None]
+    speed_min = min(speed_values) if speed_values else None
+    speed_max = max(speed_values) if speed_values else None
+    acceleration_min = min(acceleration_values) if acceleration_values else None
+    acceleration_max = max(acceleration_values) if acceleration_values else None
+    acceleration_limit = max(abs(acceleration_min or 0.0), abs(acceleration_max or 0.0)) if acceleration_values else None
 
     max_speed_marker = None
     min_speed_marker = None
@@ -2664,7 +2891,7 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
     focus_points = racing or all_points
     xs = [point[0] for point in focus_points]
     ys = [point[1] for point in focus_points]
-    padding = max((max(xs) - min(xs)) * 0.02, (max(ys) - min(ys)) * 0.02, 8)
+    padding = max((max(xs) - min(xs)) * 0.03, (max(ys) - min(ys)) * 0.03, 16)
 
     return {
         "outline": outline,
@@ -2673,6 +2900,11 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
         "sector_markers": sector_markers,
         "max_speed_marker": max_speed_marker,
         "min_speed_marker": min_speed_marker,
+        "speed_min": float(speed_min) if speed_min is not None else None,
+        "speed_max": float(speed_max) if speed_max is not None else None,
+        "acceleration_min": float(acceleration_min) if acceleration_min is not None else None,
+        "acceleration_max": float(acceleration_max) if acceleration_max is not None else None,
+        "acceleration_limit": float(acceleration_limit) if acceleration_limit is not None else None,
         "bounds": {
             "min_x": min(xs) - padding,
             "max_x": max(xs) + padding,
@@ -3271,8 +3503,9 @@ def data():
     stint_key = request.args.get("stint", "")
     qualifying_phase = request.args.get("phase", "").strip().upper()
     lap_requested = bool(lap_key)
-    session_is_qualifying = str(ctx["session_code"]).strip().upper() in {"Q", "SQ"}
-    session_is_race = str(ctx["session_code"]).strip().upper() == "R"
+    session_code = str(ctx["session_code"]).strip().upper()
+    session_is_qualifying = session_code in {"Q", "SQ"}
+    session_is_race = session_code == "R"
     lap_page_requested = request.path.rstrip("/").endswith("/lap")
     if session is None and (data_state or lap_requested or driver_requested or session_is_race or session_is_qualifying):
         session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
@@ -3386,6 +3619,52 @@ def data():
         selected_lap_value = _default_stint_lap_value(selected_stint_data)
         if selected_lap_value:
             selected_lap_data = _resolve_lap(session, driver_number, selected_lap_value)
+    race_stints_display = race_stints
+    if session_is_race and race_stints and race_stints.get("stints") and driver_number:
+        pit_stop_average_seconds = _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=driver_number)
+        if pit_stop_average_seconds is None and session and driver_options:
+            selected_driver_key = _normalize_driver_number(driver_number)
+            for driver_option in driver_options:
+                other_driver_number = driver_option.get("value")
+                other_driver_key = _normalize_driver_number(other_driver_number)
+                if not other_driver_key or other_driver_key == selected_driver_key:
+                    continue
+                if other_driver_key in stint_cache and stint_cache.get(other_driver_key):
+                    continue
+                try:
+                    stint_cache[other_driver_key] = _race_stints(session, other_driver_number, ctx["session_code"])
+                except Exception:
+                    stint_cache[other_driver_key] = None
+            pit_stop_average_seconds = _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=driver_number)
+        if pit_stop_average_seconds is not None:
+            pit_stop_average_time = _format_minutes_seconds(pit_stop_average_seconds)
+            race_stints_display = {**race_stints}
+            race_stints_display["stints"] = [dict(stint) for stint in race_stints.get("stints", [])]
+            race_stints_display["pit_stop_average_seconds"] = pit_stop_average_seconds
+            race_stints_display["pit_stop_average_time"] = pit_stop_average_time
+            for stint in race_stints_display["stints"]:
+                pit_stop_seconds = stint.get("pit_stop_seconds")
+                if pit_stop_seconds is None:
+                    continue
+                try:
+                    delta_seconds = float(pit_stop_seconds) - float(pit_stop_average_seconds)
+                except (TypeError, ValueError):
+                    continue
+                delta_text = _format_signed_duration(delta_seconds)
+                if abs(delta_seconds) < 0.0005:
+                    comparison_class = "is-even-average"
+                elif delta_seconds > 0:
+                    comparison_class = "is-above-average"
+                else:
+                    comparison_class = "is-below-average"
+                comparison_text = delta_text
+                comparison_title = f"Average pit time {pit_stop_average_time}; gap {delta_text}."
+                stint["pit_stop_average_time"] = pit_stop_average_time
+                stint["pit_stop_delta_seconds"] = delta_seconds
+                stint["pit_stop_delta_time"] = delta_text
+                stint["pit_stop_comparison_class"] = comparison_class
+                stint["pit_stop_comparison_text"] = comparison_text
+                stint["pit_stop_comparison_title"] = comparison_title
     if selected_lap_data is not None:
         telemetry_columns, telemetry_rows, telemetry = _telemetry_rows(selected_lap_data)
         telemetry_summary = _lap_summary(selected_lap_data, telemetry)
@@ -3420,6 +3699,7 @@ def data():
     if session_is_qualifying and qualifying_run_laps and lap_requested:
         selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
     page_name = "lap" if request.path.rstrip("/").endswith("/lap") or selected_lap_data is not None else "data"
+    form_action = "/lap" if session_code in {"R", "S"} else "/data"
 
     return render_template(
         "index.html",
@@ -3429,7 +3709,6 @@ def data():
         data_summary=_data_summary(data_state) if data_state else None,
         telemetry_summary=telemetry_summary,
         lap_record=lap_record,
-        race_stints=race_stints,
         selected_stint=selected_stint,
         selected_stint_data=selected_stint_data,
         telemetry_columns=telemetry_columns,
@@ -3447,7 +3726,7 @@ def data():
         qualifying_run_options=qualifying_run_options,
         qualifying_run_laps=qualifying_run_laps,
         selected_qualifying_run=selected_qualifying_run,
-        form_action="/data",
+        form_action=form_action,
         form={
             "year": ctx["year"],
             "gp": ctx["gp"],
@@ -3462,7 +3741,9 @@ def data():
         driver_lap_options=driver_lap_options,
         selected_lap=selected_lap_value,
         session_is_qualifying=session_is_qualifying,
-        **page_context,
+        race_stints=race_stints_display,
+        data=data_state,
+        **{key: value for key, value in page_context.items() if key != "data"},
     )
 
 
