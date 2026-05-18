@@ -1223,117 +1223,8 @@
         width: 100%;
       }
 
-      .results-sidebar {
-        position: fixed;
-        left: 0;
-        top: 18px;
-        width: 324px;
-        z-index: 20;
-        display: flex;
-        align-items: stretch;
-        transform: translateX(calc(-100% + 44px));
-        opacity: 1;
-        visibility: visible;
-        transition: transform 180ms ease;
-        will-change: transform, opacity;
-        cursor: pointer;
-        pointer-events: auto;
-        overflow: hidden;
-      }
-
-      .results-sidebar:hover,
-      .results-sidebar.open {
-        transform: translateX(0);
-      }
-
-      .results-sidebar.pinned {
-        transform: translateX(0);
-      }
-
-      .results-sidebar::before {
-        content: none;
-      }
-
-      .results-sidebar-edge-trigger {
-        width: 44px;
-        flex: 0 0 44px;
-        border: 1px solid rgba(148, 163, 184, 0.22);
-        border-left: 0;
-        border-radius: 0 16px 16px 0;
-        background: linear-gradient(180deg, rgba(21, 35, 59, 0.96), rgba(11, 18, 32, 0.98));
-        color: var(--text);
-        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: auto;
-        user-select: none;
-        margin-top: 122px;
-      }
-
-      .results-sidebar-edge-trigger::before {
-        content: "Results";
-        writing-mode: vertical-rl;
-        transform: rotate(180deg);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: #dbe7ff;
-      }
-
       .results-main {
         width: 100%;
-      }
-
-      .results-sidebar-panel {
-        flex: 1 1 auto;
-        min-width: 280px;
-      }
-
-      .results-sidebar .panel {
-        display: grid;
-        grid-template-rows: auto auto;
-        height: 100%;
-      }
-
-      .results-sidebar .table-wrap {
-        overflow: visible;
-        max-height: none;
-      }
-
-      .results-sidebar table {
-        width: 100%;
-      }
-
-      .results-sidebar tbody tr.session-result-row {
-        cursor: pointer;
-        transition: background 140ms ease, box-shadow 140ms ease;
-      }
-
-      .results-sidebar tbody tr.session-result-row:hover,
-      .results-sidebar tbody tr.session-result-row:focus-visible {
-        background: rgba(18, 26, 40, 0.78);
-      }
-
-      .results-sidebar tbody tr.session-result-row:focus-visible {
-        outline: 1px solid rgba(68, 194, 255, 0.55);
-        outline-offset: -1px;
-      }
-
-      .driver-name {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .driver-flag {
-        font-size: 1rem;
-        line-height: 1;
-        width: 1.2em;
-        text-align: center;
-        flex: 0 0 auto;
       }
 
       .panel {
@@ -1417,6 +1308,28 @@
         filter: brightness(1.12);
       }
 
+      .stint-graph-lap-tooltip {
+        opacity: 0;
+        transition: opacity 120ms ease;
+        pointer-events: none;
+      }
+
+      .stint-graph-point:hover .stint-graph-lap-tooltip,
+      .stint-graph-point:focus .stint-graph-lap-tooltip,
+      .stint-graph-point:focus-visible .stint-graph-lap-tooltip {
+        opacity: 1;
+      }
+
+      .stint-graph-lap-tooltip rect {
+        fill: rgba(7, 16, 29, 0.96);
+        stroke-width: 1.2;
+      }
+
+      .stint-graph-lap-tooltip text {
+        font-family: inherit;
+        letter-spacing: 0.02em;
+      }
+
       .stint-graph-personal-best rect {
         fill: rgba(12, 26, 42, 0.98);
         stroke: rgba(99, 230, 178, 0.9);
@@ -1427,6 +1340,159 @@
         fill: #63e6b2;
         font-family: inherit;
         letter-spacing: 0.08em;
+      }
+
+      .qualifying-run-svg {
+        width: 100%;
+        display: block;
+        background: rgba(10, 16, 28, 0.98);
+        border-top: 1px solid rgba(148, 163, 184, 0.14);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .qualifying-run-panel {
+        margin-top: 18px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.92);
+        overflow: hidden;
+      }
+
+      .qualifying-run-panel header {
+        padding: 18px 20px 10px;
+      }
+
+      .qualifying-run-viewport {
+        padding: 0 0 20px;
+        display: flex;
+        justify-content: center;
+        overflow-x: auto;
+      }
+
+      .qualifying-run-row {
+        cursor: default;
+      }
+
+      .qualifying-run-row text {
+        pointer-events: none;
+      }
+
+      .qualifying-run-row.is-hovered .qualifying-run-row-label,
+      .qualifying-run-row.is-hovered .qualifying-run-time-label {
+        fill: #f8fbff;
+      }
+
+      .qualifying-run-row.is-selected .qualifying-run-row-label,
+      .qualifying-run-row.is-selected .qualifying-run-time-label {
+        fill: var(--run-accent, #f8fbff);
+      }
+
+      .qualifying-run-row.is-fastest .qualifying-run-time-label {
+        fill: #facc15;
+      }
+
+      .qualifying-run-segment {
+        cursor: pointer;
+        pointer-events: all;
+        transition: opacity 120ms ease, filter 120ms ease;
+      }
+
+      .qualifying-run-segment text {
+        font-family: inherit;
+        letter-spacing: 0.05em;
+        pointer-events: none;
+      }
+
+      .qualifying-run-segment rect.segment-fill {
+        transition: filter 120ms ease, stroke-width 120ms ease, opacity 120ms ease;
+      }
+
+      .qualifying-run-segment.is-hovered rect.segment-fill {
+        filter: brightness(1.12);
+      }
+
+      .qualifying-run-segment.is-selected rect.segment-fill,
+      .qualifying-run-segment.pending-selected rect.segment-fill {
+        stroke: #f8fbff;
+        stroke-width: 1.6;
+        filter: drop-shadow(0 0 6px rgba(68, 194, 255, 0.22));
+      }
+
+      .qualifying-run-axis text {
+        fill: rgba(151,167,194,0.98);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .qualifying-run-row-label {
+        fill: rgba(226,232,240,0.96);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .qualifying-run-time-label {
+        fill: rgba(226,232,240,0.96);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .qualifying-run-row {
+        pointer-events: all;
+      }
+
+      .qualifying-run-row text {
+        pointer-events: none;
+      }
+
+      .qualifying-run-segment {
+        cursor: pointer;
+        pointer-events: all;
+      }
+
+      .qualifying-run-segment rect.segment-fill {
+        transition: filter 120ms ease, stroke-width 120ms ease, opacity 120ms ease;
+      }
+
+      .qualifying-run-segment text {
+        font-family: inherit;
+        letter-spacing: 0.05em;
+        pointer-events: none;
+      }
+
+      .qualifying-run-segment.is-hovered rect.segment-fill {
+        filter: brightness(1.12);
+      }
+
+      .qualifying-run-segment.is-selected rect.segment-fill {
+        stroke: #f8fbff;
+        stroke-width: 1.6;
+        filter: drop-shadow(0 0 6px rgba(68, 194, 255, 0.22));
+      }
+
+      .stint-graph-position-change rect {
+        fill: rgba(12, 26, 42, 0.98);
+        stroke-width: 1.2;
+      }
+
+      .stint-graph-position-change text {
+        font-family: inherit;
+        letter-spacing: 0.08em;
+      }
+
+      .stint-graph-position-change.is-gain rect {
+        stroke: rgba(99, 230, 178, 0.9);
+      }
+
+      .stint-graph-position-change.is-gain text {
+        fill: #63e6b2;
+      }
+
+      .stint-graph-position-change.is-loss rect {
+        stroke: rgba(248, 113, 113, 0.9);
+      }
+
+      .stint-graph-position-change.is-loss text {
+        fill: #fb7185;
       }
 
       .stint-graph-point.is-selected .stint-graph-point-halo {
@@ -1484,6 +1550,15 @@
         overflow: hidden;
       }
 
+      .lap-navigation-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        margin: 0 0 18px;
+      }
+
       .stint-graph-layout {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
@@ -1496,14 +1571,14 @@
         display: grid;
         min-width: 0;
         width: 100%;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
-          "driver summary"
-          "bars bars";
-        gap: 20px 28px;
+          "driver"
+          "bars";
+        gap: 20px;
         justify-self: stretch;
         align-content: start;
-        align-items: center;
+        align-items: start;
         justify-items: stretch;
         padding: 30px 30px 26px;
         border: 1px solid rgba(148, 163, 184, 0.14);
@@ -1515,11 +1590,15 @@
       .stint-graph-driver {
         grid-area: driver;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 28px;
-        justify-content: flex-start;
+        gap: 12px;
+        justify-content: center;
+        justify-self: stretch;
         width: 100%;
+        max-width: none;
         padding: 0;
+        text-align: center;
       }
 
       .stint-graph-driver .driver-headshot {
@@ -1529,7 +1608,10 @@
 
       .stint-graph-driver .selection-driver-copy {
         display: grid;
-        gap: 7px;
+        gap: 4px;
+        width: 100%;
+        justify-items: center;
+        text-align: center;
       }
 
       .stint-graph-driver .selection-driver-copy strong {
@@ -1647,7 +1729,7 @@
         position: relative;
         width: 100%;
         min-width: 0;
-        min-height: 40px;
+        min-height: 48px;
         padding: 4px 12px;
         display: flex;
         align-items: center;
@@ -1663,9 +1745,9 @@
         position: relative;
         z-index: 1;
         display: grid;
-        gap: 2px;
+        gap: 1px;
         justify-items: center;
-        line-height: 1.1;
+        line-height: 1.05;
         text-align: center;
       }
 
@@ -1696,6 +1778,14 @@
       .stint-pit-gap-comparison {
         color: #d7f4ff;
         font-size: 0.64rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+
+      .stint-pit-gap-average {
+        color: #cde7ff;
+        font-size: 0.62rem;
         font-weight: 800;
         letter-spacing: 0.04em;
         white-space: nowrap;
@@ -2034,15 +2124,58 @@
       }
 
       .lap-support-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px 18px;
+        flex-wrap: wrap;
         padding: 0;
       }
 
       .lap-support-header h2 {
         margin: 0;
+        flex: 0 0 auto;
       }
 
       .lap-support-header p {
         margin: 6px 0 0;
+      }
+
+      .track-map-header-summary {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .track-map-header-summary .stint-graph-summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: flex-end;
+        gap: 10px;
+        width: auto;
+        min-width: 0;
+      }
+
+      .track-map-header-summary .lap-summary,
+      .track-map-header-summary .stint-graph-summary-records {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: auto;
+        max-width: none;
+        justify-content: flex-end;
+      }
+
+      .track-map-header-summary .lap-summary-badge,
+      .track-map-header-summary .stint-graph-summary-records .lap-summary-badge {
+        width: auto;
+        min-height: 58px;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        justify-content: center;
       }
 
       .lap-support-grid {
@@ -2085,7 +2218,7 @@
       }
 
       .lap-track-card .track-map-viewport {
-        padding: 0 18px 18px;
+        padding: 18px 18px 18px;
       }
 
       .lap-track-card .track-map-stage {
@@ -2103,17 +2236,16 @@
       }
 
       .lap-track-card .track-map-stage > .track-map-telemetry-top {
-        grid-column: auto;
+        grid-column: 1 / -1;
       }
 
       .lap-track-card .track-map-stage > .track-svg {
-        grid-column: auto;
         align-self: stretch;
         justify-self: stretch;
       }
 
       .lap-track-card .track-map-stage > .track-map-telemetry-bottom {
-        grid-column: auto;
+        grid-column: 1 / -1;
       }
 
       .lap-track-card .track-svg {
@@ -2130,15 +2262,34 @@
       .lap-track-card .track-map-stage .telemetry-composite {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+        gap: 8px;
         min-width: 0;
+      }
+
+      .sector-marker text {
+        paint-order: stroke fill;
+        stroke: rgba(7, 16, 29, 0.95);
+        stroke-linejoin: round;
+      }
+
+      .sector-marker .sector-marker-label {
+        fill: #dbe7ff;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+      }
+
+      .sector-marker .sector-marker-time {
+        fill: #f8fbff;
+        font-size: 13px;
+        font-weight: 900;
       }
 
       .telemetry-card {
         display: grid;
         gap: 8px;
         min-width: 0;
-        padding: 10px 10px 12px;
+        padding: 8px 8px 10px;
         border: 1px solid rgba(148, 163, 184, 0.14);
         border-radius: 14px;
         background: rgba(16, 26, 45, 0.88);
@@ -2149,7 +2300,7 @@
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 10px;
+        gap: 8px;
         min-width: 0;
       }
 
@@ -2363,6 +2514,29 @@
         font-weight: 800;
       }
 
+      .qualifying-timeline-phase-end {
+        pointer-events: none;
+      }
+
+      .qualifying-timeline-phase-end rect {
+        fill: rgba(7, 16, 29, 0.95);
+        stroke: rgba(96, 165, 250, 0.82);
+        stroke-width: 1.2;
+      }
+
+      .qualifying-timeline-phase-end text {
+        fill: #dbeafe;
+        font-size: 8.5px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+      }
+
+      .qualifying-timeline-phase-end line {
+        stroke: rgba(96, 165, 250, 0.94);
+        stroke-width: 1.8;
+        stroke-linecap: round;
+      }
+
       .qualifying-fullpage {
         width: 100vw;
         margin: 18px calc(50% - 50vw) 0;
@@ -2506,6 +2680,46 @@
         line-height: 1.2;
       }
 
+      .lap-summary-badge strong.track-status-green {
+        color: #8ff7a6;
+        text-shadow:
+          0 0 6px rgba(111, 255, 167, 0.58),
+          0 0 14px rgba(68, 194, 255, 0.22);
+        filter: drop-shadow(0 0 10px rgba(111, 255, 167, 0.2));
+      }
+
+      .lap-summary-badge strong.track-status-yellow {
+        color: #ffe66d;
+        text-shadow:
+          0 0 6px rgba(250, 204, 21, 0.62),
+          0 0 14px rgba(255, 230, 109, 0.24);
+        filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.22));
+      }
+
+      .lap-summary-badge strong.track-status-safety-car {
+        color: #ffb84d;
+        text-shadow:
+          0 0 6px rgba(249, 115, 22, 0.64),
+          0 0 14px rgba(255, 184, 77, 0.24);
+        filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.22));
+      }
+
+      .lap-summary-badge strong.track-status-vsc {
+        color: #7dd3fc;
+        text-shadow:
+          0 0 6px rgba(56, 189, 248, 0.64),
+          0 0 14px rgba(125, 211, 252, 0.24);
+        filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.22));
+      }
+
+      .lap-summary-badge strong.track-status-red {
+        color: #ff7b86;
+        text-shadow:
+          0 0 6px rgba(239, 68, 68, 0.68),
+          0 0 14px rgba(255, 123, 134, 0.24);
+        filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.24));
+      }
+
       .lap-summary-badge-note {
         color: var(--warn);
         font-size: 0.74rem;
@@ -2545,7 +2759,6 @@
           grid-template-columns: 1fr;
           grid-template-areas:
             "driver"
-            "summary"
             "bars";
           justify-items: center;
         }
@@ -2564,6 +2777,25 @@
           width: 100%;
           grid-template-columns: 1fr;
           justify-self: stretch;
+        }
+
+        .lap-track-card .track-map-stage {
+          grid-template-columns: 1fr;
+        }
+
+        .lap-support-header {
+          align-items: flex-start;
+        }
+
+        .track-map-header-summary {
+          width: 100%;
+          justify-content: flex-start;
+        }
+
+        .track-map-header-summary .stint-graph-summary,
+        .track-map-header-summary .lap-summary,
+        .track-map-header-summary .stint-graph-summary-records {
+          justify-content: flex-start;
         }
 
         .stint-bars-list {
@@ -2829,24 +3061,6 @@
               {% if not session_is_qualifying %}
                 {{ render_driver_options(drivers, selected_driver, driver_result_times) }}
               {% endif %}
-              {% if session_is_qualifying and qualifying_timeline_graph and not selected_lap %}
-                <section class="qualifying-timeline-panel qualifying-data-panel">
-                  <header>
-                    <h2>{{ qualifying_phase }} Timeline</h2>
-                    <p class="subtle">This view shows the full qualifying session.</p>
-                  </header>
-                  <div class="qualifying-timeline-viewport">
-                    <svg
-                      class="qualifying-timeline-svg"
-                      id="qualifying-timeline-svg"
-                      viewBox="0 0 1600 980"
-                      role="img"
-                      aria-label="Qualifying run timeline"
-                    ></svg>
-                  </div>
-                  <script id="qualifying-timeline-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
-                </section>
-              {% endif %}
               {% if session_is_qualifying and selected_lap and selected_driver %}
                 <div class="qualifying-telemetry-strip">
                   <div class="qualifying-telemetry-top">
@@ -2873,42 +3087,41 @@
                       </a>
                     {% endfor %}
                   </div>
-                  {% if qualifying_run_laps %}
-                    <div class="qualifying-telemetry-runs">
-                      {% for run in qualifying_run_laps %}
-                        <a
-                          class="qualifying-run-badge {% if run.representative == selected_lap %}active{% endif %}"
-                          href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&lap={{ run.representative }}"
-                        >
-                          <span class="qualifying-run-badge-copy">
-                            <strong>Run {{ run.run_number }}</strong>
-                            <span class="run-time">{{ run.flying_time }}</span>
-                          </span>
-                          {% if run.is_fastest %}
-                            <span class="qualifying-run-fastest">Fastest</span>
-                          {% endif %}
-                        </a>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                  {% if selected_qualifying_run %}
-                    <div class="qualifying-telemetry-laps">
-                      {% for lap in selected_qualifying_run.laps %}
-                        <a
-                          class="qualifying-lap-badge {% if lap.value == selected_lap %}active{% endif %}"
-                          href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&lap={{ lap.value }}"
-                        >
-                          <strong>{{ lap.lap_type }}</strong>
-                          <span>{{ lap.lap_time }}</span>
-                        </a>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
                 </div>
               {% endif %}
             </div>
           </div>
         </form>
+        {% if session_is_qualifying and selected_lap and selected_driver and qualifying_run_graph %}
+          <section class="qualifying-run-panel">
+            <header>
+              <div>
+                <h2>{{ qualifying_run_graph.title }}</h2>
+                <p class="subtle">
+                  Each run is laid out as a timing bar and each segment is labeled by lap type. Click a segment to open that lap.
+                </p>
+              </div>
+            </header>
+            <div class="qualifying-run-viewport">
+              <svg
+                class="qualifying-run-svg"
+                id="qualifying-run-svg"
+                viewBox="0 0 1118 420"
+                role="img"
+                aria-label="Qualifying run breakdown"
+                data-year="{{ form.year }}"
+                data-gp="{{ form.gp }}"
+                data-session="{{ form.session }}"
+                data-phase="{{ qualifying_phase }}"
+                data-driver="{{ selected_driver }}"
+                data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
+                data-selected-lap="{{ selected_lap }}"
+                data-selected-run-number="{{ selected_qualifying_run.run_number if selected_qualifying_run else '' }}"
+              ></svg>
+            </div>
+            <script id="qualifying-run-json" type="application/json">{{ qualifying_run_graph | tojson }}</script>
+          </section>
+        {% endif %}
       {% endif %}
 
       {% if error %}
@@ -3018,6 +3231,14 @@
           </aside>
         </section>
       {% elif page == 'lap' and (selected_stint_data or selected_lap) %}
+        {% if lap_back_to_driver_table_url %}
+          <div class="lap-navigation-actions">
+            <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers table</a>
+            {% if lap_back_to_overview_url %}
+              <a class="workflow-back" href="{{ lap_back_to_overview_url }}">Back to overview</a>
+            {% endif %}
+          </div>
+        {% endif %}
         {% if selected_stint_data %}
           <section class="stint-graph-panel" id="lap-stint-panel">
             <div class="stint-graph-layout">
@@ -3031,31 +3252,6 @@
                     </span>
                   </div>
                 {% endif %}
-                <div class="stint-graph-summary">
-                  <div class="lap-summary">
-                    <div class="lap-summary-badge">
-                      <span>Lap</span>
-                      <strong>{{ telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" }}</strong>
-                      {% if telemetry_summary and telemetry_summary.deleted_label %}
-                        <span class="lap-summary-badge-note">{{ telemetry_summary.deleted_label }}</span>
-                      {% endif %}
-                    </div>
-                    <div class="lap-summary-badge">
-                      <span>Lap Time</span>
-                      <strong>{% if telemetry_summary %}{{ telemetry_summary.lap_time }}{% else %}-{% endif %}</strong>
-                    </div>
-                  </div>
-                  {% if lap_record %}
-                    <div class="stint-graph-summary-records">
-                      {% for key, label, value in lap_record %}
-                        <div class="lap-summary-badge lap-summary-badge--compact">
-                          <span>{{ label }}</span>
-                          <strong>{{ value }}</strong>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
                 {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
                   {% set stint_driver = selected_driver | default('', true) %}
                   <div class="stint-bars-panel">
@@ -3078,6 +3274,9 @@
                                 <span class="stint-pit-gap-time">{{ stint.pit_stop_time }}</span>
                                 {% if stint.pit_stop_comparison_text is defined and stint.pit_stop_comparison_text %}
                                   <span class="stint-pit-gap-comparison">{{ stint.pit_stop_comparison_text }}</span>
+                                {% endif %}
+                                {% if stint.pit_stop_average_time is defined and stint.pit_stop_average_time %}
+                                  <span class="stint-pit-gap-average">AVG {{ stint.pit_stop_average_time }}</span>
                                 {% endif %}
                               </span>
                             </div>
@@ -3201,47 +3400,6 @@
                 </section>
               {% endif %}
             </div>
-            <aside class="results-sidebar">
-              <div class="results-sidebar-panel">
-                <div class="panel">
-                <header>
-                  <h2>Session results</h2>
-                </header>
-                <div class="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Pos</th>
-                        <th>Driver</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for row in data.rows %}
-                        {% set driver_number = row.DriverNumber if row.DriverNumber is defined else row.get('DriverNumber', '') %}
-                        <tr
-                          class="session-result-row {% if driver_number %}has-driver{% endif %}"
-                          {% if driver_number %}data-driver-number="{{ driver_number }}"{% endif %}
-                          {% if driver_number %}tabindex="0" role="link" aria-label="Open lap detail for {{ row.FullName if row.FullName is defined else row.get('FullName', '-') }}"{% endif %}
-                        >
-                          <td>{{ row.Position if row.Position is defined else row.get('Position', '-') }}</td>
-                          <td>
-                            {% set driver_flag = row.CountryFlag if row.CountryFlag is defined else row.get('CountryFlag', '') %}
-                            <span class="driver-name">
-                              {% if driver_flag %}
-                                <span class="driver-flag">{{ driver_flag }}</span>
-                              {% endif %}
-                              <span>{{ row.FullName if row.FullName is defined else row.get('FullName', '-') }}</span>
-                            </span>
-                          </td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              </div>
-              <button type="button" class="results-sidebar-edge-trigger" aria-label="Open session results"></button>
-            </aside>
           </section>
         {% endif %}
       {% endif %}
@@ -3250,14 +3408,36 @@
           <section class="lap-support-panel">
             <header class="lap-support-header">
               <h2>Track map and telemetry</h2>
+              <div class="track-map-header-summary">
+                <div class="stint-graph-summary">
+                  <div class="lap-summary">
+                    <div class="lap-summary-badge">
+                      <span>Lap</span>
+                      <strong>{{ telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" }}</strong>
+                      {% if telemetry_summary and telemetry_summary.deleted_label %}
+                        <span class="lap-summary-badge-note">{{ telemetry_summary.deleted_label }}</span>
+                      {% endif %}
+                    </div>
+                    <div class="lap-summary-badge">
+                      <span>Lap Time</span>
+                      <strong>{% if telemetry_summary %}{{ telemetry_summary.lap_time }}{% else %}-{% endif %}</strong>
+                    </div>
+                  </div>
+                  {% if lap_record %}
+                    <div class="stint-graph-summary-records">
+                      {% for key, label, value in lap_record %}
+                        <div class="lap-summary-badge lap-summary-badge--compact">
+                          <span>{{ label }}</span>
+                          <strong class="{% if key == 'track_status' %}{% if value == 'Green' %}track-status-green{% elif value == 'Yellow Flag' %}track-status-yellow{% elif value == 'Safety Car' %}track-status-safety-car{% elif value == 'Virtual Safety Car' %}track-status-vsc{% elif value == 'Red Flag' %}track-status-red{% endif %}{% endif %}">{{ value }}</strong>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
             </header>
             <div class="lap-support-grid">
               <section class="lap-support-card lap-track-card">
-                <header class="lap-support-card-header">
-                  <div>
-                    <h3>Track map</h3>
-                  </div>
-                </header>
                 <div class="track-map-viewport">
                   <div class="track-map-stage">
                     <div class="track-map-telemetry track-map-telemetry-top">
@@ -3270,6 +3450,7 @@
                       role="img"
                       aria-label="Track map with racing line"
                       data-driver-abbr="{% if selected_driver_data %}{{ selected_driver_data.abbreviation }}{% elif telemetry_summary %}{{ telemetry_summary.driver }}{% endif %}"
+                      data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
                     ></svg>
                     <div class="track-map-telemetry track-map-telemetry-bottom">
                       <div class="telemetry-composite" id="telemetry-secondary-charts"></div>
@@ -3306,45 +3487,15 @@
 
           const qualifyingRows = document.querySelectorAll(".qualifying-result-row");
           qualifyingRows.forEach((row) => {
-            row.addEventListener("click", () => {
-              const driver = row.getAttribute("data-driver-value") || "";
-              const url = new URL(window.location.href);
-              url.pathname = "/results";
-              url.searchParams.set("driver", driver);
-              if (!url.searchParams.get("phase")) {
-                const phase = url.searchParams.get("session") === "Q" ? "Q1" : url.searchParams.get("phase") || "Q1";
-                url.searchParams.set("phase", phase);
-              }
-              window.location.assign(url.toString());
-            });
-          });
-
-          const sessionResultRows = document.querySelectorAll(".session-result-row[data-driver-number]");
-          sessionResultRows.forEach((row) => {
-            const driverNumber = row.getAttribute("data-driver-number") || "";
-            if (!driverNumber) {
-              return;
-            }
-
-            const openDriverLap = () => {
-              const url = new URL(window.location.href);
-              url.pathname = "/lap";
-              url.searchParams.set("driver", driverNumber);
-              url.hash = "lap-stint-panel";
-              window.location.assign(url.toString());
-            };
-
             row.addEventListener("click", (event) => {
               event.preventDefault();
               event.stopPropagation();
-              openDriverLap();
-            });
-            row.addEventListener("keydown", (event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                event.stopPropagation();
-                openDriverLap();
-              }
+              const driver = row.getAttribute("data-driver-value") || "";
+              const url = new URL(window.location.href);
+              url.pathname = "/lap";
+              url.searchParams.set("driver", driver);
+              url.searchParams.set("phase", url.searchParams.get("phase") || "Q1");
+              window.location.assign(url.toString());
             });
           });
 
@@ -3525,61 +3676,6 @@
             });
           }
 
-          const resultsSidebar = document.querySelector(".results-sidebar");
-          const resultsSidebarEdgeTrigger = document.querySelector(".results-sidebar-edge-trigger");
-          if (resultsSidebar) {
-            let sidebarHover = false;
-            let edgeHover = false;
-            let sidebarPinned = false;
-
-            const syncResultsSidebar = () => {
-              resultsSidebar.classList.toggle("open", edgeHover || sidebarPinned || sidebarHover);
-              resultsSidebar.classList.toggle("pinned", sidebarPinned);
-            };
-
-            if (resultsSidebarEdgeTrigger) {
-              resultsSidebarEdgeTrigger.addEventListener("mouseenter", () => {
-                edgeHover = true;
-                syncResultsSidebar();
-              });
-
-              resultsSidebarEdgeTrigger.addEventListener("mouseleave", () => {
-                edgeHover = false;
-                syncResultsSidebar();
-              });
-
-              resultsSidebarEdgeTrigger.addEventListener("click", () => {
-                sidebarPinned = !sidebarPinned;
-                syncResultsSidebar();
-              });
-            }
-
-            resultsSidebar.addEventListener("mouseenter", () => {
-              sidebarHover = true;
-              syncResultsSidebar();
-            });
-
-            resultsSidebar.addEventListener("mouseleave", () => {
-              sidebarHover = false;
-              syncResultsSidebar();
-            });
-
-            resultsSidebar.addEventListener("click", (event) => {
-              if (event.target.closest("a, button, input, select, textarea, label")) {
-                return;
-              }
-              sidebarPinned = !sidebarPinned;
-              syncResultsSidebar();
-            });
-
-            window.addEventListener("blur", () => {
-              sidebarHover = false;
-              edgeHover = false;
-              sidebarPinned = false;
-              syncResultsSidebar();
-            });
-          }
-
           const syncHeaderSpacing = () => {
             if (!headerBadges) {
               return;
@@ -3656,7 +3752,7 @@
             });
           });
 
-          document.querySelectorAll(".qualifying-run-badge, .qualifying-lap-badge").forEach((badge) => {
+          document.querySelectorAll(".qualifying-run-badge, .qualifying-lap-badge, .qualifying-run-segment").forEach((badge) => {
             badge.addEventListener("pointerdown", () => {
               badge.classList.add("pending-selected");
             });
@@ -3689,6 +3785,7 @@
           const innerHeight = height - padding.top - padding.bottom;
           const laps = stint.laps.filter((lap) => lap.lap_time_seconds != null);
           const selectedLap = container.dataset.selectedLap || "";
+          const showPositionMarkers = ["R", "S"].includes(String(container.dataset.session || "").trim().toUpperCase());
           if (!laps.length) {
             container.innerHTML = '<div class="empty">Lap timing data is unavailable for this stint.</div>';
             return;
@@ -3705,6 +3802,25 @@
               .replaceAll("<", "&lt;")
               .replaceAll(">", "&gt;")
               .replaceAll('"', "&quot;");
+          }
+
+          function hexToRgba(hex, alpha) {
+            const value = String(hex || "").trim().replace(/^#/, "");
+            const normalized = value.length === 3
+              ? value.split("").map((digit) => `${digit}${digit}`).join("")
+              : value;
+            if (normalized.length !== 6) {
+              return `rgba(7,16,29,${alpha})`;
+            }
+
+            const red = parseInt(normalized.slice(0, 2), 16);
+            const green = parseInt(normalized.slice(2, 4), 16);
+            const blue = parseInt(normalized.slice(4, 6), 16);
+            if ([red, green, blue].some((channel) => Number.isNaN(channel))) {
+              return `rgba(7,16,29,${alpha})`;
+            }
+
+            return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
           }
 
           function formatLapTime(seconds) {
@@ -3797,6 +3913,64 @@
             `;
           }
 
+          function renderPositionChangeMarker(lap, x, y) {
+            if (!showPositionMarkers || !lap || !lap.position_change_text) {
+              return "";
+            }
+
+            const badgeLabel = `P${String(lap.position_change_text || "").trim()}`;
+            const badgeWidth = Math.max(36, Math.ceil((badgeLabel.length * 6.0) + 12));
+            const badgeHeight = 16;
+            const topMin = padding.top + 2;
+            const topMax = height - padding.bottom - badgeHeight - 4;
+            const placeAbove = y - badgeHeight - 32 >= topMin;
+            const chosenTop = placeAbove ? y - badgeHeight - 32 : y + 16;
+            const badgeTop = Math.max(topMin, Math.min(topMax, chosenTop));
+            const badgeLeft = Math.max(padding.left + 2, Math.min(width - padding.right - badgeWidth - 2, x - (badgeWidth / 2)));
+            const badgeCenterX = badgeLeft + (badgeWidth / 2);
+            const badgeCenterY = badgeTop + (badgeHeight / 2) + 0.5;
+            const titleText = (() => {
+              const before = Number(lap.position_before);
+              const after = Number(lap.position_after);
+              const direction = String(lap.position_change_direction || "").trim();
+              if (Number.isFinite(before) && Number.isFinite(after)) {
+                return direction === "gain"
+                  ? `Position gain: P${before} to P${after}`
+                  : `Position loss: P${before} to P${after}`;
+              }
+              return `Position change: ${badgeLabel}`;
+            })();
+
+            return `
+              <g class="stint-graph-position-change ${String(lap.position_change_direction || "").trim() === "gain" ? "is-gain" : "is-loss"}">
+                <title>${escapeHtml(titleText)}</title>
+                <rect x="${badgeLeft.toFixed(2)}" y="${badgeTop.toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="8"></rect>
+                <text x="${badgeCenterX.toFixed(2)}" y="${badgeCenterY.toFixed(2)}" font-size="8.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(badgeLabel)}</text>
+              </g>
+            `;
+          }
+
+          function renderLapTimeTooltip(lap, x, y, pointColor) {
+            const tooltipText = String(lap.lap_time || formatLapTime(lap.lap_time_seconds) || "-");
+            const tooltipWidth = Math.max(70, Math.ceil((tooltipText.length * 6.3) + 16));
+            const tooltipHeight = 18;
+            const topMin = padding.top + 2;
+            const topMax = height - padding.bottom - tooltipHeight - 4;
+            const placeAbove = y - tooltipHeight - 12 >= topMin;
+            const chosenTop = placeAbove ? y - tooltipHeight - 12 : y + 12;
+            const tooltipTop = Math.max(topMin, Math.min(topMax, chosenTop));
+            const tooltipLeft = Math.max(padding.left + 2, Math.min(width - padding.right - tooltipWidth - 2, x - (tooltipWidth / 2)));
+            const tooltipCenterX = tooltipLeft + (tooltipWidth / 2);
+            const tooltipCenterY = tooltipTop + (tooltipHeight / 2) + 0.5;
+
+            return `
+              <g class="stint-graph-lap-tooltip">
+                <rect x="${tooltipLeft.toFixed(2)}" y="${tooltipTop.toFixed(2)}" width="${tooltipWidth.toFixed(2)}" height="${tooltipHeight}" rx="9" fill="rgba(7, 16, 29, 0.96)" stroke="${pointColor}" stroke-width="1.2"></rect>
+                <text x="${tooltipCenterX.toFixed(2)}" y="${tooltipCenterY.toFixed(2)}" fill="#f8fafc" font-size="10" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(tooltipText)}</text>
+              </g>
+            `;
+          }
+
           function toY(value) {
             return padding.top + innerHeight - ((value - min) / range) * innerHeight;
           }
@@ -3851,6 +4025,8 @@
                   ${pointMarkup}
                   ${renderPersonalBestMarker(lap, x, y)}
                   ${renderLapMarkers(lap, x, y)}
+                  ${renderPositionChangeMarker(lap, x, y)}
+                  ${renderLapTimeTooltip(lap, x, y, pointColor)}
                 </a>
               `;
             })
@@ -3903,39 +4079,7 @@
               return;
             }
 
-            const plotWidth = Math.max(760, Math.ceil((Number(graph.max_time || 0) * 0.62) + 48));
             const labelColumnWidth = 96;
-            const width = plotWidth + labelColumnWidth;
-            const pad = { top: 28, right: 8, bottom: 56, left: 52 };
-            const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
-              phase_code: graph.phase_code || "ALL",
-              title: graph.title || "Qualifying run timeline",
-              participant_count: (graph.drivers || []).length,
-              eliminated_count: 0,
-              drivers: graph.drivers || [],
-            }];
-            const sectionHeaderHeight = 22;
-            const sectionGap = 10;
-            const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
-            const availableHeight = Math.max(420, (window.innerHeight || 900) - 260);
-            const rowStep = Math.max(
-              15,
-              Math.min(
-                20,
-                Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionHeaderHeight) - ((sections.length - 1) * sectionGap)) / totalRows),
-              ),
-            );
-            const rowHeight = Math.max(7, Math.min(9, Math.floor(rowStep * 0.44)));
-            const height = pad.top + pad.bottom + sections.reduce(
-              (total, section, index) => total
-                + sectionHeaderHeight
-                + ((section.drivers || []).length * rowStep)
-                + (index < sections.length - 1 ? sectionGap : 0),
-              0,
-            );
-            const innerWidth = plotWidth - pad.left - pad.right;
-            const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
-            const timeLabelX = plotWidth + (labelColumnWidth / 2);
             const timeOffset = Number(graph.time_offset || 0);
             const isAllGraph = String(graph.phase_code || "").toUpperCase() === "ALL";
             const selectedPhaseCode = String(graph.phase_code || "").toUpperCase();
@@ -3943,7 +4087,53 @@
             const selectedPhaseWindow = selectedPhaseCode && selectedPhaseCode !== "ALL"
               ? phaseWindows[selectedPhaseCode] || null
               : null;
-            const graphEnd = pad.left + Math.max(0, Number(graph.max_time || 0) || 0) * scale;
+            const availableWidth = Math.floor(
+              svg.closest(".qualifying-timeline-panel")?.clientWidth
+              || svg.closest(".qualifying-fullpage")?.clientWidth
+              || svg.parentElement?.clientWidth
+              || window.innerWidth
+              || document.documentElement.clientWidth
+              || 0,
+            );
+            const desiredPlotWidth = Math.max(760, Math.ceil((Number(graph.max_time || 0) * 0.62) + 48));
+            const plotWidthCap = Math.max(760, availableWidth - labelColumnWidth - 12);
+            const plotWidth = isAllGraph
+              ? Math.min(desiredPlotWidth, plotWidthCap)
+              : desiredPlotWidth;
+            const width = plotWidth + labelColumnWidth;
+            const pad = { top: 34, right: 8, bottom: 56, left: 52 };
+            const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
+              phase_code: graph.phase_code || "ALL",
+              title: graph.title || "Qualifying run timeline",
+              participant_count: (graph.drivers || []).length,
+              eliminated_count: 0,
+              drivers: graph.drivers || [],
+            }];
+            const sectionHeaderHeight = 26;
+            const sectionContentGap = 8;
+            const sectionContentOffset = sectionHeaderHeight + sectionContentGap;
+            const sectionGap = 10;
+            const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
+            const availableHeight = Math.max(420, (window.innerHeight || 900) - 260);
+            const rowStep = Math.max(
+              15,
+              Math.min(
+                20,
+                Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionContentOffset) - ((sections.length - 1) * sectionGap)) / totalRows),
+              ),
+            );
+            const rowHeight = Math.max(7, Math.min(9, Math.floor(rowStep * 0.44)));
+            const height = pad.top + pad.bottom + sections.reduce(
+              (total, section, index) => total
+                + sectionHeaderHeight
+                + sectionContentGap
+                + ((section.drivers || []).length * rowStep)
+                + (index < sections.length - 1 ? sectionGap : 0),
+              0,
+            );
+            const innerWidth = plotWidth - pad.left - pad.right;
+            const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
+            const timeLabelX = plotWidth + (labelColumnWidth / 2);
 
             const escapeHtml = (value) => String(value)
               .replaceAll("&", "&amp;")
@@ -4072,12 +4262,12 @@
               const header = `
                 <g class="qualifying-timeline-section" transform="translate(0 ${cursorY})">
                   <line x1="${pad.left}" y1="0" x2="${plotWidth - pad.right}" y2="0" stroke="rgba(148,163,184,0.18)" stroke-width="1.2"></line>
-                  <text x="${pad.left}" y="15" fill="rgba(226,232,240,0.98)" font-size="10.5" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
-                  <text x="${plotWidth - pad.right}" y="15" fill="rgba(151,167,194,0.92)" font-size="8.5" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
+                  <text x="${pad.left}" y="16" fill="rgba(226,232,240,0.98)" font-size="10.5" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
+                  <text x="${plotWidth - pad.right}" y="16" fill="rgba(151,167,194,0.92)" font-size="8.5" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
                 </g>
               `;
-              const driversMarkup = drivers.map((driver, driverIndex) => buildDriverMarkup(driver, cursorY + sectionHeaderHeight + (driverIndex * rowStep) + rowHeight)).join("");
-              const sectionBottom = cursorY + sectionHeaderHeight + (drivers.length * rowStep);
+              const driversMarkup = drivers.map((driver, driverIndex) => buildDriverMarkup(driver, cursorY + sectionContentOffset + (driverIndex * rowStep) + rowHeight)).join("");
+              const sectionBottom = cursorY + sectionContentOffset + (drivers.length * rowStep);
               const separator = index < sections.length - 1 ? `<line x1="${pad.left}" y1="${(sectionBottom + 6).toFixed(2)}" x2="${plotWidth - pad.right}" y2="${(sectionBottom + 6).toFixed(2)}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>` : "";
               return {
                 markup: `${header}${driversMarkup}${separator}`,
@@ -4099,37 +4289,48 @@
                   <circle cx="3" cy="3" r="1.5" fill="rgba(7,16,29,0.42)"></circle>
                   <circle cx="9" cy="9" r="1.5" fill="rgba(7,16,29,0.42)"></circle>
                 </pattern>
+                <marker id="qualifying-phase-end-arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(96,165,250,0.94)"></path>
+                </marker>
               </defs>
             `;
 
             let grid = "";
-            for (let i = 0; i <= 5; i += 1) {
-              const seconds = (Number(graph.max_time || 0) / 5) * i;
-              const x = toX(seconds);
+            const tickCount = 5;
+            for (let i = 0; i <= tickCount; i += 1) {
+              const elapsedSeconds = (Number(graph.max_time || 0) / tickCount) * i;
+              const x = pad.left + (elapsedSeconds * scale);
               grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-              grid += `<text x="${x.toFixed(2)}" y="${height - 15}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="8.5" font-weight="800">${formatAxisTime(seconds + timeOffset)}</text>`;
+              grid += `<text x="${x.toFixed(2)}" y="${height - 15}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="8.5" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
             }
             grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-            const phaseWindowMarkup = selectedPhaseWindow ? (() => {
-              const phaseStart = Number(selectedPhaseWindow.start || 0);
-              const phaseEnd = Number(selectedPhaseWindow.end || phaseStart);
-              if (!Number.isFinite(phaseStart) || !Number.isFinite(phaseEnd) || phaseEnd <= phaseStart) {
+            const phaseEndMarkup = (() => {
+              if (!selectedPhaseWindow || selectedPhaseCode === "ALL") {
                 return "";
               }
-              const x1 = toX(phaseStart);
-              const x2 = toX(phaseEnd);
-              const left = Math.min(x1, x2);
-              const widthBand = Math.max(8, Math.abs(x2 - x1));
-              const label = `${selectedPhaseCode} window`;
+              const phaseEndSeconds = Number(selectedPhaseWindow.end);
+              if (!Number.isFinite(phaseEndSeconds)) {
+                return "";
+              }
+              const phaseEndX = toX(phaseEndSeconds);
+              const phaseEndLabel = `END ${selectedPhaseCode}`;
+              const labelWidth = Math.max(56, Math.ceil((phaseEndLabel.length * 7.2) + 16));
+              const labelHeight = 14;
+              const labelX = Math.max(4, Math.min(width - labelWidth - 4, phaseEndX - (labelWidth / 2)));
+              const labelY = 3;
+              const upperArrowStartY = labelY + labelHeight + 2;
+              const upperArrowEndY = upperArrowStartY + 7;
+              const lowerArrowStartY = upperArrowEndY + 2;
+              const lowerArrowEndY = Math.min(pad.top - 2, lowerArrowStartY + 7);
               return `
-                <g class="qualifying-timeline-window" opacity="0.95">
-                  <rect x="${left.toFixed(2)}" y="${pad.top.toFixed(2)}" width="${widthBand.toFixed(2)}" height="${(height - pad.top - pad.bottom).toFixed(2)}" fill="rgba(59,130,246,0.07)" stroke="rgba(96,165,250,0.38)" stroke-dasharray="6 6" stroke-width="1.2"></rect>
-                  <line x1="${left.toFixed(2)}" y1="${pad.top.toFixed(2)}" x2="${left.toFixed(2)}" y2="${(height - pad.bottom).toFixed(2)}" stroke="rgba(96,165,250,0.62)" stroke-width="1.4"></line>
-                  <line x1="${(left + widthBand).toFixed(2)}" y1="${pad.top.toFixed(2)}" x2="${(left + widthBand).toFixed(2)}" y2="${(height - pad.bottom).toFixed(2)}" stroke="rgba(96,165,250,0.62)" stroke-width="1.4"></line>
-                  <text x="${(left + 10).toFixed(2)}" y="${(pad.top + 11).toFixed(2)}" fill="rgba(224,242,254,0.98)" font-size="8.5" font-weight="900">${escapeHtml(label)}</text>
+                <g class="qualifying-timeline-phase-end" opacity="0.98">
+                  <rect x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" width="${labelWidth.toFixed(2)}" height="${labelHeight}" rx="8"></rect>
+                  <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="${(labelY + 10.2).toFixed(2)}" text-anchor="middle">${phaseEndLabel}</text>
+                  <line x1="${phaseEndX.toFixed(2)}" y1="${upperArrowStartY.toFixed(2)}" x2="${phaseEndX.toFixed(2)}" y2="${upperArrowEndY.toFixed(2)}" marker-end="url(#qualifying-phase-end-arrow)"></line>
+                  <line x1="${phaseEndX.toFixed(2)}" y1="${lowerArrowStartY.toFixed(2)}" x2="${phaseEndX.toFixed(2)}" y2="${lowerArrowEndY.toFixed(2)}" marker-end="url(#qualifying-phase-end-arrow)" opacity="0.82"></line>
                 </g>
               `;
-            })() : "";
+            })();
             let cursorY = pad.top;
             const rowBlocks = [];
             sections.forEach((section, sectionIndex) => {
@@ -4140,13 +4341,14 @@
             const rows = rowBlocks.join("");
 
             svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-            svg.style.width = `${width}px`;
+            svg.style.width = "100%";
+            svg.style.maxWidth = "100%";
             svg.style.height = `${height}px`;
             svg.innerHTML = `
               <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
               ${defs}
-              ${phaseWindowMarkup}
               <g class="qualifying-timeline-axis">${grid}</g>
+              ${phaseEndMarkup}
               ${rows}
             `;
 
@@ -4174,6 +4376,278 @@
           };
 
           renderQualifyingTimeline("qualifying-timeline-svg", "qualifying-timeline-json");
+        })();
+      </script>
+      {% endif %}
+      {% if qualifying_run_graph %}
+      <script>
+        (() => {
+          const renderQualifyingRunGraph = (svgId, dataId) => {
+            const svg = document.getElementById(svgId);
+            const dataEl = document.getElementById(dataId);
+            if (!svg || !dataEl) {
+              return;
+            }
+
+            const graph = JSON.parse(dataEl.textContent || "null");
+            if (!graph || !Array.isArray(graph.runs) || !graph.runs.length) {
+              svg.innerHTML = "";
+              return;
+            }
+
+            const escapeHtml = (value) => String(value)
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;");
+            const parseSeconds = (value) => {
+              const numeric = Number(value);
+              return Number.isFinite(numeric) ? numeric : null;
+            };
+            const formatAxisTime = (seconds) => {
+              const total = Math.max(0, Number(seconds) || 0);
+              const minutes = Math.floor(total / 60);
+              const secs = Math.floor(total % 60);
+              return `${minutes}:${String(secs).padStart(2, "0")}`;
+            };
+            const chooseTickStep = (rangeSeconds) => {
+              if (rangeSeconds <= 180) {
+                return 15;
+              }
+              if (rangeSeconds <= 420) {
+                return 30;
+              }
+              if (rangeSeconds <= 900) {
+                return 60;
+              }
+              return 120;
+            };
+            const buildHref = (lapValue) => {
+              const params = new URLSearchParams();
+              params.set("year", svg.dataset.year || "");
+              params.set("gp", svg.dataset.gp || "");
+              params.set("session", svg.dataset.session || "");
+              params.set("phase", svg.dataset.phase || "Q1");
+              params.set("driver", svg.dataset.driver || "");
+              if (lapValue) {
+                params.set("lap", lapValue);
+              }
+              return `/data?${params.toString()}`;
+            };
+            const segmentStyle = (lapType) => {
+              const normalized = String(lapType || "").trim().toLowerCase();
+              if (normalized === "out lap") {
+                return { key: "out", label: "OUT", short: "OUT", fill: "#ffbf69" };
+              }
+              if (normalized === "in lap") {
+                return { key: "in", label: "IN", short: "IN", fill: "#44c2ff" };
+              }
+              if (normalized === "cool lap") {
+                return { key: "cool", label: "COOL", short: "COOL", fill: "#94a3b8" };
+              }
+              if (normalized === "out / in lap") {
+                return {
+                  key: "out-in",
+                  label: "OUT/IN",
+                  short: "OUT/IN",
+                  outFill: "#ffbf69",
+                  inFill: "#44c2ff",
+                };
+              }
+              return { key: "flying", label: "FLYING", short: "FLY", fill: "#77f0d1" };
+            };
+
+            const normalizedRuns = (graph.runs || []).map((run) => {
+              const laps = Array.isArray(run.laps) ? run.laps : [];
+              const segments = laps.map((lap) => {
+                const lapStart = parseSeconds(lap.lap_start_seconds);
+                const lapEnd = parseSeconds(lap.lap_end_seconds);
+                const lapTime = parseSeconds(lap.lap_time_seconds);
+                const fallbackStart = parseSeconds(run.start_seconds);
+                const segmentStart = lapStart ?? fallbackStart;
+                const segmentEnd = lapEnd ?? (segmentStart !== null && lapTime !== null ? segmentStart + lapTime : null);
+                return {
+                  ...lap,
+                  segment_start_seconds: segmentStart,
+                  segment_end_seconds: segmentEnd,
+                };
+              }).filter((lap) => Number.isFinite(lap.segment_start_seconds) && Number.isFinite(lap.segment_end_seconds) && lap.segment_end_seconds > lap.segment_start_seconds);
+
+              const runStart = segments.length
+                ? Math.min(...segments.map((lap) => Number(lap.segment_start_seconds)))
+                : parseSeconds(run.start_seconds);
+              const runEnd = segments.length
+                ? Math.max(...segments.map((lap) => Number(lap.segment_end_seconds)))
+                : parseSeconds(run.end_seconds);
+
+              return {
+                ...run,
+                segments,
+                run_start_seconds: runStart,
+                run_end_seconds: runEnd,
+              };
+            }).filter((run) => Number.isFinite(run.run_start_seconds) && Number.isFinite(run.run_end_seconds));
+
+            if (!normalizedRuns.length) {
+              svg.innerHTML = "";
+              return;
+            }
+
+            const driverColor = svg.dataset.driverColor || "#44c2ff";
+            const selectedLap = String(svg.dataset.selectedLap || "");
+            const selectedRunNumber = Number(svg.dataset.selectedRunNumber || 0) || null;
+            let activeRunNumber = Number.isFinite(selectedRunNumber) && selectedRunNumber > 0 ? selectedRunNumber : null;
+            if (!activeRunNumber && selectedLap) {
+              const activeRun = normalizedRuns.find((run) => (run.segments || []).some((lap) => String(lap.value || "") === selectedLap));
+              if (activeRun) {
+                activeRunNumber = Number(activeRun.run_number || 0) || null;
+              }
+            }
+
+            const minTime = Math.min(...normalizedRuns.map((run) => Number(run.run_start_seconds)));
+            const maxTime = Math.max(...normalizedRuns.map((run) => Number(run.run_end_seconds)));
+            const timeRange = Math.max(maxTime - minTime, 1);
+            const plotWidth = 1000;
+            const labelColumnWidth = 118;
+            const width = plotWidth + labelColumnWidth;
+            const pad = { top: 34, right: 8, bottom: 44, left: 64 };
+            const rowStep = 30;
+            const rowHeight = 16;
+            const height = Math.max(320, pad.top + pad.bottom + (normalizedRuns.length * rowStep));
+            const innerWidth = plotWidth - pad.left - pad.right;
+            const scale = innerWidth / timeRange;
+            const toX = (seconds) => pad.left + (Math.max(minTime, Number(seconds) || minTime) - minTime) * scale;
+            const clampX = (value) => Math.max(pad.left, Math.min(plotWidth - pad.right, value));
+            const tickStep = chooseTickStep(timeRange);
+            const ticks = [];
+            for (let time = Math.ceil(minTime / tickStep) * tickStep; time <= maxTime; time += tickStep) {
+              ticks.push(time);
+            }
+
+            const defs = `
+              <defs>
+                <linearGradient id="qualifying-run-out-in" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#ffbf69"></stop>
+                  <stop offset="49.5%" stop-color="#ffbf69"></stop>
+                  <stop offset="49.5%" stop-color="#44c2ff"></stop>
+                  <stop offset="100%" stop-color="#44c2ff"></stop>
+                </linearGradient>
+              </defs>
+            `;
+
+            const grid = ticks.map((time) => {
+              const x = clampX(toX(time));
+              return `
+                <line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>
+                <text x="${x.toFixed(2)}" y="${height - 15}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="8.5" font-weight="800">${formatAxisTime(time)}</text>
+              `;
+            }).join("");
+
+            let rows = "";
+            normalizedRuns.forEach((run, index) => {
+              const yCenter = pad.top + (index * rowStep) + Math.floor(rowStep / 2);
+              const rowTop = yCenter - (rowHeight / 2);
+              const runNumber = Number(run.run_number || index + 1);
+              const isSelectedRun = activeRunNumber !== null && Number(activeRunNumber) === runNumber;
+              const rowTimeLabel = String(run.flying_time || run.lap_time || "-").trim() || "-";
+
+              const segmentsMarkup = (run.segments || []).map((segment, segmentIndex) => {
+                const style = segmentStyle(segment.lap_type);
+                const segmentStart = clampX(toX(segment.segment_start_seconds));
+                const segmentEnd = clampX(toX(segment.segment_end_seconds));
+                const segmentWidth = Math.max(6, segmentEnd - segmentStart);
+                const labelText = segmentWidth >= 52 ? style.label : style.short;
+                const selectedSegment = String(segment.value || "") === selectedLap;
+                const labelX = segmentStart + (segmentWidth / 2);
+                const labelY = yCenter + 0.6;
+                const ariaLabel = `Run ${runNumber}, ${style.label}${segment.lap_number ? `, lap ${segment.lap_number}` : ""}${segment.lap_time ? `, ${segment.lap_time}` : ""}`;
+                const strokeWidth = selectedSegment ? 1.6 : 1;
+                const stroke = selectedSegment ? "#f8fbff" : "rgba(7,16,29,0.72)";
+                const rectMarkup = style.key === "out-in"
+                  ? `
+                    <rect class="segment-fill" x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${(segmentWidth / 2).toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="5" fill="${style.outFill}" opacity="0.92" stroke="${stroke}" stroke-width="${strokeWidth}"></rect>
+                    <rect class="segment-fill" x="${(segmentStart + (segmentWidth / 2)).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${(segmentWidth / 2).toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="5" fill="${style.inFill}" opacity="0.92" stroke="${stroke}" stroke-width="${strokeWidth}"></rect>
+                  `
+                  : `
+                    <rect class="segment-fill" x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentWidth.toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="5" fill="${style.fill}" opacity="0.92" stroke="${stroke}" stroke-width="${strokeWidth}"></rect>
+                  `;
+
+                return `
+                  <a class="qualifying-run-segment ${selectedSegment ? "is-selected" : ""}" href="${escapeHtml(buildHref(segment.value || ""))}" data-href="${escapeHtml(buildHref(segment.value || ""))}" data-run-number="${runNumber}" data-segment-index="${segmentIndex}" tabindex="0" role="link" aria-label="${escapeHtml(ariaLabel)}" aria-current="${selectedSegment ? "true" : "false"}">
+                    ${rectMarkup}
+                    ${segmentWidth >= 26 ? `<text x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" fill="#07101d" font-size="8.5" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(labelText)}</text>` : ""}
+                  </a>
+                `;
+              }).join("");
+
+              rows += `
+                <g class="qualifying-run-row ${isSelectedRun ? "is-selected" : ""} ${run.is_fastest ? "is-fastest" : ""}" data-run-number="${runNumber}" style="--run-accent: ${escapeHtml(driverColor)};">
+                  <line x1="${pad.left}" y1="${yCenter.toFixed(2)}" x2="${(plotWidth - pad.right).toFixed(2)}" y2="${yCenter.toFixed(2)}" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
+                  <text class="qualifying-run-row-label" x="${(pad.left - 4).toFixed(2)}" y="${(yCenter + 4).toFixed(2)}" text-anchor="end">${escapeHtml(`Run ${runNumber}`)}</text>
+                  <text class="qualifying-run-time-label" x="${(plotWidth + (labelColumnWidth / 2)).toFixed(2)}" y="${(yCenter + 4).toFixed(2)}" text-anchor="middle">${escapeHtml(rowTimeLabel)}</text>
+                  ${segmentsMarkup}
+                </g>
+              `;
+            });
+
+            svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            svg.style.width = "100%";
+            svg.style.maxWidth = "100%";
+            svg.style.height = `${height}px`;
+            svg.innerHTML = `
+              <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+              ${defs}
+              <g class="qualifying-run-axis">${grid}</g>
+              ${rows}
+            `;
+
+            const segmentLinks = Array.from(svg.querySelectorAll(".qualifying-run-segment"));
+            const rowGroups = Array.from(svg.querySelectorAll(".qualifying-run-row"));
+            const clearSegments = () => {
+              segmentLinks.forEach((segment) => {
+                segment.classList.remove("is-hovered");
+                segment.style.opacity = "";
+              });
+              rowGroups.forEach((row) => {
+                row.classList.remove("is-hovered");
+              });
+            };
+            const activateSegment = (segment) => {
+              const activeRun = Number(segment.dataset.runNumber || 0);
+              segmentLinks.forEach((item) => {
+                const selected = item === segment || item.classList.contains("is-selected");
+                item.classList.toggle("is-hovered", item === segment);
+                item.style.opacity = selected ? "1" : "0.28";
+              });
+              rowGroups.forEach((row) => {
+                const selected = Number(row.dataset.runNumber || 0) === activeRun;
+                row.classList.toggle("is-hovered", selected);
+              });
+            };
+
+            segmentLinks.forEach((segment) => {
+              const href = segment.getAttribute("data-href");
+              if (!href) {
+                return;
+              }
+
+              segment.addEventListener("mouseenter", () => activateSegment(segment));
+              segment.addEventListener("click", (event) => {
+                event.preventDefault();
+                window.location.assign(href);
+              });
+              segment.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  window.location.assign(href);
+                }
+              });
+            });
+
+            svg.addEventListener("mouseleave", clearSegments);
+          };
+
+          renderQualifyingRunGraph("qualifying-run-svg", "qualifying-run-json");
         })();
       </script>
       {% endif %}
@@ -4322,7 +4796,7 @@
               ? Math.min(width - pad.right - tagWidth, lastX + 10)
               : Math.min(width - pad.right - tagWidth, lastX - tagWidth / 2);
             const driverValue = encodeURIComponent(series.value || "");
-            const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}#lap-stint-panel`;
+            const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position#lap-stint-panel`;
             return `
               <g class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" data-href="${href}" tabindex="0" role="button" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
                 <path class="race-position-hit" d="${d}" data-href="${href}"></path>
@@ -4528,7 +5002,7 @@
               const endX = xForEndLap(stint.end_lap);
               const barWidth = Math.max(6, endX - startX - 2);
               const driverValue = encodeURIComponent(driver.driver_number || "");
-              const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&stint=${encodeURIComponent(stint.stint || "")}{% if form.phase %}&phase={{ form.phase }}{% endif %}#lap-stint-panel`;
+              const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&stint=${encodeURIComponent(stint.stint || "")}{% if form.phase %}&phase={{ form.phase }}{% endif %}&source=pit-strategy#lap-stint-panel`;
               const separatorX = endX - 2;
               const stintLengthLabel = `${stint.lap_count || 0} lap${Number(stint.lap_count || 0) === 1 ? "" : "s"}`;
               const labelWidth = Math.max(48, stintLengthLabel.length * 6.4 + 16);
@@ -4658,6 +5132,23 @@
             const minutes = Math.floor(rounded / 60);
             const secs = rounded % 60;
             return `${minutes}:${String(secs).padStart(2, "0")}`;
+          }
+
+          function buildTelemetryTimeTicks(startSeconds, endSeconds, stepSeconds = 15) {
+            const start = Number(startSeconds);
+            const end = Number(endSeconds);
+            if (!Number.isFinite(start) || !Number.isFinite(end) || stepSeconds <= 0) {
+              return [];
+            }
+
+            const min = Math.min(start, end);
+            const max = Math.max(start, end);
+            const ticks = [];
+            for (let value = Math.ceil(min / stepSeconds) * stepSeconds; value <= max; value += stepSeconds) {
+              ticks.push(value);
+            }
+
+            return ticks;
           }
 
           function formatTelemetrySeconds(seconds) {
@@ -4853,12 +5344,13 @@
               markup += `<text x="${padding.left - 8}" y="${(y + 4).toFixed(2)}" fill="rgba(151,167,194,0.9)" font-size="10" text-anchor="end">${label}</text>`;
             });
 
-            for (let i = 0; i <= 3; i += 1) {
-              const value = xMin + ((xMax - xMin) / 3) * i;
+            const xTicks = buildTelemetryTimeTicks(xMin, xMax, 15);
+            const resolvedXTicks = xTicks.length ? xTicks : [xMin];
+            resolvedXTicks.forEach((value) => {
               const x = padding.left + (value - xMin) * xScale;
               markup += `<line x1="${x.toFixed(2)}" y1="${padding.top}" x2="${x.toFixed(2)}" y2="${height - padding.bottom}" stroke="rgba(148,163,184,0.14)" stroke-width="1" />`;
               markup += `<text x="${x.toFixed(2)}" y="${height - 8}" fill="rgba(151,167,194,0.9)" font-size="10" text-anchor="middle">${formatTelemetryTime(value)}</text>`;
-            }
+            });
 
             return markup;
           }
@@ -4994,9 +5486,13 @@
               return;
             }
 
-            const cardWidth = 320;
+            const compositeWidth = container.getBoundingClientRect().width || 0;
+            const isStackedLayout = window.matchMedia("(max-width: 900px)").matches;
+            const columnCount = isStackedLayout ? 1 : Math.max(charts.length, 1);
+            const cardGap = isStackedLayout ? 8 : 8;
+            const cardWidth = Math.max(280, Math.floor((compositeWidth - (cardGap * Math.max(0, columnCount - 1))) / columnCount) - 16);
             const cardHeight = 150;
-            const padding = { top: 12, right: 12, bottom: 24, left: 34 };
+            const padding = { top: 10, right: 8, bottom: 22, left: 28 };
             const innerWidth = cardWidth - padding.left - padding.right;
             const innerHeight = cardHeight - padding.top - padding.bottom;
             const stateName = stateKey || containerId;
@@ -5030,14 +5526,15 @@
                 `;
               });
 
-              for (let i = 0; i <= 3; i += 1) {
-                const value = chartXMin + ((chartXMax - chartXMin) / 3) * i;
+              const xTicks = buildTelemetryTimeTicks(chartXMin, chartXMax, 15);
+              const resolvedXTicks = xTicks.length ? xTicks : [chartXMin];
+              resolvedXTicks.forEach((value) => {
                 const x = padding.left + ((value - chartXMin) * xScale);
                 markup += `
                   <line x1="${x.toFixed(2)}" y1="${padding.top}" x2="${x.toFixed(2)}" y2="${(padding.top + innerHeight).toFixed(2)}" stroke="rgba(148,163,184,0.10)" stroke-width="1"></line>
                   <text x="${x.toFixed(2)}" y="${(cardHeight - 7).toFixed(2)}" fill="rgba(151,167,194,0.88)" font-size="9" text-anchor="middle">${formatTelemetryTime(value)}</text>
                 `;
-              }
+              });
 
               return markup;
             };
@@ -5158,7 +5655,7 @@
                     card.line.setAttribute("y2", (padding.top + innerHeight).toFixed(2));
                   }
                   if (card.badgeLabel) {
-                    card.badgeLabel.textContent = formatTelemetryBadgeLabel(card.chart, driverAheadPoint);
+                    card.badgeLabel.textContent = formatTelemetryBadgeLabel(card.chart, driverAheadPoint).toUpperCase();
                   }
                   if (card.badgeText) {
                     card.badgeText.textContent = formatTelemetryValue(card.chart, point.value);
@@ -5229,25 +5726,29 @@
               .replaceAll('"', "&quot;");
           }
 
+          function lerp(start, end, ratio) {
+            return start + ((end - start) * ratio);
+          }
+
           function accelerationColor(acceleration) {
             if (!Number.isFinite(acceleration) || accelerationLimit === null || accelerationLimit <= 0) {
               return "#94a3b8";
             }
 
-            const ratio = Math.max(0, Math.min(1, Math.abs(acceleration) / accelerationLimit));
-            if (ratio < 0.06) {
-              return "#cbd5e1";
+            const normalized = Math.max(-1, Math.min(1, acceleration / accelerationLimit));
+            const magnitude = Math.pow(Math.abs(normalized), 0.72);
+
+            if (normalized < 0) {
+              const hue = lerp(20, 4, magnitude);
+              const saturation = lerp(40, 92, magnitude);
+              const lightness = lerp(78, 52, magnitude);
+              return `hsl(${hue.toFixed(0)} ${saturation.toFixed(0)}% ${lightness.toFixed(0)}%)`;
             }
 
-            if (acceleration > 0) {
-              const hue = 158 + (ratio * 32);
-              const lightness = 64 - (ratio * 12);
-              return `hsl(${hue.toFixed(0)} 88% ${lightness.toFixed(0)}%)`;
-            }
-
-            const hue = 18 - (ratio * 14);
-            const lightness = 64 - (ratio * 12);
-            return `hsl(${hue.toFixed(0)} 92% ${lightness.toFixed(0)}%)`;
+            const hue = lerp(168, 124, magnitude);
+            const saturation = lerp(40, 92, magnitude);
+            const lightness = lerp(78, 52, magnitude);
+            return `hsl(${hue.toFixed(0)} ${saturation.toFixed(0)}% ${lightness.toFixed(0)}%)`;
           }
 
           function renderAccelerationLine(points, pointsWithAcceleration) {
@@ -5318,6 +5819,7 @@
           const maxSpeedMarker = map.max_speed_marker || null;
           const minSpeedMarker = map.min_speed_marker || null;
           const driverAbbr = (svg.dataset.driverAbbr || "DRI").trim() || "DRI";
+          const driverColor = (svg.dataset.driverColor || "#44c2ff").trim() || "#44c2ff";
           const racingScreen = racing.map((point) => toPoint(point));
           const trackCenter = racingScreen.reduce((acc, point) => {
             acc.x += point[0];
@@ -5437,6 +5939,29 @@
             `;
           }
 
+          function renderSectorBadge(marker, index, anchor, color, trackCenter) {
+            const centerX = anchor.centerX ?? anchor.x;
+            const centerY = anchor.centerY ?? anchor.y;
+            const badgeOffset = 86;
+            const badgeDirection = ((anchor.unitX || 0) * (centerX - trackCenter.x) + (anchor.unitY || 0) * (centerY - trackCenter.y)) >= 0 ? 1 : -1;
+            const badgeX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (anchor.unitX || 0) * badgeOffset * badgeDirection));
+            const badgeY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (anchor.unitY || 0) * badgeOffset * badgeDirection));
+            const badgeWidth = 124;
+            const badgeHeight = 50;
+            const backgroundFill = "rgba(21, 35, 59, 0.95)";
+            const backgroundStroke = color;
+            const labelY = badgeY - 9;
+            const valueY = badgeY + 13;
+            return `
+              <g class="sector-marker" style="pointer-events:none">
+                <line x1="${(centerX + (anchor.unitX || 0) * 16).toFixed(2)}" y1="${(centerY + (anchor.unitY || 0) * 16).toFixed(2)}" x2="${(centerX - (anchor.unitX || 0) * 16).toFixed(2)}" y2="${(centerY - (anchor.unitY || 0) * 16).toFixed(2)}" stroke="${color}" stroke-width="4" stroke-linecap="round"></line>
+                <rect x="${(badgeX - (badgeWidth / 2)).toFixed(2)}" y="${(badgeY - (badgeHeight / 2)).toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="14" fill="${backgroundFill}" stroke="${backgroundStroke}" stroke-width="1.2"></rect>
+                <text class="sector-marker-label" x="${badgeX.toFixed(2)}" y="${labelY.toFixed(2)}" fill="${color}" text-anchor="middle">Sector ${index + 1}</text>
+                <text class="sector-marker-time" x="${badgeX.toFixed(2)}" y="${valueY.toFixed(2)}" fill="${color}" font-variant-numeric="tabular-nums" text-anchor="middle">${escapeHtml(marker.time)}</text>
+              </g>
+            `;
+          }
+
           svg.innerHTML = `
             <defs>
               <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
@@ -5453,38 +5978,15 @@
               const anchor = markerAnchor(marker.cumulative_seconds || 0) || { x: 0, y: 0 };
               const colors = ["#fbbf24", "#34d399", "#60a5fa"];
               const color = colors[index] || "#c4b5fd";
-              const centerX = anchor.centerX ?? anchor.x;
-              const centerY = anchor.centerY ?? anchor.y;
-              const hashHalf = 16;
-              const hashX1 = centerX + (anchor.unitX || 0) * hashHalf;
-              const hashY1 = centerY + (anchor.unitY || 0) * hashHalf;
-              const hashX2 = centerX - (anchor.unitX || 0) * hashHalf;
-              const hashY2 = centerY - (anchor.unitY || 0) * hashHalf;
-              const badgeOffset = 86;
-              const badgeDirection = ((anchor.unitX || 0) * (centerX - trackCenter.x) + (anchor.unitY || 0) * (centerY - trackCenter.y)) >= 0 ? 1 : -1;
-              const badgeX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (anchor.unitX || 0) * badgeOffset * badgeDirection));
-              const badgeY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (anchor.unitY || 0) * badgeOffset * badgeDirection));
-              const labelX = badgeX;
-              const labelY = badgeY - 18;
-              const timeX = badgeX;
-              const timeY = badgeY + 16;
-              return `
-                <g class="sector-marker" style="pointer-events:none">
-                  <line x1="${hashX1.toFixed(2)}" y1="${hashY1.toFixed(2)}" x2="${hashX2.toFixed(2)}" y2="${hashY2.toFixed(2)}" stroke="${color}" stroke-width="4" stroke-linecap="round"></line>
-                  <rect x="${(labelX - 42).toFixed(2)}" y="${(labelY - 14).toFixed(2)}" width="84" height="24" rx="12" fill="rgba(7,16,29,0.94)" stroke="${color}" stroke-width="1.5"></rect>
-                  <text x="${labelX.toFixed(2)}" y="${(labelY + 1).toFixed(2)}" fill="#f8fafc" font-size="12" font-weight="800" text-anchor="middle">Sector ${index + 1}</text>
-                  <rect x="${(timeX - 50).toFixed(2)}" y="${(timeY - 12).toFixed(2)}" width="100" height="22" rx="11" fill="rgba(248,250,252,0.9)" stroke="${color}" stroke-width="1.25"></rect>
-                  <text x="${timeX.toFixed(2)}" y="${(timeY + 3).toFixed(2)}" fill="#07101d" font-size="11" font-weight="800" text-anchor="middle">${escapeHtml(marker.time)}</text>
-                </g>
-              `;
+              return renderSectorBadge(marker, index, anchor, color, trackCenter);
             }).join("")}
             ${renderSpeedMarker(maxSpeedMarker, "MAX", "#fbbf24", 54)}
             ${renderSpeedMarker(minSpeedMarker, "MIN", "#60a5fa", 72)}
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
             <circle cx="${endX.toFixed(2)}" cy="${endY.toFixed(2)}" r="7" fill="#ffbf69"></circle>
             <g id="lap-marker" transform="translate(${startX.toFixed(2)} ${startY.toFixed(2)})">
-              <circle cx="0" cy="0" r="19" fill="rgba(7,16,29,0.92)" stroke="#44c2ff" stroke-width="2"></circle>
-              <text x="0" y="1" fill="#44c2ff" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(driverAbbr)}</text>
+              <circle cx="0" cy="0" r="19" fill="rgba(7,16,29,0.92)" stroke="${driverColor}" stroke-width="2"></circle>
+              <text x="0" y="1" fill="${driverColor}" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(driverAbbr)}</text>
             </g>
           `;
 

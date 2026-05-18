@@ -295,6 +295,32 @@ def _format_minutes_seconds(value):
     return f"{seconds}.{millis:03d}" if millis else f"{seconds}"
 
 
+def _format_sector_time(value):
+    if pd.isna(value):
+        return "-"
+
+    if isinstance(value, pd.Timedelta):
+        total_seconds = value.total_seconds()
+    else:
+        try:
+            total_seconds = float(value)
+        except (AttributeError, TypeError, ValueError):
+            try:
+                total_seconds = float(value.total_seconds())
+            except Exception:
+                try:
+                    total_seconds = float(pd.to_timedelta(value).total_seconds())
+                except Exception:
+                    return _clean_value(value)
+
+    total_milliseconds = max(0, int(round(float(total_seconds) * 1000)))
+    minutes, remainder = divmod(total_milliseconds, 60000)
+    seconds, millis = divmod(remainder, 1000)
+    if minutes > 0:
+        return f"{minutes}:{seconds:02d}.{millis:03d}"
+    return f"{seconds}.{millis:03d}" if millis else f"{seconds}"
+
+
 def _format_signed_duration(value):
     if value is None:
         return "-"
@@ -463,6 +489,16 @@ def _session_selection_label(session_code):
     return _session_label(session_code)
 
 
+def _supports_pit_strategy_graph(session_code):
+    session_code = str(session_code).strip().upper()
+    return session_code in {"R", "S"} or session_code.startswith("FP")
+
+
+def _supports_race_position_markers(session_code):
+    session_code = str(session_code).strip().upper()
+    return session_code in {"R", "S"}
+
+
 def _strategy_summary(data):
     rows = data.get("rows", []) if data else []
     leader = rows[0] if rows else {}
@@ -604,7 +640,7 @@ def _driver_options(session, results=None):
     if results is None:
         results = getattr(session, "results", None)
     if results is None or results.empty:
-        return []
+        return _driver_options_from_laps(session)
 
     columns = [
         col
@@ -651,6 +687,80 @@ def _driver_options(session, results=None):
         seen.add(option["value"])
         deduped.append(option)
     return deduped
+
+
+def _driver_options_from_laps(session):
+    laps = _safe_session_laps(session)
+    if laps is None or laps.empty:
+        return []
+
+    driver_key_column = None
+    if "DriverNumber" in laps.columns:
+        driver_key_column = "DriverNumber"
+    elif "Driver" in laps.columns:
+        driver_key_column = "Driver"
+    if driver_key_column is None:
+        return []
+
+    working = laps.copy()
+    if driver_key_column == "DriverNumber":
+        working["_driver_key"] = working["DriverNumber"].map(_normalize_driver_number)
+    else:
+        working["_driver_key"] = working["Driver"].astype(str).str.strip()
+    working = working[working["_driver_key"].astype(str).str.strip() != ""].copy()
+    if working.empty:
+        return []
+
+    options = []
+    for driver_key, driver_laps in working.groupby("_driver_key", dropna=True, sort=False):
+        if driver_laps.empty:
+            continue
+
+        first_row = driver_laps.iloc[0]
+        driver_number = _normalize_driver_number(first_row.get("DriverNumber", driver_key)) or _clean_value(driver_key).strip()
+        abbreviation = _clean_value(first_row.get("Abbreviation", first_row.get("Driver", driver_number))).strip()
+        full_name = _clean_value(first_row.get("FullName", abbreviation or driver_number)).strip()
+        if not full_name or full_name == "-":
+            full_name = abbreviation or driver_number or _clean_value(driver_key).strip()
+        team_name = _clean_value(first_row.get("TeamName", first_row.get("Team", "-"))).strip() or "-"
+        driver_id = _clean_value(first_row.get("DriverId", abbreviation or driver_number)).strip() or driver_number
+        headshot_url = _driver_headshot_url(driver_id, first_row.get("HeadshotUrl", ""))
+        team_badge_text, team_badge_color = _team_badge(team_name)
+
+        best_lap_seconds = None
+        best_lap_value = None
+        if "LapTime" in driver_laps.columns:
+            for lap_time in driver_laps["LapTime"].tolist():
+                lap_seconds = _lap_time_seconds(lap_time)
+                if lap_seconds is None:
+                    continue
+                if best_lap_seconds is None or lap_seconds < best_lap_seconds:
+                    best_lap_seconds = lap_seconds
+                    best_lap_value = lap_time
+
+        options.append(
+            {
+                "value": driver_number or driver_id or abbreviation or _clean_value(driver_key).strip(),
+                "driver_id": driver_id,
+                "abbreviation": abbreviation or driver_number or _clean_value(driver_key).strip(),
+                "full_name": full_name or abbreviation or driver_number or _clean_value(driver_key).strip(),
+                "team_name": team_name,
+                "team_badge_text": team_badge_text,
+                "team_badge_color": team_badge_color,
+                "team_logo_url": _team_logo_url(team_name),
+                "headshot_url": headshot_url,
+                "label": f"{abbreviation} - {full_name}" if abbreviation and full_name else full_name or abbreviation or driver_number,
+                "result_time": _format_lap_time(best_lap_value) if best_lap_value is not None else "-",
+                "_best_lap_seconds": best_lap_seconds if best_lap_seconds is not None else float("inf"),
+            }
+        )
+
+    options.sort(key=lambda option: (option.get("_best_lap_seconds", float("inf")), option.get("abbreviation", ""), option.get("full_name", ""), option.get("value", "")))
+    for position, option in enumerate(options, start=1):
+        option["position"] = position
+        option.pop("_best_lap_seconds", None)
+
+    return options
 
 
 def _driver_abbreviation_lookup(session, results=None):
@@ -1947,7 +2057,7 @@ def _lap_record(lap, telemetry):
 
 
 def _race_stints(session, driver_number, session_code):
-    if not session or not driver_number or str(session_code).strip().upper() not in {"R", "S"}:
+    if not session or not driver_number or not _supports_pit_strategy_graph(session_code):
         return None
 
     driver_laps = _safe_driver_laps(session, driver_number)
@@ -1961,6 +2071,40 @@ def _race_stints(session, driver_number, session_code):
         ordered = driver_laps[driver_laps["LapNumber"].notna()].copy() if "LapNumber" in driver_laps.columns else pd.DataFrame()
         if not ordered.empty and "Stint" in ordered.columns:
             ordered = ordered.sort_values(by=["LapNumber", "Time"])
+            lap_position_lookup = {}
+            if _supports_race_position_markers(session_code) and "Position" in ordered.columns:
+                previous_position = None
+                for _, lap_row in ordered.iterrows():
+                    lap_number = lap_row.get("LapNumber")
+                    if pd.isna(lap_number):
+                        continue
+
+                    position_value = lap_row.get("Position")
+                    current_position = None
+                    if pd.notna(position_value):
+                        try:
+                            current_position = int(float(position_value))
+                        except (TypeError, ValueError):
+                            current_position = None
+
+                    position_change = None
+                    position_before = None
+                    position_after = None
+                    if current_position is not None and previous_position is not None and current_position != previous_position:
+                        position_change = previous_position - current_position
+                        position_before = previous_position
+                        position_after = current_position
+
+                    if current_position is not None:
+                        previous_position = current_position
+
+                    lap_position_lookup[int(float(lap_number))] = {
+                        "position": current_position,
+                        "position_change": position_change,
+                        "position_before": position_before,
+                        "position_after": position_after,
+                    }
+
             for stint_number, stint_laps in ordered.groupby("Stint", dropna=True):
                 stint_laps = stint_laps.sort_values(by=["LapNumber", "Time"])
                 if stint_laps.empty:
@@ -1991,6 +2135,14 @@ def _race_stints(session, driver_number, session_code):
                         lap_role = "In Lap"
                     else:
                         lap_role = "Flying Lap"
+                    lap_position = lap_position_lookup.get(lap_number_int, {})
+                    position_change = lap_position.get("position_change")
+                    position_change_text = None
+                    position_change_direction = None
+                    if position_change is not None and position_change != 0:
+                        direction = "gain" if position_change > 0 else "loss"
+                        position_change_direction = direction
+                        position_change_text = f"{int(position_change):+d}"
                     laps.append(
                         {
                             "lap_number": lap_number_int,
@@ -2005,6 +2157,10 @@ def _race_stints(session, driver_number, session_code):
                             "lap_type": lap_role,
                             "pit_out_seconds": _lap_time_seconds(lap_row.get("PitOutTime", None)),
                             "pit_in_seconds": _lap_time_seconds(lap_row.get("PitInTime", None)),
+                            "position": lap_position.get("position"),
+                            "position_change": position_change,
+                            "position_change_text": position_change_text,
+                            "position_change_direction": position_change_direction,
                         }
                     )
                 stints.append(
@@ -2165,12 +2321,10 @@ def _pit_strategy_graph(session):
         return None
 
     results = getattr(session, "results", None)
-    if results is None or results.empty or "Position" not in results.columns:
-        return None
-
     driver_meta = _driver_options(session, results=results)
     if not driver_meta:
         return None
+    practice_mode = results is None or results.empty
 
     rows = []
     max_lap = 0
@@ -2254,6 +2408,7 @@ def _pit_strategy_graph(session):
                 "team": driver["team_name"],
                 "team_color": driver["team_badge_color"],
                 "current_position": int(driver.get("position") or len(rows) + 1),
+                "time_label": driver.get("result_time", "-") if practice_mode else "-",
                 "stints": stints,
                 "pit_laps": pit_laps,
                 "driver_number": driver_number,
@@ -2329,9 +2484,18 @@ def _pit_strategy_graph(session):
         if current is not None:
             status_segments.append(current)
 
-    results_ordered = results.sort_values(by="Position") if "Position" in results.columns else results
+    if results is not None and "Position" in results.columns:
+        results_ordered = results.sort_values(by="Position")
+    elif results is not None and "Time" in results.columns:
+        results_ordered = results.sort_values(by="Time", na_position="last")
+    else:
+        results_ordered = results
     leader_time = None
-    if results_ordered is not None and not results_ordered.empty:
+    if practice_mode:
+        leader_time = driver_meta[0].get("result_time", "-") if driver_meta else None
+        for index, row in enumerate(rows, start=1):
+            row["current_position"] = index
+    elif results_ordered is not None and not results_ordered.empty:
         leader_row = results_ordered.iloc[0]
         leader_time = format_session_time(leader_row.get("Time", ""))
         leader_laps = int(float(leader_row.get("Laps", 0) or 0))
@@ -2934,7 +3098,12 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
     speed_max = max(speed_values) if speed_values else None
     acceleration_min = min(acceleration_values) if acceleration_values else None
     acceleration_max = max(acceleration_values) if acceleration_values else None
-    acceleration_limit = max(abs(acceleration_min or 0.0), abs(acceleration_max or 0.0)) if acceleration_values else None
+    acceleration_limit = None
+    if acceleration_values:
+        acceleration_magnitudes = pd.Series([abs(value) for value in acceleration_values], dtype="float64")
+        acceleration_limit = float(acceleration_magnitudes.quantile(0.9))
+        if pd.isna(acceleration_limit) or acceleration_limit <= 0:
+            acceleration_limit = max(abs(value) for value in acceleration_values)
 
     max_speed_marker = None
     min_speed_marker = None
@@ -2984,7 +3153,7 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
         sector_markers.append(
             {
                 "label": label,
-                "time": _clean_value(sector_value),
+                "time": _format_sector_time(sector_value),
                 "seconds": float(sector_seconds),
                 "cumulative_seconds": float(cumulative_seconds),
                 "x": float(point["x"]),
@@ -3310,6 +3479,7 @@ def _load_session_data(year, gp, session_code):
             race_position_graph = _race_position_graph(session)
         except Exception:
             race_position_graph = None
+    if _supports_pit_strategy_graph(session_code):
         try:
             pit_strategy_graph = _pit_strategy_graph(session)
         except Exception:
@@ -3539,6 +3709,11 @@ def results():
                 pit_strategy_graph = _pit_strategy_graph(session)
             except Exception:
                 pit_strategy_graph = None
+    if not session_is_race and _supports_pit_strategy_graph(session_code) and session and pit_strategy_graph is None:
+        try:
+            pit_strategy_graph = _pit_strategy_graph(session)
+        except Exception:
+            pit_strategy_graph = None
     qualifying_results = _qualifying_driver_results(session, qualifying_rows_phase) if session_is_qualifying else None
     qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_rows_phase) if session_is_qualifying else []
     qualifying_timeline_graph = _qualifying_timeline_graph(
@@ -3701,6 +3876,13 @@ def data():
     qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
     qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
     driver_lap_options = _lap_options(session, driver_number) if session and driver_number else []
+    if lap_page_requested and session_is_qualifying and driver_number and not selected_lap_value and qualifying_run_laps:
+        default_qualifying_run = next((run for run in qualifying_run_laps if run.get("is_fastest")), qualifying_run_laps[0])
+        selected_lap_value = _clean_value(default_qualifying_run.get("representative", "")).strip()
+        if not selected_lap_value:
+            selected_lap_value = next((lap.get("value") for lap in default_qualifying_run.get("laps", []) if lap.get("value")), "")
+        if selected_lap_value:
+            selected_lap_data = _resolve_lap(session, driver_number, selected_lap_value)
     if session and driver_number:
         if session_is_qualifying:
             race_stints = _qualifying_phases(session, driver_number, ctx["session_code"])
@@ -3766,7 +3948,7 @@ def data():
                 else:
                     comparison_class = "is-below-average"
                 comparison_text = delta_text
-                comparison_title = f"Average pit time {pit_stop_average_time}; gap {delta_text}."
+                comparison_title = f"Average pit time {pit_stop_average_time} (AVG); gap {delta_text}."
                 stint["pit_stop_average_time"] = pit_stop_average_time
                 stint["pit_stop_delta_seconds"] = delta_seconds
                 stint["pit_stop_delta_time"] = delta_text
@@ -3804,8 +3986,33 @@ def data():
             track_map is not None,
         )
     selected_qualifying_run = None
-    if session_is_qualifying and qualifying_run_laps and lap_requested:
+    if session_is_qualifying and qualifying_run_laps and selected_lap_value:
         selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
+    qualifying_run_graph = None
+    if session_is_qualifying and qualifying_run_laps:
+        qualifying_run_graph = {
+            "title": f"{qualifying_phase or 'Q1'} run breakdown",
+            "phase": qualifying_phase or "Q1",
+            "driver": selected_driver_data.get("full_name", "-") if selected_driver_data else "-",
+            "team": selected_driver_data.get("team_name", "-") if selected_driver_data else "-",
+            "runs": qualifying_run_laps,
+            "run_total": len(qualifying_run_laps),
+            "lap_total": int(sum(len(run.get("laps", [])) for run in qualifying_run_laps)),
+        }
+    lap_entry_source = request.args.get("source", "").strip().lower()
+    lap_back_driver_value = driver_number or request.args.get("driver", "").strip()
+    lap_back_to_driver_table_url = url_for(
+        "data",
+        year=ctx["year"],
+        gp=ctx["gp"],
+        session=ctx["session_code"],
+        **({"driver": lap_back_driver_value} if lap_back_driver_value else {}),
+    )
+    lap_back_to_overview_url = (
+        url_for("results", year=ctx["year"], gp=ctx["gp"], session=ctx["session_code"])
+        if lap_entry_source in {"pit-strategy", "race-position"}
+        else ""
+    )
     page_name = "lap" if request.path.rstrip("/").endswith("/lap") or selected_lap_data is not None else "data"
     form_action = "/lap" if session_code in {"R", "S"} else "/data"
 
@@ -3833,6 +4040,7 @@ def data():
         qualifying_timeline_combined_graph=qualifying_timeline_combined_graph,
         qualifying_run_options=qualifying_run_options,
         qualifying_run_laps=qualifying_run_laps,
+        qualifying_run_graph=qualifying_run_graph,
         selected_qualifying_run=selected_qualifying_run,
         form_action=form_action,
         form={
@@ -3851,6 +4059,8 @@ def data():
         session_is_qualifying=session_is_qualifying,
         race_stints=race_stints_display,
         data=data_state,
+        lap_back_to_driver_table_url=lap_back_to_driver_table_url,
+        lap_back_to_overview_url=lap_back_to_overview_url,
         **{key: value for key, value in page_context.items() if key != "data"},
     )
 
