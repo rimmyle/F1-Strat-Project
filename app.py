@@ -13,6 +13,17 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+
+@app.after_request
+def _disable_html_cache(response):
+    if response.mimetype == "text/html":
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 FASTF1_CACHE_DIR = Path(__file__).with_name(".fastf1-cache")
 try:
     fastf1.Cache.enable_cache(str(FASTF1_CACHE_DIR))
@@ -117,6 +128,15 @@ def _clean_value(value):
     if hasattr(value, "isoformat") and not isinstance(value, str):
         return value.isoformat()
     return str(value)
+
+
+def _is_truthy_value(value):
+    if pd.isna(value):
+        return False
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        return normalized in {"1", "true", "t", "yes", "y", "deleted"}
+    return bool(value)
 
 
 def _country_flag_emoji(country_code):
@@ -295,6 +315,45 @@ def _format_signed_duration(value):
     if numeric < 0:
         return f"-{formatted}"
     return formatted
+
+
+def _format_gap_seconds(value):
+    if value is None or pd.isna(value):
+        return "-"
+
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        try:
+            numeric = float(value.total_seconds())
+        except (AttributeError, TypeError, ValueError):
+            try:
+                numeric = float(pd.to_timedelta(value).total_seconds())
+            except Exception:
+                return _clean_value(value)
+
+    total_milliseconds = max(0, int(round(float(numeric) * 1000)))
+    seconds, millis = divmod(total_milliseconds, 1000)
+    if seconds >= 60:
+        minutes, remainder = divmod(seconds, 60)
+        return f"{minutes}:{remainder:02d}.{millis:03d} s"
+    return f"{seconds}.{millis:03d} s" if millis else f"{seconds} s"
+
+
+def _gap_ahead_seconds(distance_value, speed_value):
+    if distance_value is None or speed_value is None:
+        return None
+
+    try:
+        distance_m = float(distance_value)
+        speed_kmh = float(speed_value)
+    except (TypeError, ValueError):
+        return None
+
+    if not np.isfinite(distance_m) or not np.isfinite(speed_kmh) or speed_kmh <= 0:
+        return None
+
+    return max(distance_m, 0.0) / (speed_kmh / 3.6)
 
 
 def _format_track_status(value):
@@ -592,6 +651,23 @@ def _driver_options(session, results=None):
         seen.add(option["value"])
         deduped.append(option)
     return deduped
+
+
+def _driver_abbreviation_lookup(session, results=None):
+    if results is None:
+        results = getattr(session, "results", None)
+    if results is None or results.empty:
+        return {}
+    if "DriverNumber" not in results.columns or "Abbreviation" not in results.columns:
+        return {}
+
+    lookup = {}
+    for _, row in results.iterrows():
+        driver_number = _normalize_driver_number(row.get("DriverNumber", ""))
+        abbreviation = _clean_value(row.get("Abbreviation", "")).strip()
+        if driver_number and abbreviation:
+            lookup[driver_number] = abbreviation
+    return lookup
 
 
 def _pit_strategy_driver_options(pit_strategy_graph):
@@ -1825,6 +1901,9 @@ def _telemetry_rows(lap, limit=240):
 
 
 def _lap_summary(lap, telemetry):
+    deleted_reason = _clean_value(lap.get("DeletedReason", "-")).strip()
+    deleted_reason = "" if deleted_reason in {"", "-"} else deleted_reason
+    is_deleted = _is_truthy_value(lap.get("Deleted", False))
     summary = {
         "driver": _clean_value(lap.get("Driver", "-")),
         "team": _clean_value(lap.get("Team", "-")),
@@ -1834,6 +1913,9 @@ def _lap_summary(lap, telemetry):
         "stint": _clean_value(lap.get("Stint", "-")),
         "tyre_life": _clean_value(lap.get("TyreLife", "-")),
         "samples": len(telemetry),
+        "is_deleted": is_deleted,
+        "deleted_reason": deleted_reason,
+        "deleted_label": f"Deleted ({deleted_reason})" if is_deleted and deleted_reason else ("Deleted" if is_deleted else ""),
     }
     if "Speed" in telemetry.columns and not telemetry.empty:
         summary["max_speed"] = _clean_value(telemetry["Speed"].max())
@@ -1843,31 +1925,22 @@ def _lap_summary(lap, telemetry):
 
 
 def _lap_record(lap, telemetry):
-    ahead_driver = "-"
-    if "DriverAhead" in telemetry.columns:
-        series = telemetry["DriverAhead"].dropna().astype(str)
-        series = series[series.str.strip() != ""]
-        if not series.empty:
-            ahead_driver = series.iloc[-1].strip()
-
     gap_ahead = "-"
-    if "DistanceToDriverAhead" in telemetry.columns:
-        gap_series = telemetry["DistanceToDriverAhead"].dropna()
-        if not gap_series.empty:
-            gap_ahead = f"{float(gap_series.iloc[-1]):.3f} m"
+    if "DistanceToDriverAhead" in telemetry.columns and "Speed" in telemetry.columns:
+        gap_points = []
+        time_series = telemetry["Time"].dt.total_seconds() if "Time" in telemetry.columns else None
+        for time_value, distance_value, speed_value in zip(time_series if time_series is not None else [], telemetry["DistanceToDriverAhead"], telemetry["Speed"]):
+            gap_seconds = _gap_ahead_seconds(distance_value, speed_value)
+            if gap_seconds is None or pd.isna(time_value):
+                continue
+            gap_points.append([float(time_value), float(gap_seconds)])
+        if gap_points:
+            gap_ahead = _format_gap_seconds(gap_points[-1][1])
 
     fields = [
-        ("tyre_life", "Tyre Life", _clean_value(lap.get("TyreLife", "-"))),
-        ("fresh_tyre", "Fresh Tyre", _clean_value(lap.get("FreshTyre", "-"))),
+        ("tyre_life", "Tyre Age", _clean_value(lap.get("TyreLife", "-"))),
         ("track_status", "Track Status", _format_track_status(lap.get("TrackStatus", "-"))),
         ("position", "Position", _clean_value(lap.get("Position", "-"))),
-        ("deleted", "Deleted", _clean_value(lap.get("Deleted", "-"))),
-        ("deleted_reason", "Deleted Reason", _clean_value(lap.get("DeletedReason", "-"))),
-        ("fastf1_generated", "FastF1 Generated", _clean_value(lap.get("FastF1Generated", "-"))),
-        ("is_personal_best", "Personal Best", _clean_value(lap.get("IsPersonalBest", "-"))),
-        ("is_accurate", "Accurate", _clean_value(lap.get("IsAccurate", "-"))),
-        ("driver_ahead", "Driver Ahead", ahead_driver),
-        ("distance_to_driver_ahead", "Gap to Driver Ahead", gap_ahead),
     ]
 
     return fields
@@ -1928,6 +2001,7 @@ def _race_stints(session, driver_number, session_code):
                             "value": f"{_clean_value(driver_number)}:{lap_number_int}",
                             "compound": _clean_value(lap_row.get("Compound", "-")),
                             "fresh_tyre": bool(lap_row.get("FreshTyre", False)) if pd.notna(lap_row.get("FreshTyre", False)) else False,
+                            "is_personal_best": bool(lap_row.get("IsPersonalBest", False)) if pd.notna(lap_row.get("IsPersonalBest", False)) else False,
                             "lap_type": lap_role,
                             "pit_out_seconds": _lap_time_seconds(lap_row.get("PitOutTime", None)),
                             "pit_in_seconds": _lap_time_seconds(lap_row.get("PitInTime", None)),
@@ -2022,6 +2096,7 @@ def _race_stints(session, driver_number, session_code):
                 "value": f"{_clean_value(driver_number)}:{lap_number}",
                 "compound": _clean_value(inferred_compound),
                 "fresh_tyre": False,
+                "is_personal_best": False,
                 "lap_type": "Flying Lap",
             }
             for lap_number in range(1, lap_total + 1)
@@ -2035,6 +2110,7 @@ def _race_stints(session, driver_number, session_code):
                 "compound": _clean_value(inferred_compound),
                 "tyre_color": _tyre_color(inferred_compound),
                 "fresh_tyre": False,
+                "is_personal_best": False,
                 "laps": placeholder_laps,
             }
         ]
@@ -2346,6 +2422,7 @@ def _qualifying_phases(session, driver_number, session_code):
                 "value": f"{_clean_value(driver_number)}:{lap_number_int}",
                 "compound": _clean_value(lap_row.get("Compound", "-")),
                 "fresh_tyre": bool(lap_row.get("FreshTyre", False)) if pd.notna(lap_row.get("FreshTyre", False)) else False,
+                "is_personal_best": bool(lap_row.get("IsPersonalBest", False)) if pd.notna(lap_row.get("IsPersonalBest", False)) else False,
             }
         )
 
@@ -2361,6 +2438,7 @@ def _qualifying_phases(session, driver_number, session_code):
                 "compound": "-",
                 "tyre_color": spec["tyre_color"],
                 "fresh_tyre": False,
+                "is_personal_best": False,
                 "laps": laps,
             }
         )
@@ -2381,6 +2459,8 @@ def _telemetry_charts(lap):
         return []
 
     time_series = telemetry["Time"].dt.total_seconds()
+    session = getattr(lap, "session", None)
+    driver_ahead_lookup = _driver_abbreviation_lookup(session)
     palette = [
         "#44c2ff",
         "#77f0d1",
@@ -2397,28 +2477,53 @@ def _telemetry_charts(lap):
         ("Brake", "Brake", "0 / 1", lambda value: 1 if bool(value) else 0),
         ("RPM", "RPM", "", None),
         ("nGear", "Gear", "", None),
-        ("DistanceToDriverAhead", "Gap to Driver Ahead", "m", None),
+        ("DistanceToDriverAhead", "Gap to Driver Ahead", "s", None),
     ]
 
     charts = []
+    gap_ahead_points = []
+    driver_ahead_points = []
+    if "DistanceToDriverAhead" in telemetry.columns and "Speed" in telemetry.columns:
+        for t_value, distance_value, speed_value in zip(time_series, telemetry["DistanceToDriverAhead"], telemetry["Speed"]):
+            gap_seconds = _gap_ahead_seconds(distance_value, speed_value)
+            if pd.isna(t_value) or gap_seconds is None:
+                continue
+            gap_ahead_points.append([float(t_value), float(gap_seconds)])
+        if "DriverAhead" in telemetry.columns:
+            for t_value, driver_ahead_value in zip(time_series, telemetry["DriverAhead"]):
+                if pd.isna(t_value) or pd.isna(driver_ahead_value):
+                    continue
+                driver_number = _normalize_driver_number(driver_ahead_value)
+                if not driver_number:
+                    continue
+                try:
+                    driver_ahead_points.append([float(t_value), float(driver_number)])
+                except (TypeError, ValueError):
+                    continue
+
     for index, (column, title, unit, transform) in enumerate(specs):
-        if column not in telemetry.columns:
+        if column == "DistanceToDriverAhead":
+            points = gap_ahead_points
+            if not points:
+                continue
+        elif column not in telemetry.columns:
             continue
 
-        points = []
-        series = telemetry[column]
-        for t_value, raw_value in zip(time_series, series):
-            if pd.isna(t_value) or pd.isna(raw_value):
-                continue
+        if column != "DistanceToDriverAhead":
+            points = []
+            series = telemetry[column]
+            for t_value, raw_value in zip(time_series, series):
+                if pd.isna(t_value) or pd.isna(raw_value):
+                    continue
 
-            value = transform(raw_value) if transform else raw_value
-            if pd.isna(value):
-                continue
-            try:
-                numeric_value = float(value)
-            except (TypeError, ValueError):
-                continue
-            points.append([float(t_value), numeric_value])
+                value = transform(raw_value) if transform else raw_value
+                if pd.isna(value):
+                    continue
+                try:
+                    numeric_value = float(value)
+                except (TypeError, ValueError):
+                    continue
+                points.append([float(t_value), numeric_value])
 
         if not points:
             continue
@@ -2460,6 +2565,9 @@ def _telemetry_charts(lap):
                 "y_tick_labels": y_tick_labels,
             }
         )
+        if column == "DistanceToDriverAhead":
+            charts[-1]["driver_ahead_points"] = driver_ahead_points
+            charts[-1]["driver_ahead_lookup"] = driver_ahead_lookup
 
     return charts
 
