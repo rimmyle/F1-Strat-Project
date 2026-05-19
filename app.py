@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import re
 from pathlib import Path
+from urllib.parse import urlencode
 from threading import Event, Lock, Thread
 
 import fastf1
@@ -267,7 +268,7 @@ def _format_lap_time(value):
     minutes = int(minutes)
     if minutes > 0:
         return f"{minutes}:{whole_seconds:02d}.{millis:03d}"
-    return f"{whole_seconds}.{millis:03d}" if millis else f"{whole_seconds}"
+    return f"{whole_seconds}.{millis:03d}"
 
 
 def _format_minutes_seconds(value):
@@ -292,7 +293,7 @@ def _format_minutes_seconds(value):
     seconds, millis = divmod(remainder, 1000)
     if minutes > 0:
         return f"{minutes}:{seconds:02d}.{millis:03d}"
-    return f"{seconds}.{millis:03d}" if millis else f"{seconds}"
+    return f"{seconds}.{millis:03d}"
 
 
 def _format_sector_time(value):
@@ -318,7 +319,7 @@ def _format_sector_time(value):
     seconds, millis = divmod(remainder, 1000)
     if minutes > 0:
         return f"{minutes}:{seconds:02d}.{millis:03d}"
-    return f"{seconds}.{millis:03d}" if millis else f"{seconds}"
+    return f"{seconds}.{millis:03d}"
 
 
 def _format_signed_duration(value):
@@ -363,7 +364,7 @@ def _format_gap_seconds(value):
     if seconds >= 60:
         minutes, remainder = divmod(seconds, 60)
         return f"{minutes}:{remainder:02d}.{millis:03d} s"
-    return f"{seconds}.{millis:03d} s" if millis else f"{seconds} s"
+    return f"{seconds}.{millis:03d} s"
 
 
 def _gap_ahead_seconds(distance_value, speed_value):
@@ -2338,6 +2339,28 @@ def _race_stints(session, driver_number, session_code):
                 continue
             stint["pit_stop_fill_percent"] = max(28.0, min(100.0, (float(pit_stop_seconds) / pit_stop_max_seconds) * 100.0))
 
+        def _best_timed_lap(laps_for_best):
+            candidates = [lap for lap in laps_for_best if lap.get("lap_time_seconds") is not None and lap.get("value")]
+            if not candidates:
+                return None
+            return min(
+                candidates,
+                key=lambda lap: (
+                    float(lap.get("lap_time_seconds") or float("inf")),
+                    float(lap.get("lap_number") or float("inf")),
+                ),
+            )
+
+        session_best_lap = _best_timed_lap([lap for stint in stints for lap in stint.get("laps", [])])
+        for stint in stints:
+            stint_best_lap = _best_timed_lap(stint.get("laps", []))
+            stint["stint_best_lap_value"] = _clean_value(stint_best_lap.get("value", "")).strip() if stint_best_lap else ""
+            stint["stint_best_lap_number"] = int(stint_best_lap.get("lap_number")) if stint_best_lap and stint_best_lap.get("lap_number") is not None else None
+            stint["stint_best_lap_seconds"] = float(stint_best_lap.get("lap_time_seconds")) if stint_best_lap and stint_best_lap.get("lap_time_seconds") is not None else None
+            stint["session_best_lap_value"] = _clean_value(session_best_lap.get("value", "")).strip() if session_best_lap else ""
+            stint["session_best_lap_number"] = int(session_best_lap.get("lap_number")) if session_best_lap and session_best_lap.get("lap_number") is not None else None
+            stint["session_best_lap_seconds"] = float(session_best_lap.get("lap_time_seconds")) if session_best_lap and session_best_lap.get("lap_time_seconds") is not None else None
+
     if not stints:
         results = getattr(session, "results", None)
         if results is None or results.empty:
@@ -2448,13 +2471,9 @@ def _pit_strategy_graph(session):
         text = _clean_value(value).strip()
         if not text or text == "-":
             return "-"
-        text = text.replace("0 days ", "")
-        text = text.replace("0:0", "")
-        text = text.replace("0:", "")
-        text = text.replace("days ", "")
-        text = text.strip()
-        if text.startswith("0:"):
-            text = text[2:]
+        text = _format_lap_time(value)
+        if text in ("", "-"):
+            return "-"
         if prefix_plus and not text.startswith("+"):
             text = f"+{text}"
         return text
@@ -2913,7 +2932,7 @@ def _telemetry_charts(lap, gap_reference_lap=None):
     return charts
 
 
-def _race_position_graph(session):
+def _race_position_graph(session, year=None, gp=None, session_code="R"):
     if not session:
         return None
 
@@ -2954,6 +2973,8 @@ def _race_position_graph(session):
     if max_position <= 0:
         max_position = len(driver_meta)
 
+    race_session_code = str(session_code or "R").strip().upper()
+
     for driver in driver_meta:
         driver_number = driver["value"]
         laps = _safe_driver_laps(session, driver_number)
@@ -2993,6 +3014,33 @@ def _race_position_graph(session):
         if not points:
             continue
 
+        href = ""
+        if year is not None and gp is not None:
+            href_params = {
+                "year": year,
+                "gp": gp,
+                "session": race_session_code or "R",
+                "driver": driver_number,
+                "source": "race-position",
+            }
+            if race_session_code in {"R", "S"}:
+                try:
+                    race_stints = _race_stints(session, driver_number, race_session_code)
+                except Exception:
+                    race_stints = None
+                if race_stints and race_stints.get("stints"):
+                    first_stint = race_stints["stints"][0]
+                    first_stint_number = first_stint.get("stint")
+                    if first_stint_number is not None:
+                        try:
+                            href_params["stint"] = int(float(first_stint_number))
+                        except (TypeError, ValueError):
+                            pass
+                    first_lap_value = _default_stint_lap_value(first_stint)
+                    if first_lap_value:
+                        href_params["lap"] = first_lap_value
+            href = f"/lap?{urlencode(href_params)}#lap-stint-panel"
+
         driver_results[driver_number] = {
             "value": driver_number,
             "driver": driver["full_name"],
@@ -3001,6 +3049,7 @@ def _race_position_graph(session):
             "color": _team_color(driver["team_name"]),
             "points": points,
             "current_position": points[-1][1],
+            "href": href,
         }
 
     if not driver_results or max_lap <= 0:
@@ -3840,7 +3889,7 @@ def _load_session_data(year, gp, session_code):
     pit_strategy_graph = None
     if str(session_code).strip().upper() == "R":
         try:
-            race_position_graph = _race_position_graph(session)
+            race_position_graph = _race_position_graph(session, year=year, gp=gp, session_code=session_code)
         except Exception:
             race_position_graph = None
     if _supports_pit_strategy_graph(session_code):
@@ -4065,7 +4114,7 @@ def results():
     if session_is_race and session:
         if race_position_graph is None:
             try:
-                race_position_graph = _race_position_graph(session)
+                race_position_graph = _race_position_graph(session, year=ctx["year"], gp=ctx["gp"], session_code=ctx["session_code"])
             except Exception:
                 race_position_graph = None
         if pit_strategy_graph is None:
@@ -4202,7 +4251,7 @@ def data():
     stint_cache = data_state.get("stint_cache", {}) if data_state else {}
     if session_is_race and session:
         try:
-            race_position_graph = _race_position_graph(session)
+            race_position_graph = _race_position_graph(session, year=ctx["year"], gp=ctx["gp"], session_code=ctx["session_code"])
         except Exception:
             race_position_graph = None
         try:
