@@ -33,15 +33,49 @@
 
       body.page-transitioning .page {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(-10px) scale(0.992);
+        filter: blur(4px);
       }
 
       .page {
         width: min(1600px, calc(100vw - 24px));
         margin: 0 auto;
         padding: 32px 0 48px;
-        opacity: 1;
-        transition: opacity 180ms ease, transform 180ms ease;
+        opacity: 0;
+        transform: translateY(14px) scale(0.992);
+        filter: blur(6px);
+        animation: page-load-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 30ms both;
+        transition: opacity 240ms ease, transform 240ms ease, filter 240ms ease;
+        will-change: opacity, transform, filter;
+      }
+
+      @keyframes page-load-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.992);
+          filter: blur(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .page {
+          animation: none;
+          transition: none;
+          opacity: 1;
+          transform: none;
+          filter: none;
+        }
+
+        body.page-transitioning .page {
+          opacity: 0;
+          transform: none;
+          filter: none;
+        }
       }
 
       header {
@@ -1413,9 +1447,7 @@
         pointer-events: none;
       }
 
-      .stint-graph-point:hover .stint-graph-lap-tooltip,
-      .stint-graph-point:focus .stint-graph-lap-tooltip,
-      .stint-graph-point:focus-visible .stint-graph-lap-tooltip {
+      .stint-graph-point.is-dot-hovered .stint-graph-lap-tooltip {
         opacity: 1;
       }
 
@@ -1613,6 +1645,26 @@
       .stint-graph-position-change text {
         font-family: inherit;
         letter-spacing: 0.08em;
+      }
+
+      .stint-graph-position-change-tooltip {
+        opacity: 0;
+        transition: opacity 120ms ease;
+        pointer-events: none;
+      }
+
+      .stint-graph-point.is-position-hovered .stint-graph-position-change-tooltip {
+        opacity: 1;
+      }
+
+      .stint-graph-position-change-tooltip rect {
+        fill: rgba(7, 16, 29, 0.96);
+        stroke-width: 1.2;
+      }
+
+      .stint-graph-position-change-tooltip text {
+        font-family: inherit;
+        letter-spacing: 0.02em;
       }
 
       .stint-graph-position-change.is-gain rect {
@@ -2397,9 +2449,67 @@
         grid-column: 1 / -1;
       }
 
-      .lap-track-card .track-map-stage > .track-svg {
+      .lap-track-card .track-map-body {
+        display: grid;
+        grid-template-columns: minmax(172px, 194px) minmax(0, 1fr) minmax(172px, 194px);
+        gap: 16px;
+        min-width: 0;
+        align-items: start;
+        grid-column: 1 / -1;
+      }
+
+      .lap-track-card .track-map-body::after {
+        content: "";
+        grid-column: 3;
+      }
+
+      .lap-track-card .track-map-sector-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        align-self: start;
+        justify-self: start;
+        grid-column: 1;
+      }
+
+      .lap-track-card .track-map-sector-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-height: 56px;
+        padding: 10px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(21, 35, 59, 0.96), rgba(12, 19, 34, 0.98));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      }
+
+      .lap-track-card .track-map-sector-badge-label {
+        color: var(--sector-color, #38bdf8);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+
+      .lap-track-card .track-map-sector-badge-time {
+        color: #f8fbff;
+        font-size: 1rem;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.05;
+        text-shadow: 0 1px 0 rgba(7, 16, 29, 0.6);
+      }
+
+      .lap-track-card .track-map-body > .track-svg {
         align-self: stretch;
         justify-self: stretch;
+        min-width: 0;
+        grid-column: 2;
       }
 
       .lap-track-card .track-map-stage > .track-map-telemetry-bottom {
@@ -2538,13 +2648,13 @@
 
       .race-position-series .race-position-line {
         transition: stroke-width 140ms ease, opacity 140ms ease, filter 140ms ease;
-        pointer-events: none;
+        pointer-events: stroke;
       }
 
       .race-position-series .race-position-hit {
         fill: none;
-        stroke: transparent;
-        stroke-width: 18;
+        stroke: rgba(255, 255, 255, 0.001);
+        stroke-width: 22;
         pointer-events: stroke;
       }
 
@@ -2979,10 +3089,22 @@
         }
 
         .lap-track-card .track-map-stage > .track-map-telemetry-top,
-        .lap-track-card .track-map-stage > .track-svg,
         .lap-track-card .track-map-stage > .track-map-telemetry-bottom {
           grid-column: auto;
           align-self: auto;
+        }
+
+        .lap-track-card .track-map-body {
+          grid-template-columns: 1fr;
+        }
+
+        .lap-track-card .track-map-body::after {
+          content: none;
+        }
+
+        .lap-track-card .track-map-sector-stack,
+        .lap-track-card .track-map-body > .track-svg {
+          grid-column: auto;
         }
 
         .lap-track-card .track-map-stage .telemetry-composite {
@@ -3496,7 +3618,7 @@
                         >
                           <div class="stint-bar-top">
                             <strong>
-                              Stint {{ stint.stint }}{% if stint.fresh_tyre %} <span class="stint-bar-fresh-note">(Fresh Tyre)</span>{% endif %}
+                              Stint {{ stint.stint }}{% if stint.stint_note %} <span class="stint-bar-fresh-note">{{ stint.stint_note }}</span>{% endif %}
                             </strong>
                             <span>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</span>
                           </div>
@@ -3540,6 +3662,31 @@
                 </p>
               </div>
             </header>
+            {% if qualifying_timeline_graph %}
+              <section class="qualifying-timeline-panel">
+                <header>
+                  <div>
+                    <h2>{{ qualifying_timeline_graph.title }}</h2>
+                    <p class="subtle">
+                      {% if qualifying_phase == 'ALL' %}
+                        Full qualifying session run timeline.
+                      {% else %}
+                        {{ qualifying_phase }} run timeline.
+                      {% endif %}
+                    </p>
+                  </div>
+                </header>
+                <div class="qualifying-timeline-viewport">
+                  <svg
+                    class="qualifying-timeline-svg"
+                    id="qualifying-timeline-svg"
+                    role="img"
+                    aria-label="{{ qualifying_timeline_graph.title }}"
+                  ></svg>
+                </div>
+                <script id="qualifying-timeline-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
+              </section>
+            {% endif %}
             <section class="track-map qualifying-overview-track-map">
               <header>
                 <div class="qualifying-telemetry-phases">
@@ -3626,14 +3773,6 @@
             <header class="lap-support-header">
               <div class="lap-support-header-main">
                 <h2>Track map and telemetry</h2>
-                {% if lap_back_to_driver_table_url %}
-                  <div class="lap-navigation-actions">
-                    <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers table</a>
-                    {% if lap_back_to_overview_url %}
-                      <a class="workflow-back" href="{{ lap_back_to_overview_url }}">Back to overview</a>
-                    {% endif %}
-                  </div>
-                {% endif %}
               </div>
               <div class="track-map-header-summary">
                 <div class="stint-graph-summary">
@@ -3756,15 +3895,29 @@
                     <div class="track-map-telemetry track-map-telemetry-top">
                       <div class="telemetry-composite" id="telemetry-primary-charts"></div>
                     </div>
-                    <svg
-                      class="track-svg"
-                      id="track-svg"
-                      viewBox="0 0 1000 700"
-                      role="img"
-                      aria-label="Track map with racing line"
-                      data-driver-abbr="{% if selected_driver_data %}{{ selected_driver_data.abbreviation }}{% elif telemetry_summary %}{{ telemetry_summary.driver }}{% endif %}"
-                      data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
-                    ></svg>
+                    <div class="track-map-body">
+                      {% if track_map and track_map.sector_markers %}
+                        {% set sector_colors = ['#38bdf8', '#2563eb', '#14b8a6'] %}
+                        <div class="track-map-sector-stack" aria-label="Sector split times">
+                          {% for marker in track_map.sector_markers %}
+                            {% set sector_color = sector_colors[loop.index0] if loop.index0 < sector_colors|length else '#14b8a6' %}
+                            <div class="track-map-sector-badge" style="--sector-color: {{ sector_color }};">
+                              <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
+                              <span class="track-map-sector-badge-time">{{ marker.time }}</span>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
+                      <svg
+                        class="track-svg"
+                        id="track-svg"
+                        viewBox="0 0 1000 700"
+                        role="img"
+                        aria-label="Track map with racing line"
+                        data-driver-abbr="{% if selected_driver_data %}{{ selected_driver_data.abbreviation }}{% elif telemetry_summary %}{{ telemetry_summary.driver }}{% endif %}"
+                        data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
+                      ></svg>
+                    </div>
                     <div class="track-map-telemetry track-map-telemetry-bottom">
                       <div class="telemetry-composite" id="telemetry-secondary-charts"></div>
                     </div>
@@ -3781,7 +3934,7 @@
       <script id="stint-graph-json" type="application/json">{{ selected_stint_data | tojson }}</script>
       {% endif %}
       <script>
-        (() => {
+        (async () => {
           const picker = document.querySelector("[data-driver-picker]");
           if (picker) {
             const input = picker.querySelector("[data-driver-input]");
@@ -4061,7 +4214,7 @@
               document.body.classList.add("page-transitioning");
               window.setTimeout(() => {
                 window.location.assign(href);
-              }, 160);
+              }, 240);
             });
           });
 
@@ -4078,7 +4231,7 @@
       </script>
       {% if selected_stint_data and not session_is_qualifying %}
       <script>
-        (() => {
+        (async () => {
           const container = document.querySelector("[data-stint-graph]");
           const dataEl = document.getElementById("stint-graph-json");
           if (!container || !dataEl) {
@@ -4239,6 +4392,9 @@
             }
 
             const badgeLabel = String(lap.position_change_text || "").trim();
+            const tooltipNames = Array.isArray(lap.position_change_driver_names)
+              ? lap.position_change_driver_names.map((name) => String(name || "").trim()).filter(Boolean)
+              : [];
             const badgeWidth = Math.max(36, Math.ceil((badgeLabel.length * 6.0) + 12));
             const badgeHeight = 16;
             const topMin = padding.top + 2;
@@ -4249,37 +4405,68 @@
             const badgeLeft = Math.max(padding.left + 2, Math.min(width - padding.right - badgeWidth - 2, x - (badgeWidth / 2)));
             const badgeCenterX = badgeLeft + (badgeWidth / 2);
             const badgeCenterY = badgeTop + (badgeHeight / 2) + 0.5;
-            const titleText = (() => {
-              const before = Number(lap.position_before);
-              const after = Number(lap.position_after);
-              const direction = String(lap.position_change_direction || "").trim();
-              if (Number.isFinite(before) && Number.isFinite(after)) {
-                return direction === "gain"
-                  ? `Position gain: ${before} to ${after}`
-                  : `Position loss: ${before} to ${after}`;
-              }
-              return `Position change: ${badgeLabel}`;
-            })();
+            if (!tooltipNames.length) {
+              return `
+                <g class="stint-graph-position-change ${String(lap.position_change_direction || "").trim() === "gain" ? "is-gain" : "is-loss"}">
+                  <rect x="${badgeLeft.toFixed(2)}" y="${badgeTop.toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="8"></rect>
+                  <text x="${badgeCenterX.toFixed(2)}" y="${badgeCenterY.toFixed(2)}" font-size="8.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(badgeLabel)}</text>
+                </g>
+              `;
+            }
+
+            const bubbleText = tooltipNames.join(", ");
+            const bubbleWidth = Math.max(52, Math.min(width - padding.left - padding.right - 8, Math.ceil((bubbleText.length * 5.4) + 18)));
+            const bubbleHeight = 18;
+            const bubbleGap = 8;
+            const bubbleTopMin = padding.top + 2;
+            const bubbleTopMax = height - padding.bottom - bubbleHeight - 4;
+            const bubbleAbove = badgeTop - bubbleHeight - bubbleGap >= bubbleTopMin;
+            const bubbleTop = bubbleAbove
+              ? Math.max(bubbleTopMin, badgeTop - bubbleHeight - bubbleGap)
+              : Math.min(bubbleTopMax, badgeTop + badgeHeight + bubbleGap);
+            const bubbleLeft = Math.max(
+              padding.left + 2,
+              Math.min(width - padding.right - bubbleWidth - 2, x - (bubbleWidth / 2)),
+            );
+            const bubbleCenterX = bubbleLeft + (bubbleWidth / 2);
+            const bubbleCenterY = bubbleTop + (bubbleHeight / 2) + 0.5;
+            const lineX = badgeCenterX.toFixed(2);
+            const lineY1 = bubbleAbove ? (bubbleTop + bubbleHeight).toFixed(2) : (bubbleTop).toFixed(2);
+            const lineY2 = badgeCenterY.toFixed(2);
 
             return `
               <g class="stint-graph-position-change ${String(lap.position_change_direction || "").trim() === "gain" ? "is-gain" : "is-loss"}">
-                <title>${escapeHtml(titleText)}</title>
                 <rect x="${badgeLeft.toFixed(2)}" y="${badgeTop.toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="8"></rect>
                 <text x="${badgeCenterX.toFixed(2)}" y="${badgeCenterY.toFixed(2)}" font-size="8.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(badgeLabel)}</text>
+                <g class="stint-graph-position-change-tooltip">
+                  <line x1="${lineX}" y1="${lineY1}" x2="${bubbleCenterX.toFixed(2)}" y2="${lineY2}" stroke="rgba(255,255,255,0.28)" stroke-width="1.1" stroke-linecap="round"></line>
+                  <rect x="${bubbleLeft.toFixed(2)}" y="${bubbleTop.toFixed(2)}" width="${bubbleWidth}" height="${bubbleHeight}" rx="9"></rect>
+                  <text x="${bubbleCenterX.toFixed(2)}" y="${bubbleCenterY.toFixed(2)}" fill="#f8fafc" font-size="8.9" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(bubbleText)}</text>
+                </g>
               </g>
             `;
           }
 
           function renderLapTimeTooltip(lap, x, y, pointColor) {
+            const hasPositionChangeTooltip = Boolean(
+              showPositionMarkers
+              && lap
+              && lap.position_change_text
+              && Array.isArray(lap.position_change_driver_names)
+              && lap.position_change_driver_names.map((name) => String(name || "").trim()).filter(Boolean).length,
+            );
             const tooltipText = String(lap.lap_time || formatLapTime(lap.lap_time_seconds) || "-");
             const tooltipWidth = Math.max(70, Math.ceil((tooltipText.length * 6.3) + 16));
             const tooltipHeight = 18;
             const topMin = padding.top + 2;
             const topMax = height - padding.bottom - tooltipHeight - 4;
-            const placeAbove = y - tooltipHeight - 12 >= topMin;
-            const chosenTop = placeAbove ? y - tooltipHeight - 12 : y + 12;
-            const tooltipTop = Math.max(topMin, Math.min(topMax, chosenTop));
-            const tooltipLeft = Math.max(padding.left + 2, Math.min(width - padding.right - tooltipWidth - 2, x - (tooltipWidth / 2)));
+            const tooltipGap = hasPositionChangeTooltip ? 18 : 12;
+            const tooltipAbove = !hasPositionChangeTooltip && y - tooltipHeight - tooltipGap >= topMin;
+            const tooltipTop = hasPositionChangeTooltip
+              ? Math.max(topMin, Math.min(topMax, y + tooltipGap))
+              : Math.max(topMin, Math.min(topMax, tooltipAbove ? y - tooltipHeight - tooltipGap : y + tooltipGap));
+            const tooltipLeftBias = hasPositionChangeTooltip ? (x < (width / 2) ? 14 : -14) : 0;
+            const tooltipLeft = Math.max(padding.left + 2, Math.min(width - padding.right - tooltipWidth - 2, x - (tooltipWidth / 2) + tooltipLeftBias));
             const tooltipCenterX = tooltipLeft + (tooltipWidth / 2);
             const tooltipCenterY = tooltipTop + (tooltipHeight / 2) + 0.5;
 
@@ -4372,6 +4559,26 @@
               return;
             }
 
+            const clearHoverState = () => {
+              point.classList.remove("is-dot-hovered", "is-position-hovered");
+            };
+
+            const syncHoverState = (event) => {
+              const target = event.target;
+              const isDotTarget = Boolean(
+                target
+                && target.closest
+                && target.closest(".stint-graph-point-core, .stint-graph-point-halo"),
+              );
+              const isPositionTarget = Boolean(
+                target
+                && target.closest
+                && target.closest(".stint-graph-position-change"),
+              );
+              point.classList.toggle("is-dot-hovered", isDotTarget);
+              point.classList.toggle("is-position-hovered", isPositionTarget);
+            };
+
             point.addEventListener("click", (event) => {
               event.preventDefault();
               window.location.assign(href);
@@ -4383,6 +4590,26 @@
                 window.location.assign(href);
               }
             });
+
+            point.addEventListener("pointerover", syncHoverState);
+            point.addEventListener("pointermove", syncHoverState);
+            point.addEventListener("pointerout", (event) => {
+              const relatedTarget = event.relatedTarget;
+              if (!relatedTarget || !point.contains(relatedTarget)) {
+                clearHoverState();
+              }
+            });
+            point.addEventListener("focus", (event) => {
+              const target = event.target;
+              const isPositionTarget = Boolean(
+                target
+                && target.closest
+                && target.closest(".stint-graph-position-change"),
+              );
+              point.classList.toggle("is-dot-hovered", !isPositionTarget);
+              point.classList.toggle("is-position-hovered", isPositionTarget);
+            });
+            point.addEventListener("blur", clearHoverState);
           });
         })();
       </script>
@@ -4804,11 +5031,13 @@
               const label = segment.label === "Safety Car" ? "SC" : segment.label === "Virtual Safety Car" ? "VSC" : "RF";
               const labelWidth = segment.label === "Safety Car" ? 28 : segment.label === "Virtual Safety Car" ? 36 : 28;
               return `
-                <line x1="${startX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${startX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
-                <line x1="${endX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${endX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
-                <g>
-                  <rect x="${((startX + endX) / 2 - (labelWidth / 2)).toFixed(2)}" y="${statusBandTop.toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
-                  <text x="${((startX + endX) / 2).toFixed(2)}" y="${statusLabelY.toFixed(2)}" fill="${fill}" font-size="9" font-weight="900" text-anchor="middle">${label}</text>
+                <g pointer-events="none">
+                  <line x1="${startX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${startX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                  <line x1="${endX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${endX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                  <g>
+                    <rect x="${((startX + endX) / 2 - (labelWidth / 2)).toFixed(2)}" y="${statusBandTop.toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
+                    <text x="${((startX + endX) / 2).toFixed(2)}" y="${statusLabelY.toFixed(2)}" fill="${fill}" font-size="9" font-weight="900" text-anchor="middle">${label}</text>
+                  </g>
                 </g>
               `;
             })
@@ -4851,10 +5080,10 @@
             const driverValue = encodeURIComponent(series.value || "");
             const href = String(series.href || "").trim() || `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position#lap-stint-panel`;
             return `
-              <g class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" data-href="${href}" tabindex="0" role="button" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
+              <a class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" href="${escapeHtml(href)}" xlink:href="${escapeHtml(href)}" tabindex="0" role="link" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
                 <path class="race-position-hit" d="${d}" data-href="${href}"></path>
-                <path class="race-position-line" d="${d}" fill="none" stroke="${series.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
-              </g>
+                <path class="race-position-line" d="${d}" data-href="${href}" fill="none" stroke="${series.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+              </a>
             `;
           }).join("");
 
@@ -4891,7 +5120,9 @@
           const seriesGroups = Array.from(svg.querySelectorAll(".race-position-series"));
           const badgeGroups = Array.from(svg.querySelectorAll(".race-position-badge"));
           const openDriver = (group) => {
-            const href = group ? (group.getAttribute("data-href") || "").trim() : "";
+            const href = group
+              ? (group.getAttribute("href") || group.getAttribute("xlink:href") || group.getAttribute("data-href") || "").trim()
+              : "";
             if (!href) {
               return;
             }
@@ -4943,10 +5174,6 @@
             group.addEventListener("mouseleave", clearSeries);
             group.addEventListener("focus", () => activateSeries(group));
             group.addEventListener("blur", clearSeries);
-            group.addEventListener("click", (event) => {
-              event.preventDefault();
-              openDriver(group);
-            });
             group.addEventListener("keydown", (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
@@ -5758,7 +5985,7 @@
         })();
       </script>
       <script>
-        (() => {
+        (async () => {
           const svg = document.getElementById("track-svg");
           const dataEl = document.getElementById("track-map-json");
           if (!svg || !dataEl) {
@@ -5775,7 +6002,7 @@
           const height = 700;
           svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
           const bounds = map.bounds;
-          const pad = 28;
+          const pad = 24;
           const innerWidth = width - pad * 2;
           const innerHeight = height - pad * 2;
           const xRange = bounds.max_x - bounds.min_x || 1;
@@ -5862,19 +6089,153 @@
             return `<g id="track-acceleration-line" filter="url(#glow)">${markup}</g>`;
           }
 
-          function renderTrackSurface(points) {
+          function splitPolylineByFractions(points, fractions, gapDistance = 0) {
+            if (!Array.isArray(points) || points.length < 2) {
+              return [];
+            }
+
+            const cleanFractions = Array.from(
+              new Set(
+                (Array.isArray(fractions) ? fractions : [])
+                  .map((fraction) => Number(fraction))
+                  .filter((fraction) => Number.isFinite(fraction) && fraction > 0 && fraction < 1),
+              ),
+            ).sort((left, right) => left - right);
+            if (!cleanFractions.length) {
+              return [points];
+            }
+
+            const cumulativeLengths = [0];
+            let totalLength = 0;
+            for (let index = 1; index < points.length; index += 1) {
+              const [x1, y1] = points[index - 1];
+              const [x2, y2] = points[index];
+              totalLength += Math.hypot(x2 - x1, y2 - y1);
+              cumulativeLengths[index] = totalLength;
+            }
+
+            if (!Number.isFinite(totalLength) || totalLength <= 0) {
+              return [points];
+            }
+
+            const breakLengths = cleanFractions.map((fraction) => fraction * totalLength);
+            const segments = [];
+            const gap = Math.max(0, Number(gapDistance) || 0);
+
+            const pointAtLength = (targetLength) => {
+              if (targetLength <= 0) {
+                return points[0];
+              }
+              if (targetLength >= totalLength) {
+                return points[points.length - 1];
+              }
+
+              for (let index = 1; index < points.length; index += 1) {
+                const prevLength = cumulativeLengths[index - 1];
+                const nextLength = cumulativeLengths[index];
+                if (targetLength > nextLength) {
+                  continue;
+                }
+
+                const span = nextLength - prevLength || 1;
+                const ratio = Math.max(0, Math.min(1, (targetLength - prevLength) / span));
+                const prev = points[index - 1];
+                const next = points[index];
+                return [
+                  prev[0] + ((next[0] - prev[0]) * ratio),
+                  prev[1] + ((next[1] - prev[1]) * ratio),
+                ];
+              }
+
+              return points[points.length - 1];
+            };
+
+            const slicePolyline = (startLength, endLength) => {
+              if (endLength <= startLength) {
+                return [];
+              }
+
+              const segment = [pointAtLength(startLength)];
+              for (let index = 1; index < points.length - 1; index += 1) {
+                const pointLength = cumulativeLengths[index];
+                if (pointLength <= startLength || pointLength >= endLength) {
+                  continue;
+                }
+                segment.push(points[index]);
+              }
+              segment.push(pointAtLength(endLength));
+              return segment;
+            };
+
+            let sectorStart = 0;
+            for (let index = 0; index <= breakLengths.length; index += 1) {
+              const sectorEnd = index < breakLengths.length
+                ? breakLengths[index] - (gap / 2)
+                : totalLength;
+              const segmentStart = index === 0 ? 0 : sectorStart + (gap / 2);
+              const trimmedStart = Math.max(0, segmentStart);
+              const trimmedEnd = Math.min(totalLength, sectorEnd);
+              const segment = slicePolyline(trimmedStart, trimmedEnd);
+              if (segment.length > 1) {
+                segments.push(segment);
+              }
+              sectorStart = breakLengths[index] || totalLength;
+            }
+
+            return segments.length ? segments : [points];
+          }
+
+          function renderTrackSurface(points, sectorMarkers = []) {
             if (!points.length) {
               return "";
             }
 
-            const surfaceWidth = Math.max(12, Math.min(24, Math.round(Math.min(width, height) * 0.02)));
-            const innerWidth = Math.max(8, surfaceWidth - 4);
+            const surfaceWidth = Math.max(16, Math.min(30, Math.round(Math.min(width, height) * 0.028)));
+            const innerWidth = Math.max(8, surfaceWidth - 10);
+            const outerWidth = surfaceWidth + 4;
             const outerPath = path(points);
+            const sectorFractions = Array.isArray(sectorMarkers) && duration > 0
+              ? sectorMarkers
+                .slice(0, -1)
+                .map((marker) => Number(marker && marker.cumulative_seconds))
+                .filter((seconds) => Number.isFinite(seconds) && seconds > 0 && seconds < duration)
+                .map((seconds) => seconds / duration)
+              : [];
+            const sectorGap = Math.max(2.5, 8 / Math.max(scale, 0.001));
+            const sectorSegments = splitPolylineByFractions(points, sectorFractions, sectorGap);
+            const sectorColors = ["#38bdf8", "#2563eb", "#14b8a6"];
+            const sectorSurfaceMarkup = sectorSegments.length > 1
+              ? sectorSegments.map((segment, index) => {
+                const segmentPath = path(segment);
+                const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
+                return `<path d="${segmentPath}" fill="none" stroke="${sectorColor}" stroke-opacity="0.52" stroke-width="${surfaceWidth}" stroke-linecap="butt" stroke-linejoin="round"></path>`;
+              }).join("")
+              : `<path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.26)" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
             return `
               <g id="track-surface" pointer-events="none">
-                <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.26)" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.18)" stroke-width="${outerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
+                ${sectorSurfaceMarkup}
                 <path d="${outerPath}" fill="none" stroke="rgba(11, 17, 30, 0.96)" stroke-width="${innerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
               </g>
+            `;
+          }
+
+          function renderTrackImage(url) {
+            if (!url) {
+              return "";
+            }
+
+            return `
+              <image
+                href="${escapeHtml(url)}"
+                x="${pad.toFixed(2)}"
+                y="${pad.toFixed(2)}"
+                width="${innerWidth.toFixed(2)}"
+                height="${innerHeight.toFixed(2)}"
+                preserveAspectRatio="xMidYMid meet"
+                opacity="0.28"
+                pointer-events="none"
+              ></image>
             `;
           }
 
@@ -5909,6 +6270,9 @@
           }
 
           const rawOutline = Array.isArray(map.outline) ? map.outline : [];
+          const rawSurfaceOutline = Array.isArray(map.surface_outline) && map.surface_outline.length
+            ? map.surface_outline
+            : rawOutline;
           const rawRacing = Array.isArray(map.racing) ? map.racing : [];
           if (!rawRacing.length) {
             svg.innerHTML = '<text x="24" y="36" fill="rgba(151,167,194,0.8)" font-size="16">Load telemetry to inspect the track map here.</text>';
@@ -5939,14 +6303,358 @@
           const minSpeedMarker = map.min_speed_marker || null;
           const driverAbbr = (svg.dataset.driverAbbr || "DRI").trim() || "DRI";
           const driverColor = (svg.dataset.driverColor || "#44c2ff").trim() || "#44c2ff";
+          const trackImageCandidates = Array.from(new Set(Array.isArray(map.track_image_candidates) ? map.track_image_candidates.filter(Boolean) : []));
+          const referenceTrack = trackImageCandidates.length
+            ? await resolveTrackReference(trackImageCandidates, rawRacing)
+            : null;
+          const referenceSurfaceOutline = referenceTrack && Array.isArray(referenceTrack.points) && referenceTrack.points.length
+            ? sample(referenceTrack.points, 900)
+            : [];
+          const surfaceOutline = referenceSurfaceOutline.length > 1
+            ? referenceSurfaceOutline
+            : sample(rawSurfaceOutline, 900);
+          const referenceImageUrl = referenceTrack && referenceTrack.url ? referenceTrack.url : null;
           const racingScreen = racing.map((point) => toPoint(point));
-          const trackCenter = racingScreen.reduce((acc, point) => {
-            acc.x += point[0];
-            acc.y += point[1];
+          const trackSurfaceScreen = (surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing)).map((point) => toPoint(point));
+          const trackSurfaceBounds = trackSurfaceScreen.reduce((acc, point) => {
+            acc.minX = Math.min(acc.minX, point[0]);
+            acc.maxX = Math.max(acc.maxX, point[0]);
+            acc.minY = Math.min(acc.minY, point[1]);
+            acc.maxY = Math.max(acc.maxY, point[1]);
             return acc;
-          }, { x: 0, y: 0 });
-          trackCenter.x /= racingScreen.length || 1;
-          trackCenter.y /= racingScreen.length || 1;
+          }, {
+            minX: Number.POSITIVE_INFINITY,
+            maxX: Number.NEGATIVE_INFINITY,
+            minY: Number.POSITIVE_INFINITY,
+            maxY: Number.NEGATIVE_INFINITY,
+          });
+          const trackCenter = {
+            x: (trackSurfaceBounds.minX + trackSurfaceBounds.maxX) / 2,
+            y: (trackSurfaceBounds.minY + trackSurfaceBounds.maxY) / 2,
+          };
+
+          function loadTrackImage(url) {
+            return new Promise((resolve) => {
+              const image = new Image();
+              image.onload = () => resolve(url);
+              image.onerror = () => resolve(null);
+              image.src = url;
+            });
+          }
+
+          function parsePointList(value) {
+            return String(value || "")
+              .trim()
+              .split(/[\s,]+/)
+              .reduce((acc, token, index, list) => {
+                if (index % 2 === 0) {
+                  const x = Number(token);
+                  const y = Number(list[index + 1]);
+                  if (Number.isFinite(x) && Number.isFinite(y)) {
+                    acc.push([x, y]);
+                  }
+                }
+                return acc;
+              }, []);
+          }
+
+          function computeCloudStats(points) {
+            if (!points.length) {
+              return null;
+            }
+
+            const center = points.reduce((acc, point) => {
+              acc.x += point[0];
+              acc.y += point[1];
+              return acc;
+            }, { x: 0, y: 0 });
+            center.x /= points.length;
+            center.y /= points.length;
+
+            let covarianceXX = 0;
+            let covarianceXY = 0;
+            let covarianceYY = 0;
+            for (const [x, y] of points) {
+              const diffX = x - center.x;
+              const diffY = y - center.y;
+              covarianceXX += diffX * diffX;
+              covarianceXY += diffX * diffY;
+              covarianceYY += diffY * diffY;
+            }
+
+            const angle = 0.5 * Math.atan2(2 * covarianceXY, covarianceXX - covarianceYY);
+            const cos = Math.cos(-angle);
+            const sin = Math.sin(-angle);
+            const rotated = points.map(([x, y]) => {
+              const diffX = x - center.x;
+              const diffY = y - center.y;
+              return [
+                diffX * cos - diffY * sin,
+                diffX * sin + diffY * cos,
+              ];
+            });
+            const bounds = rotated.reduce((acc, point) => {
+              acc.minX = Math.min(acc.minX, point[0]);
+              acc.maxX = Math.max(acc.maxX, point[0]);
+              acc.minY = Math.min(acc.minY, point[1]);
+              acc.maxY = Math.max(acc.maxY, point[1]);
+              return acc;
+            }, {
+              minX: Number.POSITIVE_INFINITY,
+              maxX: Number.NEGATIVE_INFINITY,
+              minY: Number.POSITIVE_INFINITY,
+              maxY: Number.NEGATIVE_INFINITY,
+            });
+
+            return {
+              center,
+              angle,
+              bounds,
+              width: bounds.maxX - bounds.minX || 1,
+              height: bounds.maxY - bounds.minY || 1,
+            };
+          }
+
+          function samplePathPoints(path, count) {
+            try {
+              const totalLength = path.getTotalLength();
+              if (!Number.isFinite(totalLength) || totalLength <= 0) {
+                return [];
+              }
+
+              const sampleCount = Math.max(40, Math.min(count, Math.round(totalLength / 4)));
+              const points = [];
+              for (let index = 0; index < sampleCount; index += 1) {
+                const point = path.getPointAtLength((totalLength * index) / Math.max(sampleCount - 1, 1));
+                points.push([point.x, point.y]);
+              }
+              return points;
+            } catch {
+              return [];
+            }
+          }
+
+          function sampleTrackShape(node) {
+            const tagName = String(node.tagName || "").toLowerCase();
+            if (tagName === "path") {
+              return samplePathPoints(node, 220);
+            }
+            if (tagName === "polyline" || tagName === "polygon") {
+              return parsePointList(node.getAttribute("points"));
+            }
+            if (tagName === "line") {
+              const x1 = Number(node.getAttribute("x1"));
+              const y1 = Number(node.getAttribute("y1"));
+              const x2 = Number(node.getAttribute("x2"));
+              const y2 = Number(node.getAttribute("y2"));
+              if ([x1, y1, x2, y2].every(Number.isFinite)) {
+                return [[x1, y1], [x2, y2]];
+              }
+              return [];
+            }
+            if (tagName === "rect") {
+              const x = Number(node.getAttribute("x"));
+              const y = Number(node.getAttribute("y"));
+              const width = Number(node.getAttribute("width"));
+              const height = Number(node.getAttribute("height"));
+              if ([x, y, width, height].every(Number.isFinite)) {
+                return [
+                  [x, y],
+                  [x + width, y],
+                  [x + width, y + height],
+                  [x, y + height],
+                  [x, y],
+                ];
+              }
+              return [];
+            }
+            if (tagName === "circle" || tagName === "ellipse") {
+              const cx = Number(node.getAttribute("cx"));
+              const cy = Number(node.getAttribute("cy"));
+              const rx = Number(tagName === "circle" ? node.getAttribute("r") : node.getAttribute("rx"));
+              const ry = Number(tagName === "circle" ? node.getAttribute("r") : node.getAttribute("ry"));
+              if ([cx, cy, rx, ry].every(Number.isFinite) && rx > 0 && ry > 0) {
+                const samples = [];
+                for (let index = 0; index < 48; index += 1) {
+                  const theta = (Math.PI * 2 * index) / 48;
+                  samples.push([
+                    cx + Math.cos(theta) * rx,
+                    cy + Math.sin(theta) * ry,
+                  ]);
+                }
+                return samples;
+              }
+              return [];
+            }
+            return [];
+          }
+
+          function extractReferenceTrackPoints(svgText) {
+            if (!svgText) {
+              return [];
+            }
+
+            const parser = new DOMParser();
+            const parsed = parser.parseFromString(svgText, "image/svg+xml");
+            if (parsed.querySelector("parsererror")) {
+              return [];
+            }
+
+            const root = parsed.documentElement;
+            const viewBox = String(root.getAttribute("viewBox") || "").trim();
+            const tempSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            tempSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+            if (viewBox) {
+              tempSvg.setAttribute("viewBox", viewBox);
+            }
+            tempSvg.setAttribute("width", "0");
+            tempSvg.setAttribute("height", "0");
+            tempSvg.style.position = "absolute";
+            tempSvg.style.left = "-99999px";
+            tempSvg.style.top = "-99999px";
+            tempSvg.style.visibility = "hidden";
+            tempSvg.innerHTML = root.innerHTML;
+            document.body.appendChild(tempSvg);
+
+            try {
+              const shapes = Array.from(tempSvg.querySelectorAll("path, polyline, polygon, line, rect, circle, ellipse"));
+              const candidates = shapes
+                .map((shape) => {
+                  const points = sampleTrackShape(shape);
+                  if (points.length < 4) {
+                    return null;
+                  }
+                  const score = points.length;
+                  return { points, score };
+                })
+                .filter(Boolean)
+                .sort((left, right) => right.score - left.score);
+              return candidates.length ? candidates[0].points : [];
+            } finally {
+              tempSvg.remove();
+            }
+          }
+
+          function rotateToLocal(point, stats) {
+            const diffX = point[0] - stats.center.x;
+            const diffY = point[1] - stats.center.y;
+            const cos = Math.cos(-stats.angle);
+            const sin = Math.sin(-stats.angle);
+            return [
+              diffX * cos - diffY * sin,
+              diffX * sin + diffY * cos,
+            ];
+          }
+
+          function localToWorld(point, stats) {
+            const cos = Math.cos(stats.angle);
+            const sin = Math.sin(stats.angle);
+            return [
+              stats.center.x + (point[0] * cos - point[1] * sin),
+              stats.center.y + (point[0] * sin + point[1] * cos),
+            ];
+          }
+
+          function fitReferenceTrack(referencePoints, targetPoints) {
+            if (!referencePoints.length || !targetPoints.length) {
+              return null;
+            }
+
+            const referenceStats = computeCloudStats(referencePoints);
+            const targetStats = computeCloudStats(targetPoints);
+            if (!referenceStats || !targetStats) {
+              return null;
+            }
+
+            const scoreCandidate = (mirror) => {
+              const refRotated = referencePoints.map((point) => {
+                const localPoint = rotateToLocal(point, referenceStats);
+                return [mirror ? -localPoint[0] : localPoint[0], localPoint[1]];
+              });
+              const bounds = refRotated.reduce((acc, point) => {
+                acc.minX = Math.min(acc.minX, point[0]);
+                acc.maxX = Math.max(acc.maxX, point[0]);
+                acc.minY = Math.min(acc.minY, point[1]);
+                acc.maxY = Math.max(acc.maxY, point[1]);
+                return acc;
+              }, {
+                minX: Number.POSITIVE_INFINITY,
+                maxX: Number.NEGATIVE_INFINITY,
+                minY: Number.POSITIVE_INFINITY,
+                maxY: Number.NEGATIVE_INFINITY,
+              });
+              const width = bounds.maxX - bounds.minX || 1;
+              const height = bounds.maxY - bounds.minY || 1;
+              const transformed = refRotated.map((point) => {
+                const normalizedX = (point[0] - bounds.minX) / width;
+                const normalizedY = (point[1] - bounds.minY) / height;
+                const localTargetX = targetStats.bounds.minX + (normalizedX * targetStats.width);
+                const localTargetY = targetStats.bounds.minY + (normalizedY * targetStats.height);
+                return localToWorld([localTargetX, localTargetY], targetStats);
+              });
+              const evaluated = sample(transformed, Math.min(240, transformed.length));
+              let totalDistance = 0;
+              for (const [x, y] of evaluated) {
+                let minDistanceSq = Number.POSITIVE_INFINITY;
+                for (let index = 1; index < targetPoints.length; index += 1) {
+                  const [x1, y1] = targetPoints[index - 1];
+                  const [x2, y2] = targetPoints[index];
+                  minDistanceSq = Math.min(minDistanceSq, distanceSquaredToSegment(x, y, x1, y1, x2, y2));
+                }
+                totalDistance += minDistanceSq;
+              }
+              return {
+                points: transformed,
+                score: totalDistance / Math.max(evaluated.length, 1),
+              };
+            };
+
+            const normalCandidate = scoreCandidate(false);
+            const mirroredCandidate = scoreCandidate(true);
+            if (!normalCandidate && !mirroredCandidate) {
+              return null;
+            }
+            if (!mirroredCandidate || (normalCandidate && normalCandidate.score <= mirroredCandidate.score)) {
+              return normalCandidate;
+            }
+            return mirroredCandidate;
+          }
+
+          async function resolveTrackReference(candidates, targetPoints) {
+            let loadedImageUrl = null;
+            for (const candidate of candidates) {
+              const loadedUrl = await loadTrackImage(candidate);
+              if (!loadedUrl) {
+                continue;
+              }
+
+              if (!loadedImageUrl) {
+                loadedImageUrl = loadedUrl;
+              }
+
+              let svgText = null;
+              try {
+                const response = await fetch(candidate, { mode: "cors" });
+                if (response.ok) {
+                  svgText = await response.text();
+                }
+              } catch {
+                svgText = null;
+              }
+
+              if (svgText) {
+                const referencePoints = extractReferenceTrackPoints(svgText);
+                if (referencePoints.length) {
+                  const fitted = fitReferenceTrack(referencePoints, targetPoints);
+                  if (fitted && fitted.points.length) {
+                    return { url: loadedUrl, points: fitted.points };
+                  }
+                }
+              }
+            }
+
+            return loadedImageUrl ? { url: loadedImageUrl, points: null } : null;
+          }
 
           function interpolatePoint(progress) {
             if (!samples.length) {
@@ -6058,6 +6766,8 @@
             `;
           }
 
+          const placedSectorBadges = [];
+
           function renderSectorBadge(marker, index, anchor, color, trackCenter) {
             const centerX = anchor.centerX ?? anchor.x;
             const centerY = anchor.centerY ?? anchor.y;
@@ -6066,54 +6776,174 @@
             const backgroundFill = "rgba(21, 35, 59, 0.95)";
             const backgroundStroke = color;
             const badgeDirection = ((anchor.unitX || 0) * (centerX - trackCenter.x) + (anchor.unitY || 0) * (centerY - trackCenter.y)) >= 0 ? 1 : -1;
-            const badgeOffsets = [78, 92, 106, 120, 134, 148, 162, 176, 190];
+            const badgeOffsets = [96, 114, 132, 150, 168, 186, 204, 222, 240];
             const badgeDirections = [badgeDirection, -badgeDirection];
-            const tangentOffsets = [0, 20, -20, 36, -36, 52, -52];
+            const tangentOffsets = [0, 22, -22, 40, -40, 58, -58, 76, -76, 94, -94];
             const normalX = anchor.unitX || 0;
             const normalY = anchor.unitY || 0;
             const tangentX = normalY;
             const tangentY = -normalX;
-            const clearanceRadius = (Math.hypot(badgeWidth, badgeHeight) / 2) + 14;
+            const clearanceRadius = (Math.hypot(badgeWidth, badgeHeight) / 2) + 34;
             const clearanceRadiusSq = clearanceRadius * clearanceRadius;
-            const badgeIntersectsRacingLine = (badgeX, badgeY) => {
-              for (let index = 1; index < racingScreen.length; index += 1) {
-                const [x1, y1] = racingScreen[index - 1];
-                const [x2, y2] = racingScreen[index];
-                if (distanceSquaredToSegment(badgeX, badgeY, x1, y1, x2, y2) <= clearanceRadiusSq) {
-                  return true;
-                }
+            const boxPadding = 14;
+            const badgeClearanceSq = (badgeX, badgeY) => {
+              let minDistanceSq = Number.POSITIVE_INFINITY;
+              for (let index = 1; index < trackSurfaceScreen.length; index += 1) {
+                const [x1, y1] = trackSurfaceScreen[index - 1];
+                const [x2, y2] = trackSurfaceScreen[index];
+                minDistanceSq = Math.min(minDistanceSq, distanceSquaredToSegment(badgeX, badgeY, x1, y1, x2, y2));
+              }
+              return minDistanceSq;
+            };
+            const badgeBox = (badgeX, badgeY) => ({
+              left: badgeX - (badgeWidth / 2),
+              right: badgeX + (badgeWidth / 2),
+              top: badgeY - (badgeHeight / 2),
+              bottom: badgeY + (badgeHeight / 2),
+            });
+            const badgeOverlapsPlaced = (badgeX, badgeY) => {
+              const box = badgeBox(badgeX, badgeY);
+              return placedSectorBadges.some((placed) => !(
+                box.right + boxPadding < placed.left
+                || box.left - boxPadding > placed.right
+                || box.bottom + boxPadding < placed.top
+                || box.top - boxPadding > placed.bottom
+              ));
+            };
+            const outsideTrackMargin = Math.max(18, Math.round(clearanceRadius * 0.22));
+            const badgeOutsideTrackBounds = (badgeX, badgeY) => (
+              badgeX < trackSurfaceBounds.minX - outsideTrackMargin
+              || badgeX > trackSurfaceBounds.maxX + outsideTrackMargin
+              || badgeY < trackSurfaceBounds.minY - outsideTrackMargin
+              || badgeY > trackSurfaceBounds.maxY + outsideTrackMargin
+            );
+            const isBetterCandidate = (candidate, current) => {
+              if (candidate.overlapsPlaced !== current.overlapsPlaced) {
+                return !candidate.overlapsPlaced && current.overlapsPlaced;
+              }
+              if (candidate.outsideBounds !== current.outsideBounds) {
+                return candidate.outsideBounds && !current.outsideBounds;
+              }
+              if (candidate.isClear !== current.isClear) {
+                return candidate.isClear && !current.isClear;
+              }
+              if (Math.abs(candidate.offset) !== Math.abs(current.offset)) {
+                return Math.abs(candidate.offset) < Math.abs(current.offset);
+              }
+              if (Math.abs(candidate.tangentOffset) !== Math.abs(current.tangentOffset)) {
+                return Math.abs(candidate.tangentOffset) < Math.abs(current.tangentOffset);
+              }
+              if (candidate.clearanceSq !== current.clearanceSq) {
+                return candidate.clearanceSq > current.clearanceSq;
               }
               return false;
             };
             const fallbackX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (normalX * badgeOffsets[0] * badgeDirection) + (tangentX * tangentOffsets[0])));
             const fallbackY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (normalY * badgeOffsets[0] * badgeDirection) + (tangentY * tangentOffsets[0])));
-            let badgeX = fallbackX;
-            let badgeY = fallbackY;
-            let foundClearSpot = !badgeIntersectsRacingLine(fallbackX, fallbackY);
+            let bestCandidate = {
+              x: fallbackX,
+              y: fallbackY,
+              clearanceSq: badgeClearanceSq(fallbackX, fallbackY),
+              isClear: badgeClearanceSq(fallbackX, fallbackY) > clearanceRadiusSq,
+              outsideBounds: badgeOutsideTrackBounds(fallbackX, fallbackY),
+              overlapsPlaced: badgeOverlapsPlaced(fallbackX, fallbackY),
+              offset: badgeOffsets[0],
+              tangentOffset: tangentOffsets[0],
+            };
 
             for (const direction of badgeDirections) {
               for (const offset of badgeOffsets) {
                 for (const tangentOffset of tangentOffsets) {
                   const candidateX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (normalX * offset * direction) + (tangentX * tangentOffset)));
                   const candidateY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (normalY * offset * direction) + (tangentY * tangentOffset)));
-                  if (!badgeIntersectsRacingLine(candidateX, candidateY)) {
-                    badgeX = candidateX;
-                    badgeY = candidateY;
-                    foundClearSpot = true;
-                    break;
+                  const candidateClearanceSq = badgeClearanceSq(candidateX, candidateY);
+                  const candidate = {
+                    x: candidateX,
+                    y: candidateY,
+                    clearanceSq: candidateClearanceSq,
+                    isClear: candidateClearanceSq > clearanceRadiusSq,
+                    outsideBounds: badgeOutsideTrackBounds(candidateX, candidateY),
+                    overlapsPlaced: badgeOverlapsPlaced(candidateX, candidateY),
+                    offset,
+                    tangentOffset,
+                  };
+                  if (isBetterCandidate(candidate, bestCandidate)) {
+                    bestCandidate = candidate;
                   }
                 }
-                if (foundClearSpot) {
-                  break;
-                }
-              }
-              if (foundClearSpot) {
-                break;
               }
             }
 
-            const leaderStartX = centerX + (normalX * 18 * badgeDirection);
-            const leaderStartY = centerY + (normalY * 18 * badgeDirection);
+            let badgeX = bestCandidate.x;
+            let badgeY = bestCandidate.y;
+            let nudgeCount = 0;
+            while ((!bestCandidate.isClear || !bestCandidate.outsideBounds) && nudgeCount < 10) {
+              const nudgeDistance = 20 + (nudgeCount * 14);
+              const candidateX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (normalX * (badgeOffsets[badgeOffsets.length - 1] + nudgeDistance) * badgeDirection) + (tangentX * tangentOffsets[0])));
+              const candidateY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (normalY * (badgeOffsets[badgeOffsets.length - 1] + nudgeDistance) * badgeDirection) + (tangentY * tangentOffsets[0])));
+              const candidateClearanceSq = badgeClearanceSq(candidateX, candidateY);
+              const candidate = {
+                x: candidateX,
+                y: candidateY,
+                clearanceSq: candidateClearanceSq,
+                isClear: candidateClearanceSq > clearanceRadiusSq,
+                outsideBounds: badgeOutsideTrackBounds(candidateX, candidateY),
+                overlapsPlaced: badgeOverlapsPlaced(candidateX, candidateY),
+                offset: badgeOffsets[badgeOffsets.length - 1] + nudgeDistance,
+                tangentOffset: 0,
+              };
+              if (isBetterCandidate(candidate, bestCandidate)) {
+                bestCandidate = candidate;
+                badgeX = bestCandidate.x;
+                badgeY = bestCandidate.y;
+              }
+              if (bestCandidate.isClear && bestCandidate.outsideBounds) {
+                break;
+              }
+              nudgeCount += 1;
+            }
+
+            if (bestCandidate.overlapsPlaced) {
+              const collisionTangentOffsets = [120, -120, 144, -144, 168, -168];
+              const collisionNormalOffsets = [0, 18, -18, 36, -36];
+              for (const tangentOffset of collisionTangentOffsets) {
+                for (const normalOffset of collisionNormalOffsets) {
+                  const candidateX = Math.max(
+                    markerEdgeX,
+                    Math.min(width - markerEdgeX, bestCandidate.x + (tangentX * tangentOffset) + (normalX * normalOffset)),
+                  );
+                  const candidateY = Math.max(
+                    markerEdgeY,
+                    Math.min(height - markerEdgeY, bestCandidate.y + (tangentY * tangentOffset) + (normalY * normalOffset)),
+                  );
+                  const candidateClearanceSq = badgeClearanceSq(candidateX, candidateY);
+                  const candidate = {
+                    x: candidateX,
+                    y: candidateY,
+                    clearanceSq: candidateClearanceSq,
+                    isClear: candidateClearanceSq > clearanceRadiusSq,
+                    outsideBounds: badgeOutsideTrackBounds(candidateX, candidateY),
+                    overlapsPlaced: badgeOverlapsPlaced(candidateX, candidateY),
+                    offset: bestCandidate.offset,
+                    tangentOffset,
+                  };
+                  if (isBetterCandidate(candidate, bestCandidate)) {
+                    bestCandidate = candidate;
+                  }
+                  if (!candidate.overlapsPlaced && candidate.isClear && candidate.outsideBounds) {
+                    bestCandidate = candidate;
+                    break;
+                  }
+                }
+                if (!bestCandidate.overlapsPlaced && bestCandidate.isClear && bestCandidate.outsideBounds) {
+                  break;
+                }
+              }
+            }
+
+            badgeX = bestCandidate.x;
+            badgeY = bestCandidate.y;
+            placedSectorBadges.push(badgeBox(badgeX, badgeY));
 
             const labelY = badgeY - 9;
             const valueY = badgeY + 13;
@@ -6128,8 +6958,6 @@
             }
             return `
               <g class="sector-marker" style="pointer-events:none">
-                <line x1="${(centerX + (anchor.unitX || 0) * 16).toFixed(2)}" y1="${(centerY + (anchor.unitY || 0) * 16).toFixed(2)}" x2="${(centerX - (anchor.unitX || 0) * 16).toFixed(2)}" y2="${(centerY - (anchor.unitY || 0) * 16).toFixed(2)}" stroke="${color}" stroke-width="4" stroke-linecap="round"></line>
-                <line x1="${leaderStartX.toFixed(2)}" y1="${leaderStartY.toFixed(2)}" x2="${badgeX.toFixed(2)}" y2="${badgeY.toFixed(2)}" stroke="${color}" stroke-width="1.8" stroke-linecap="round" opacity="0.78"></line>
                 <rect x="${(badgeX - (badgeWidth / 2)).toFixed(2)}" y="${(badgeY - (badgeHeight / 2)).toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="14" fill="${backgroundFill}" stroke="${backgroundStroke}" stroke-width="1.2"></rect>
                 <text class="sector-marker-label" x="${badgeX.toFixed(2)}" y="${labelY.toFixed(2)}" fill="${color}" text-anchor="middle">Sector ${index + 1}</text>
                 <text class="sector-marker-time" x="${badgeX.toFixed(2)}" y="${valueY.toFixed(2)}" fill="${color}" font-variant-numeric="tabular-nums" text-anchor="middle">${escapeHtml(displayTime)}</text>
@@ -6148,14 +6976,11 @@
               </filter>
             </defs>
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-            ${renderTrackSurface(outline.length > 1 ? outline : racing)}
+            <g id="track-underlay" pointer-events="none">
+              ${referenceImageUrl ? renderTrackImage(referenceImageUrl) : ""}
+              ${renderTrackSurface(surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing), sectorMarkers)}
+            </g>
             ${renderAccelerationLine(racing, samples)}
-            ${sectorMarkers.map((marker, index) => {
-              const anchor = markerAnchor(marker.cumulative_seconds || 0) || { x: 0, y: 0 };
-              const colors = ["#fbbf24", "#34d399", "#60a5fa"];
-              const color = colors[index] || "#c4b5fd";
-              return renderSectorBadge(marker, index, anchor, color, trackCenter);
-            }).join("")}
             ${renderSpeedMarker(maxSpeedMarker, "MAX", "#fbbf24", 54)}
             ${renderSpeedMarker(minSpeedMarker, "MIN", "#60a5fa", 72)}
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>

@@ -2,6 +2,7 @@ import os
 import time
 from datetime import datetime
 import re
+import unicodedata
 from pathlib import Path
 from urllib.parse import urlencode
 from threading import Event, Lock, Thread
@@ -131,6 +132,40 @@ def _clean_value(value):
     return str(value)
 
 
+def _format_stint_tyre_note(tyre_life, fresh_tyre):
+    if fresh_tyre:
+        return "(Fresh Tyre)"
+    if tyre_life is None or pd.isna(tyre_life):
+        return ""
+
+    try:
+        age_laps = int(float(tyre_life))
+    except (TypeError, ValueError):
+        return ""
+
+    if age_laps < 0:
+        return ""
+    return f"({age_laps} LAP{'S' if age_laps != 1 else ''})"
+
+
+def _driver_last_name_abbreviation(full_name, abbreviation=""):
+    name_text = _clean_value(full_name).strip()
+    if not name_text or name_text == "-":
+        abbreviation_text = _clean_value(abbreviation).strip().upper()
+        if abbreviation_text:
+            return abbreviation_text[:3]
+        return ""
+
+    surname = re.split(r"\s+", name_text)[-1]
+    cleaned = re.sub(r"[^A-Z0-9]", "", surname.upper())
+    if not cleaned:
+        abbreviation_text = _clean_value(abbreviation).strip().upper()
+        if abbreviation_text:
+            return abbreviation_text[:3]
+        return ""
+    return cleaned[:3]
+
+
 def _is_truthy_value(value):
     if pd.isna(value):
         return False
@@ -230,6 +265,124 @@ def _driver_country_code(row):
         "BOR": "BR",
     }
     return abbrev_to_code.get(abbreviation, "")
+
+
+TRACK_MAP_ASSET_BASE_URL = "https://raw.githubusercontent.com/julesr0y/f1-circuits-svg/main"
+TRACK_MAP_ASSET_DIRECTORIES = ("circuits", "readme")
+TRACK_MAP_ASSET_LAYOUTS = (6, 5, 4, 3, 2, 1)
+TRACK_MAP_REFERENCE_BASE_URL = "https://raw.githubusercontent.com/f1laps/f1-track-vectors/main/f1_2020"
+TRACK_MAP_SLUG_ALIASES = {
+    "austin": ("circuit-of-the-americas", "cota"),
+    "autodromo-hermanos-rodriguez": ("mexico-city", "mexico"),
+    "autodromo-internazionale-enzo-e-dino-ferrari": ("imola",),
+    "barcelona": ("catalunya", "circuit-de-barcelona-catalunya"),
+    "bahrain-international-circuit": ("bahrain", "sakhir"),
+    "baku-city-circuit": ("baku",),
+    "circuit-de-barcelona-catalunya": ("catalunya", "barcelona"),
+    "circuit-de-monaco": ("monaco", "monte-carlo"),
+    "circuit-de-spa-francorchamps": ("spa", "spa-francorchamps"),
+    "circuit-of-the-americas": ("austin", "cota"),
+    "jeddah": ("jeddah-corniche", "jeddah-corniche-circuit"),
+    "jeddah-corniche": ("jeddah", "jeddah-corniche-circuit"),
+    "las-vegas": ("caesars-palace", "las-vegas-strip"),
+    "lusail": ("qatar", "losail"),
+    "melbourne": ("albert-park",),
+    "miami": ("miami-international-autodrome",),
+    "monaco": ("monte-carlo", "circuit-de-monaco"),
+    "monte-carlo": ("monaco", "circuit-de-monaco"),
+    "monza": ("autodromo-nazionale-monza",),
+    "red-bull-ring": ("spielberg", "austria"),
+    "sao-paulo": ("interlagos", "sao-paulo-grand-prix"),
+    "sakhir": ("bahrain", "bahrain-international-circuit"),
+    "shanghai": ("china",),
+    "silverstone": ("great-britain",),
+    "spa": ("spa-francorchamps",),
+    "spa-francorchamps": ("spa",),
+    "spielberg": ("red-bull-ring",),
+    "yas-marina": ("abu-dhabi",),
+    "zandvoort": ("netherlands",),
+}
+
+
+def _slugify_track_name(value):
+    text = _clean_value(value).strip().lower()
+    if not text or text == "-":
+        return ""
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    text = re.sub(r"-+", "-", text).strip("-")
+    return text
+
+
+def _track_map_slug_variants(value):
+    base_slug = _slugify_track_name(value)
+    if not base_slug:
+        return []
+
+    variants = []
+    queue = [base_slug]
+    while queue:
+        slug = queue.pop(0)
+        if slug in variants:
+            continue
+        variants.append(slug)
+
+        for alias in TRACK_MAP_SLUG_ALIASES.get(slug, ()):
+            alias_slug = _slugify_track_name(alias)
+            if alias_slug and alias_slug not in variants and alias_slug not in queue:
+                queue.append(alias_slug)
+
+        for suffix in ("grand-prix", "formula-1", "grand-prix-of", "gp"):
+            if slug.endswith(f"-{suffix}"):
+                stripped = slug[: -(len(suffix) + 1)]
+                if stripped and stripped not in variants and stripped not in queue:
+                    queue.append(stripped)
+
+    return variants
+
+
+def _track_map_asset_candidates(session):
+    if not session:
+        return []
+
+    event = getattr(session, "event", None)
+    session_info = getattr(session, "session_info", {}) or {}
+    meeting = session_info.get("Meeting") if isinstance(session_info, dict) else {}
+    circuit = meeting.get("Circuit") if isinstance(meeting, dict) else {}
+
+    sources = [
+        getattr(event, "Location", ""),
+        getattr(event, "EventName", ""),
+        getattr(event, "Country", ""),
+        circuit.get("ShortName", "") if isinstance(circuit, dict) else "",
+        circuit.get("LongName", "") if isinstance(circuit, dict) else "",
+        circuit.get("Name", "") if isinstance(circuit, dict) else "",
+    ]
+
+    slugs = []
+    for source in sources:
+        for slug in _track_map_slug_variants(source):
+            if slug and slug not in slugs:
+                slugs.append(slug)
+
+    urls = []
+    seen_urls = set()
+    for slug in slugs:
+        for directory in TRACK_MAP_ASSET_DIRECTORIES:
+            for layout in TRACK_MAP_ASSET_LAYOUTS:
+                url = f"{TRACK_MAP_ASSET_BASE_URL}/{directory}/{slug}-{layout}.svg"
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                urls.append(url)
+
+        reference_url = f"{TRACK_MAP_REFERENCE_BASE_URL}/{slug}.svg"
+        if reference_url not in seen_urls:
+            seen_urls.add(reference_url)
+            urls.append(reference_url)
+
+    return urls
 
 
 def _render_error_page(status_code, title, message):
@@ -2179,10 +2332,99 @@ def _race_stints(session, driver_number, session_code):
     driver_laps = _safe_driver_laps(session, driver_number)
     driver_name = _clean_value(driver_number)
     stints = []
+    driver_short_lookup = {}
+    current_driver_short_label = ""
+    session_position_lookup = {}
 
     if driver_laps is not None and not driver_laps.empty:
         if "Driver" in driver_laps.columns:
             driver_name = _clean_value(driver_laps.iloc[0].get("Driver", driver_name))
+
+        if _supports_race_position_markers(session_code):
+            session_driver_options = _driver_options(session, results=getattr(session, "results", None))
+            driver_short_lookup = {
+                _clean_value(option.get("value", "")).strip(): _driver_last_name_abbreviation(
+                    option.get("full_name", ""),
+                    option.get("abbreviation", ""),
+                )
+                for option in session_driver_options
+                if _clean_value(option.get("value", "")).strip()
+            }
+            current_driver_short_label = driver_short_lookup.get(_normalize_driver_number(driver_number), "")
+            if not current_driver_short_label:
+                current_driver_short_label = _driver_last_name_abbreviation(driver_name, "")
+            all_session_laps = _safe_session_laps(session)
+            if (
+                all_session_laps is not None
+                and not all_session_laps.empty
+                and "LapNumber" in all_session_laps.columns
+                and "Position" in all_session_laps.columns
+            ):
+                ordered_positions = all_session_laps[
+                    all_session_laps["LapNumber"].notna() & all_session_laps["Position"].notna()
+                ].copy()
+                if not ordered_positions.empty:
+                    sort_columns = [column for column in ["LapNumber", "Time"] if column in ordered_positions.columns]
+                    if sort_columns:
+                        ordered_positions = ordered_positions.sort_values(by=sort_columns)
+                    for _, position_row in ordered_positions.iterrows():
+                        lap_number_value = position_row.get("LapNumber")
+                        position_value = position_row.get("Position")
+                        if pd.isna(lap_number_value) or pd.isna(position_value):
+                            continue
+                        try:
+                            lap_number_int = int(float(lap_number_value))
+                            position_int = int(float(position_value))
+                        except (TypeError, ValueError):
+                            continue
+
+                        driver_number_value = _normalize_driver_number(position_row.get("DriverNumber", ""))
+                        driver_label = driver_short_lookup.get(driver_number_value, "")
+                        if not driver_label and "Abbreviation" in position_row.index:
+                            driver_label = _driver_last_name_abbreviation(
+                                position_row.get("FullName", position_row.get("Driver", "")),
+                                position_row.get("Abbreviation", ""),
+                            )
+                        if not driver_label and "FullName" in position_row.index:
+                            driver_label = _driver_last_name_abbreviation(position_row.get("FullName", ""), "")
+                        if not driver_label and "Driver" in position_row.index:
+                            driver_label = _driver_last_name_abbreviation(position_row.get("Driver", ""), "")
+                        if not driver_label or driver_label == "-":
+                            driver_label = driver_number_value or _clean_value(position_row.get("DriverNumber", "")).strip()
+                        if not driver_label:
+                            continue
+
+                        session_position_lookup.setdefault(lap_number_int, {})[position_int] = driver_label
+
+        def _position_change_driver_names(lap_number, position_before, position_after):
+            if not session_position_lookup or lap_number is None or position_before is None or position_after is None:
+                return []
+
+            try:
+                lap_number_int = int(float(lap_number))
+                position_before_int = int(float(position_before))
+                position_after_int = int(float(position_after))
+            except (TypeError, ValueError):
+                return []
+
+            snapshot = session_position_lookup.get(lap_number_int)
+            if not snapshot:
+                return []
+
+            if position_after_int < position_before_int:
+                positions = range(position_after_int + 1, position_before_int + 1)
+            elif position_after_int > position_before_int:
+                positions = range(position_before_int, position_after_int)
+            else:
+                return []
+
+            names = []
+            for position in positions:
+                driver_label = _clean_value(snapshot.get(position, "")).strip()
+                if not driver_label or driver_label == current_driver_short_label or driver_label in names:
+                    continue
+                names.append(driver_label)
+            return names
 
         ordered = driver_laps[driver_laps["LapNumber"].notna()].copy() if "LapNumber" in driver_laps.columns else pd.DataFrame()
         if not ordered.empty and "Stint" in ordered.columns:
@@ -2231,6 +2473,9 @@ def _race_stints(session, driver_number, session_code):
 
                 fresh_series = stint_laps["FreshTyre"].dropna() if "FreshTyre" in stint_laps.columns else pd.Series([], dtype=object)
                 fresh_tyre = bool(fresh_series.iloc[0]) if not fresh_series.empty and pd.notna(fresh_series.iloc[0]) else False
+                tyre_life_series = stint_laps["TyreLife"].dropna() if "TyreLife" in stint_laps.columns else pd.Series([], dtype=object)
+                tyre_life = tyre_life_series.iloc[0] if not tyre_life_series.empty else None
+                stint_note = _format_stint_tyre_note(tyre_life, fresh_tyre)
 
                 lap_numbers = stint_laps["LapNumber"].dropna().astype(int).tolist()
                 laps = []
@@ -2255,10 +2500,16 @@ def _race_stints(session, driver_number, session_code):
                     position_change = lap_position.get("position_change")
                     position_change_text = None
                     position_change_direction = None
+                    position_change_driver_names = []
                     if position_change is not None and position_change != 0:
                         direction = "gain" if position_change > 0 else "loss"
                         position_change_direction = direction
                         position_change_text = f"{int(position_change):+d}"
+                        position_change_driver_names = _position_change_driver_names(
+                            lap_number_int,
+                            lap_position.get("position_before"),
+                            lap_position.get("position_after"),
+                        )
                     laps.append(
                         {
                             "lap_number": lap_number_int,
@@ -2277,6 +2528,7 @@ def _race_stints(session, driver_number, session_code):
                             "position_change": position_change,
                             "position_change_text": position_change_text,
                             "position_change_direction": position_change_direction,
+                            "position_change_driver_names": position_change_driver_names,
                         }
                     )
                 stints.append(
@@ -2288,6 +2540,8 @@ def _race_stints(session, driver_number, session_code):
                         "compound": compound,
                         "tyre_color": _tyre_color(compound),
                         "fresh_tyre": fresh_tyre,
+                        "tyre_life": tyre_life,
+                        "stint_note": stint_note,
                         "laps": laps,
                     }
                 )
@@ -2382,6 +2636,18 @@ def _race_stints(session, driver_number, session_code):
             compound_series = compound_series[compound_series.str.strip() != ""]
             if not compound_series.empty:
                 inferred_compound = compound_series.iloc[0]
+        placeholder_fresh = False
+        placeholder_tyre_life = None
+        if driver_laps is not None and not driver_laps.empty:
+            if "FreshTyre" in driver_laps.columns:
+                fresh_series = driver_laps["FreshTyre"].dropna()
+                if not fresh_series.empty and pd.notna(fresh_series.iloc[0]):
+                    placeholder_fresh = bool(fresh_series.iloc[0])
+            if "TyreLife" in driver_laps.columns:
+                tyre_life_series = driver_laps["TyreLife"].dropna()
+                if not tyre_life_series.empty:
+                    placeholder_tyre_life = tyre_life_series.iloc[0]
+        placeholder_stint_note = _format_stint_tyre_note(placeholder_tyre_life, placeholder_fresh)
         placeholder_laps = [
             {
                 "lap_number": lap_number,
@@ -2389,7 +2655,7 @@ def _race_stints(session, driver_number, session_code):
                 "lap_time_seconds": None,
                 "value": f"{_clean_value(driver_number)}:{lap_number}",
                 "compound": _clean_value(inferred_compound),
-                "fresh_tyre": False,
+                "fresh_tyre": placeholder_fresh,
                 "is_personal_best": False,
                 "lap_type": "Flying Lap",
             }
@@ -2403,7 +2669,9 @@ def _race_stints(session, driver_number, session_code):
                 "lap_count": lap_total,
                 "compound": _clean_value(inferred_compound),
                 "tyre_color": _tyre_color(inferred_compound),
-                "fresh_tyre": False,
+                "fresh_tyre": placeholder_fresh,
+                "tyre_life": placeholder_tyre_life,
+                "stint_note": placeholder_stint_note,
                 "is_personal_best": False,
                 "laps": placeholder_laps,
             }
@@ -3039,6 +3307,36 @@ def _race_position_graph(session, year=None, gp=None, session_code="R"):
                     first_lap_value = _default_stint_lap_value(first_stint)
                     if first_lap_value:
                         href_params["lap"] = first_lap_value
+            if "lap" not in href_params:
+                fallback_lap_value = ""
+                try:
+                    driver_laps = _safe_driver_laps(session, driver_number)
+                except Exception:
+                    driver_laps = None
+                if driver_laps is not None and not driver_laps.empty and "LapNumber" in driver_laps.columns:
+                    fastest_lap = None
+                    try:
+                        fastest_lap = driver_laps.pick_fastest()
+                    except Exception:
+                        fastest_lap = None
+                    if fastest_lap is not None and not fastest_lap.empty:
+                        lap_number = fastest_lap.get("LapNumber")
+                        if lap_number is not None:
+                            try:
+                                fallback_lap_value = f"{driver_number}:{int(float(lap_number))}"
+                            except (TypeError, ValueError):
+                                fallback_lap_value = ""
+                    if not fallback_lap_value:
+                        valid_laps = driver_laps[driver_laps["LapNumber"].notna()].copy()
+                        if not valid_laps.empty:
+                            valid_laps = valid_laps.sort_values(by=["LapNumber", "Time"])
+                            lap_number = valid_laps.iloc[0].get("LapNumber")
+                            if lap_number is not None:
+                                try:
+                                    fallback_lap_value = f"{driver_number}:{int(float(lap_number))}"
+                                except (TypeError, ValueError):
+                                    fallback_lap_value = ""
+                href_params["lap"] = fallback_lap_value or driver_number
             href = f"/lap?{urlencode(href_params)}#lap-stint-panel"
 
         driver_results[driver_number] = {
@@ -3202,11 +3500,13 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
     else:
         circuit_points = []
 
-    outline = circuit_points or racing_frame.loc[:, ["X", "Y"]].to_numpy().tolist()
+    surface_outline = racing_frame.loc[:, ["X", "Y"]].to_numpy().tolist()
+    outline = circuit_points or surface_outline
     racing = racing_frame.loc[:, ["X", "Y"]].to_numpy().tolist()
     rotation = circuit_info.rotation if circuit_info is not None else 0.0
     if circuit_info is not None:
         outline = _rotate_xy(outline, rotation)
+        surface_outline = _rotate_xy(surface_outline, rotation)
         racing = _rotate_xy(racing, rotation)
 
     if "Time" in racing_frame.columns:
@@ -3398,6 +3698,7 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
 
     return {
         "outline": outline,
+        "surface_outline": surface_outline,
         "racing": racing,
         "samples": racing_samples,
         "sector_markers": sector_markers,
@@ -3414,6 +3715,7 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
             "min_y": min(ys) - padding,
             "max_y": max(ys) + padding,
         },
+        "track_image_candidates": _track_map_asset_candidates(session),
         "rotation": rotation,
         "duration": float(lap_duration_seconds) if lap_duration_seconds is not None else None,
     }
