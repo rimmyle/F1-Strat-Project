@@ -1028,6 +1028,121 @@ def _qualifying_phase_rows(session, phase):
     return rows
 
 
+def _qualifying_phase_fastest_lap(session, phase, phase_rows=None, phase_windows=None):
+    if not session:
+        return None
+
+    phase_code = str(phase or "Q1").strip().upper()
+    if phase_code not in {"Q1", "Q2", "Q3"}:
+        return None
+
+    rows = phase_rows if phase_rows is not None else _qualifying_phase_rows(session, phase_code)
+    if not rows:
+        return None
+
+    timed_rows = [row for row in rows if row.get("phase_seconds") is not None]
+    if not timed_rows:
+        return None
+
+    fastest_row = min(
+        timed_rows,
+        key=lambda row: (
+            float(row.get("phase_seconds")),
+            int(float(row.get("position", "999999"))) if str(row.get("position", "")).strip().replace(".", "", 1).isdigit() else 999999,
+        ),
+    )
+
+    fastest_driver = _normalize_driver_number(fastest_row.get("driver_number", "")) or _normalize_driver_number(fastest_row.get("DriverNumber", ""))
+    if not fastest_driver:
+        return None
+
+    driver_laps = _safe_driver_laps(session, fastest_driver)
+    if driver_laps is None or driver_laps.empty:
+        return None
+
+    timed_laps = driver_laps[driver_laps["LapTime"].notna()].copy() if "LapTime" in driver_laps.columns else driver_laps.copy()
+    if timed_laps.empty:
+        return None
+
+    phase_start = None
+    phase_end = None
+    if isinstance(phase_windows, dict):
+        phase_window = phase_windows.get(phase_code, {}) or {}
+        try:
+            phase_start = float(phase_window.get("start")) if phase_window.get("start") is not None else None
+        except (TypeError, ValueError):
+            phase_start = None
+        try:
+            phase_end = float(phase_window.get("end")) if phase_window.get("end") is not None else None
+        except (TypeError, ValueError):
+            phase_end = None
+
+    if phase_start is not None and phase_end is not None:
+        def lap_overlaps_phase(row):
+            lap_start = _lap_time_seconds(row.get("LapStartTime", None))
+            lap_end = _lap_time_seconds(row.get("Time", None))
+            if lap_start is None and lap_end is None:
+                return False
+            if lap_start is None:
+                lap_start = lap_end
+            if lap_end is None:
+                lap_end = lap_start
+            try:
+                return float(lap_start) < phase_end and float(lap_end) > phase_start
+            except (TypeError, ValueError):
+                return False
+
+        filtered = timed_laps[timed_laps.apply(lap_overlaps_phase, axis=1)]
+        if not filtered.empty:
+            timed_laps = filtered
+
+    phase_seconds = fastest_row.get("phase_seconds")
+    if phase_seconds is not None:
+        try:
+            phase_seconds = float(phase_seconds)
+        except (TypeError, ValueError):
+            phase_seconds = None
+
+    if phase_seconds is not None:
+        def lap_delta(row):
+            lap_time_seconds = _lap_time_seconds(row.get("LapTime", None))
+            if lap_time_seconds is None:
+                return float("inf")
+            try:
+                return abs(float(lap_time_seconds) - phase_seconds)
+            except (TypeError, ValueError):
+                return float("inf")
+
+        timed_laps = timed_laps.copy()
+        timed_laps["_phase_delta"] = timed_laps.apply(lap_delta, axis=1)
+        sort_columns = ["_phase_delta"]
+        if "LapNumber" in timed_laps.columns:
+            sort_columns.append("LapNumber")
+        if "Time" in timed_laps.columns:
+            sort_columns.append("Time")
+        timed_laps = timed_laps.sort_values(by=sort_columns, na_position="last")
+    else:
+        sort_columns = [column for column in ["LapNumber", "Time"] if column in timed_laps.columns]
+        if sort_columns:
+            timed_laps = timed_laps.sort_values(by=sort_columns, na_position="last")
+
+    if timed_laps.empty:
+        return None
+
+    best_row = timed_laps.iloc[0]
+    lap_number = best_row.get("LapNumber")
+    if pd.isna(lap_number):
+        return None
+
+    try:
+        return _resolve_lap(session, fastest_driver, f"{fastest_driver}:{int(float(lap_number))}")
+    except Exception:
+        try:
+            return timed_laps.iloc[0]
+        except Exception:
+            return None
+
+
 def _lap_options(session, driver_number):
     if not driver_number:
         return []
@@ -2617,7 +2732,7 @@ def _qualifying_phases(session, driver_number, session_code):
     }
 
 
-def _telemetry_charts(lap):
+def _telemetry_charts(lap, gap_reference_lap=None):
     telemetry = lap.get_telemetry(frequency="original").reset_index(drop=True)
     if telemetry.empty or "Time" not in telemetry.columns:
         return []
@@ -2635,19 +2750,77 @@ def _telemetry_charts(lap):
         "#8bd3ff",
         "#c6ff7d",
     ]
+    gap_title = "Gap to Driver Ahead"
     specs = [
         ("Speed", "Speed", "km/h", None),
         ("Throttle", "Throttle", "%", None),
         ("Brake", "Brake", "0 / 1", lambda value: 1 if bool(value) else 0),
         ("RPM", "RPM", "", None),
         ("nGear", "Gear", "", None),
-        ("DistanceToDriverAhead", "Gap to Driver Ahead", "s", None),
+        ("DistanceToDriverAhead", gap_title, "s", None),
     ]
 
     charts = []
     gap_ahead_points = []
     driver_ahead_points = []
-    if "DistanceToDriverAhead" in telemetry.columns and "Speed" in telemetry.columns:
+    using_reference_gap = False
+    if gap_reference_lap is not None:
+        try:
+            reference_telemetry = gap_reference_lap.get_telemetry(frequency="original").reset_index(drop=True)
+        except Exception:
+            reference_telemetry = None
+        if (
+            reference_telemetry is not None
+            and not reference_telemetry.empty
+            and "Time" in reference_telemetry.columns
+            and "Distance" in reference_telemetry.columns
+            and "Distance" in telemetry.columns
+        ):
+            current_gap_frame = telemetry.loc[:, ["Time", "Distance"]].dropna(subset=["Time", "Distance"]).copy()
+            reference_gap_frame = reference_telemetry.loc[:, ["Time", "Distance"]].dropna(subset=["Time", "Distance"]).copy()
+            if not current_gap_frame.empty and not reference_gap_frame.empty:
+                reference_gap_frame = reference_gap_frame.sort_values(by="Distance")
+                reference_samples = []
+                for _, ref_row in reference_gap_frame.iterrows():
+                    ref_distance = ref_row.get("Distance")
+                    ref_time = _lap_time_seconds(ref_row.get("Time", None))
+                    if ref_distance is None or pd.isna(ref_distance) or ref_time is None:
+                        continue
+                    reference_samples.append((float(ref_distance), float(ref_time)))
+
+                def interpolate_distance(samples, target_distance):
+                    if not samples:
+                        return None
+                    if len(samples) == 1:
+                        return samples[0][1]
+                    if target_distance <= samples[0][0]:
+                        return samples[0][1]
+                    if target_distance >= samples[-1][0]:
+                        return samples[-1][1]
+
+                    for index in range(1, len(samples)):
+                        prev_distance, prev_time = samples[index - 1]
+                        next_distance, next_time = samples[index]
+                        if target_distance > next_distance:
+                            continue
+
+                        span = next_distance - prev_distance or 1.0
+                        ratio = (target_distance - prev_distance) / span
+                        return prev_time + (next_time - prev_time) * ratio
+
+                    return samples[-1][1]
+
+                if reference_samples:
+                    for t_value, distance_value in zip(current_gap_frame["Time"].dt.total_seconds(), current_gap_frame["Distance"]):
+                        if pd.isna(t_value) or pd.isna(distance_value):
+                            continue
+                        reference_time = interpolate_distance(reference_samples, float(distance_value))
+                        if reference_time is None:
+                            continue
+                        gap_ahead_points.append([float(t_value), float(t_value) - float(reference_time)])
+                    using_reference_gap = bool(gap_ahead_points)
+
+    if not gap_ahead_points and "DistanceToDriverAhead" in telemetry.columns and "Speed" in telemetry.columns:
         for t_value, distance_value, speed_value in zip(time_series, telemetry["DistanceToDriverAhead"], telemetry["Speed"]):
             gap_seconds = _gap_ahead_seconds(distance_value, speed_value)
             if pd.isna(t_value) or gap_seconds is None:
@@ -2730,8 +2903,12 @@ def _telemetry_charts(lap):
             }
         )
         if column == "DistanceToDriverAhead":
-            charts[-1]["driver_ahead_points"] = driver_ahead_points
-            charts[-1]["driver_ahead_lookup"] = driver_ahead_lookup
+            if using_reference_gap:
+                charts[-1]["title"] = "Gap to Fastest Lap"
+                charts[-1]["reference_mode"] = "qualifying_fastest_lap"
+            else:
+                charts[-1]["driver_ahead_points"] = driver_ahead_points
+                charts[-1]["driver_ahead_lookup"] = driver_ahead_lookup
 
     return charts
 
@@ -3191,6 +3368,193 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
         "rotation": rotation,
         "duration": float(lap_duration_seconds) if lap_duration_seconds is not None else None,
     }
+
+
+def _qualifying_overview_track_map_payload(session, phase=None, driver_options=None, phase_windows=None):
+    if not session:
+        return None
+
+    phase_code = str(phase or "Q1").strip().upper()
+    if phase_code not in {"Q1", "Q2", "Q3", "ALL"}:
+        phase_code = "Q1"
+
+    session_laps = _safe_session_laps(session)
+    if session_laps is None or getattr(session_laps, "empty", True):
+        return None
+
+    qualifying_laps = session_laps
+    if "LapTime" in qualifying_laps.columns:
+        qualifying_laps = qualifying_laps[qualifying_laps["LapTime"].notna()]
+
+    if qualifying_laps is None or getattr(qualifying_laps, "empty", True):
+        return None
+
+    if phase_code in {"Q1", "Q2", "Q3"}:
+        phase_start = None
+        phase_end = None
+        if isinstance(phase_windows, dict):
+            phase_window = phase_windows.get(phase_code, {}) or {}
+            phase_start = phase_window.get("start")
+            phase_end = phase_window.get("end")
+        if phase_start is None or phase_end is None:
+            try:
+                fallback_graph = _qualifying_timeline_graph(session, phase_code, split_sections=False)
+            except Exception:
+                fallback_graph = None
+            if fallback_graph and isinstance(fallback_graph.get("phase_windows"), dict):
+                phase_window = fallback_graph.get("phase_windows", {}).get(phase_code, {}) or {}
+                phase_start = phase_window.get("start")
+                phase_end = phase_window.get("end")
+
+        if phase_start is not None and phase_end is not None:
+            try:
+                phase_start = float(phase_start)
+                phase_end = float(phase_end)
+            except (TypeError, ValueError):
+                phase_start = None
+                phase_end = None
+
+        if phase_start is not None and phase_end is not None:
+            filtered_indices = []
+            for index, lap in qualifying_laps.iterrows():
+                lap_start = _lap_time_seconds(lap.get("LapStartTime", None))
+                lap_end = _lap_time_seconds(lap.get("Time", None))
+                if lap_start is None and lap_end is None:
+                    continue
+                if lap_start is None:
+                    lap_start = lap_end
+                if lap_end is None:
+                    lap_end = lap_start
+                if lap_start < phase_end and lap_end > phase_start:
+                    filtered_indices.append(index)
+
+            if filtered_indices:
+                qualifying_laps = qualifying_laps.loc[filtered_indices]
+            else:
+                return None
+
+    if qualifying_laps is None or getattr(qualifying_laps, "empty", True):
+        return None
+
+    reference_index = None
+    if "LapTime" in qualifying_laps.columns:
+        try:
+            valid_lap_times = qualifying_laps["LapTime"].dropna()
+            if not valid_lap_times.empty:
+                reference_index = valid_lap_times.idxmin()
+        except Exception:
+            reference_index = None
+
+    if reference_index is None:
+        try:
+            sorted_laps = qualifying_laps.sort_values(by=["LapTime", "Time"], na_position="last")
+            if not sorted_laps.empty:
+                reference_index = sorted_laps.index[0]
+        except Exception:
+            reference_index = None
+
+    if reference_index is None:
+        return None
+
+    try:
+        reference_lap = session_laps.loc[reference_index]
+    except Exception:
+        try:
+            reference_lap = qualifying_laps.loc[reference_index]
+        except Exception:
+            reference_lap = None
+
+    if reference_lap is None:
+        return None
+    if isinstance(reference_lap, pd.DataFrame):
+        reference_lap = reference_lap.iloc[0] if not reference_lap.empty else None
+    if reference_lap is None:
+        return None
+
+    reference_duration = _lap_time_seconds(reference_lap.get("LapTime", None))
+    payload = None
+    try:
+        payload = _track_map_payload(session, reference_lap, reference_duration)
+    except Exception:
+        payload = None
+
+    if payload is None:
+        try:
+            reference_telemetry = reference_lap.get_telemetry(frequency="original")
+        except Exception:
+            reference_telemetry = None
+        try:
+            payload = _track_map_payload(session, reference_lap, reference_duration, reference_telemetry)
+        except Exception:
+            payload = None
+
+    if payload is None:
+        return None
+
+    sector_columns = [("Sector1Time", "S1"), ("Sector2Time", "S2"), ("Sector3Time", "S3")]
+    sector_markers = []
+    cumulative_seconds = 0.0
+    for sector_column, sector_label in sector_columns:
+        if sector_column not in qualifying_laps.columns:
+            continue
+
+        best_seconds = None
+        best_lap = None
+        for _, lap in qualifying_laps.iterrows():
+            sector_seconds = _lap_time_seconds(lap.get(sector_column, None))
+            if sector_seconds is None:
+                continue
+            if best_seconds is None or sector_seconds < best_seconds:
+                best_seconds = float(sector_seconds)
+                best_lap = lap
+
+        if best_seconds is None:
+            continue
+
+        cumulative_seconds += float(best_seconds)
+        marker = {
+            "label": sector_label,
+            "time": _format_sector_time(best_seconds),
+            "seconds": float(best_seconds),
+            "cumulative_seconds": float(cumulative_seconds),
+        }
+        if best_lap is not None:
+            marker["source_lap_number"] = _clean_value(best_lap.get("LapNumber", "")).strip()
+            marker["source_driver_number"] = _normalize_driver_number(best_lap.get("DriverNumber", ""))
+        sector_markers.append(marker)
+
+    reference_driver_number = _normalize_driver_number(reference_lap.get("DriverNumber", ""))
+    reference_option = None
+    if driver_options:
+        reference_option = next(
+            (
+                option
+                for option in driver_options
+                if _normalize_driver_number(option.get("value", "")) == reference_driver_number
+            ),
+            None,
+        )
+
+    driver_abbr = _clean_value((reference_option or {}).get("abbreviation", "")).strip()
+    if not driver_abbr:
+        driver_abbr = _clean_value(reference_lap.get("Driver", "")).strip()
+    if not driver_abbr:
+        driver_abbr = reference_driver_number or "BEST"
+
+    driver_color = _clean_value((reference_option or {}).get("team_badge_color", "")).strip()
+    if not driver_color:
+        team_name = _clean_value(reference_lap.get("Team", "")).strip()
+        driver_color = _team_color(team_name) if team_name else "#44c2ff"
+
+    payload["title"] = f"{phase_code} fastest sectors" if phase_code != "ALL" else "Qualifying fastest sectors"
+    payload["phase_code"] = phase_code
+    payload["driver_abbr"] = driver_abbr
+    payload["driver_color"] = driver_color
+    payload["sector_markers"] = sector_markers
+    payload["reference_driver_number"] = reference_driver_number
+    payload["reference_driver_name"] = _clean_value(reference_lap.get("Driver", "")).strip()
+
+    return payload
 
 
 def _resolve_context():
@@ -3744,6 +4108,12 @@ def results():
                     row["display_time"] = f"+{_format_lap_time(pd.to_timedelta(gap, unit='s'))}"
                 else:
                     row["display_time"] = _format_lap_time(row.get("phase_time"))
+    qualifying_overview_track_map = _qualifying_overview_track_map_payload(
+        session,
+        qualifying_phase,
+        driver_options=driver_options,
+        phase_windows=qualifying_timeline_combined_graph.get("phase_windows", {}) if isinstance(qualifying_timeline_combined_graph, dict) else None,
+    ) if session_is_qualifying else None
 
     return render_template(
         "index.html",
@@ -3757,6 +4127,7 @@ def results():
         qualifying_phase_rows=qualifying_phase_rows,
         qualifying_timeline_graph=qualifying_timeline_graph,
         qualifying_timeline_combined_graph=qualifying_timeline_combined_graph,
+        qualifying_overview_track_map=qualifying_overview_track_map,
         qualifying_run_options=qualifying_run_options,
         qualifying_run_laps=qualifying_run_laps,
         selected_driver=driver_number,
@@ -3821,6 +4192,7 @@ def data():
     telemetry_charts = []
     primary_telemetry_charts = []
     secondary_telemetry_charts = []
+    qualifying_gap_reference_lap = None
     track_map = None
     race_position_graph = None
     pit_strategy_graph = None
@@ -3875,12 +4247,55 @@ def data():
         selected_driver_data = next((option for option in driver_options if option["value"] == request.args.get("driver", "").strip()), None)
     qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
     qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
+    qualifying_run_value = request.args.get("run", "").strip()
+    qualifying_phase_runs = list(qualifying_run_laps)
+    qualifying_phase_other_runs = []
+    selected_qualifying_run = None
+
+    def qualifying_run_reference(run):
+        return _clean_value(run.get("representative", "")).strip()
+
+    if session_is_qualifying and qualifying_phase in {"Q1", "Q2", "Q3"} and qualifying_run_laps:
+        phase_window = {}
+        if qualifying_timeline_graph and isinstance(qualifying_timeline_graph.get("phase_windows"), dict):
+            phase_window = qualifying_timeline_graph.get("phase_windows", {}).get(qualifying_phase, {}) or {}
+        phase_run_refs = {
+            _clean_value(run_ref).strip()
+            for run_ref in (phase_window.get("runs") or [])
+            if _clean_value(run_ref).strip()
+        }
+        if phase_run_refs:
+            filtered_runs = [run for run in qualifying_run_laps if qualifying_run_reference(run) in phase_run_refs]
+            if filtered_runs:
+                qualifying_phase_runs = filtered_runs
+
+    if session_is_qualifying and qualifying_phase_runs:
+        if qualifying_run_value:
+            selected_qualifying_run = next((run for run in qualifying_phase_runs if qualifying_run_reference(run) == qualifying_run_value), None)
+            if selected_qualifying_run is None and qualifying_run_value.isdigit():
+                selected_qualifying_run = next((run for run in qualifying_phase_runs if str(run.get("run_number")) == qualifying_run_value), None)
+        if selected_qualifying_run is None and selected_lap_value:
+            selected_qualifying_run = next((run for run in qualifying_phase_runs if any(lap.get("value") == selected_lap_value for lap in run.get("laps", []))), None)
+        if selected_qualifying_run is None:
+            fastest_runs = [run for run in qualifying_phase_runs if run.get("flying_time_seconds") is not None]
+            selected_qualifying_run = min(
+                fastest_runs,
+                key=lambda run: float(run.get("flying_time_seconds")),
+            ) if fastest_runs else qualifying_phase_runs[0]
+
+    if session_is_qualifying and qualifying_phase_runs and selected_qualifying_run is not None:
+        selected_run_reference = qualifying_run_reference(selected_qualifying_run)
+        qualifying_phase_other_runs = [run for run in qualifying_phase_runs if qualifying_run_reference(run) != selected_run_reference]
+    if session_is_qualifying and qualifying_phase_runs:
+        for run in qualifying_phase_runs:
+            laps = run.get("laps") or []
+            run["lap_count"] = len(laps)
+            run["compound"] = next((lap.get("compound") for lap in laps if lap.get("compound")), "-")
     driver_lap_options = _lap_options(session, driver_number) if session and driver_number else []
-    if lap_page_requested and session_is_qualifying and driver_number and not selected_lap_value and qualifying_run_laps:
-        default_qualifying_run = next((run for run in qualifying_run_laps if run.get("is_fastest")), qualifying_run_laps[0])
-        selected_lap_value = _clean_value(default_qualifying_run.get("representative", "")).strip()
+    if lap_page_requested and session_is_qualifying and driver_number and not selected_lap_value and selected_qualifying_run is not None:
+        selected_lap_value = _clean_value(selected_qualifying_run.get("representative", "")).strip()
         if not selected_lap_value:
-            selected_lap_value = next((lap.get("value") for lap in default_qualifying_run.get("laps", []) if lap.get("value")), "")
+            selected_lap_value = next((lap.get("value") for lap in selected_qualifying_run.get("laps", []) if lap.get("value")), "")
         if selected_lap_value:
             selected_lap_data = _resolve_lap(session, driver_number, selected_lap_value)
     if session and driver_number:
@@ -3959,7 +4374,14 @@ def data():
         telemetry_columns, telemetry_rows, telemetry = _telemetry_rows(selected_lap_data)
         telemetry_summary = _lap_summary(selected_lap_data, telemetry)
         lap_record = _lap_record(selected_lap_data, telemetry)
-        telemetry_charts = _telemetry_charts(selected_lap_data)
+        if session_is_qualifying:
+            qualifying_gap_reference_lap = _qualifying_phase_fastest_lap(
+                session,
+                qualifying_phase,
+                phase_rows=qualifying_phase_rows,
+                phase_windows=qualifying_timeline_graph.get("phase_windows", {}) if isinstance(qualifying_timeline_graph, dict) else None,
+            )
+        telemetry_charts = _telemetry_charts(selected_lap_data, qualifying_gap_reference_lap)
         primary_telemetry_titles = {"Speed", "Throttle", "Brake"}
         primary_telemetry_charts = [
             chart
@@ -3985,20 +4407,6 @@ def data():
             len(telemetry_rows),
             track_map is not None,
         )
-    selected_qualifying_run = None
-    if session_is_qualifying and qualifying_run_laps and selected_lap_value:
-        selected_qualifying_run = next((run for run in qualifying_run_laps if any(lap["value"] == selected_lap_value for lap in run["laps"])), None)
-    qualifying_run_graph = None
-    if session_is_qualifying and qualifying_run_laps:
-        qualifying_run_graph = {
-            "title": f"{qualifying_phase or 'Q1'} run breakdown",
-            "phase": qualifying_phase or "Q1",
-            "driver": selected_driver_data.get("full_name", "-") if selected_driver_data else "-",
-            "team": selected_driver_data.get("team_name", "-") if selected_driver_data else "-",
-            "runs": qualifying_run_laps,
-            "run_total": len(qualifying_run_laps),
-            "lap_total": int(sum(len(run.get("laps", [])) for run in qualifying_run_laps)),
-        }
     lap_entry_source = request.args.get("source", "").strip().lower()
     lap_back_driver_value = driver_number or request.args.get("driver", "").strip()
     lap_back_to_driver_table_url = url_for(
@@ -4040,7 +4448,8 @@ def data():
         qualifying_timeline_combined_graph=qualifying_timeline_combined_graph,
         qualifying_run_options=qualifying_run_options,
         qualifying_run_laps=qualifying_run_laps,
-        qualifying_run_graph=qualifying_run_graph,
+        qualifying_phase_runs=qualifying_phase_runs,
+        qualifying_phase_other_runs=qualifying_phase_other_runs,
         selected_qualifying_run=selected_qualifying_run,
         form_action=form_action,
         form={

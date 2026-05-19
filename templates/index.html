@@ -771,6 +771,105 @@
         color: #c0cede;
       }
 
+      .qualifying-run-browser {
+        padding: 0 20px 20px;
+      }
+
+      .qualifying-run-browser-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.9fr);
+        gap: 16px;
+      }
+
+      .qualifying-run-browser-body.single-column {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .qualifying-run-browser-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+        justify-content: flex-end;
+        color: #c0cede;
+        font-size: 0.8rem;
+      }
+
+      .qualifying-run-browser .qualifying-run-group {
+        padding: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 16px;
+        background: rgba(8, 14, 26, 0.36);
+      }
+
+      .qualifying-run-browser .qualifying-run-group header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .qualifying-run-browser .qualifying-run-choices {
+        gap: 14px;
+      }
+
+      .qualifying-run-browser .qualifying-run-lap-button {
+        width: auto;
+        min-width: 0;
+        flex: 1 1 220px;
+        max-width: 260px;
+        display: grid;
+        gap: 8px;
+        padding: 10px 10px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 14px;
+        background: rgba(21, 35, 59, 0.88) !important;
+        background-image: none !important;
+        align-items: start;
+        justify-items: start;
+        text-align: left;
+        box-shadow: inset 0 0 0 1px transparent;
+      }
+
+      .qualifying-run-browser .qualifying-run-lap-button strong {
+        color: var(--text);
+        font-size: 0.82rem;
+        line-height: 1.1;
+      }
+
+      .qualifying-run-browser .qualifying-run-lap-button span {
+        color: var(--muted);
+        font-size: 0.76rem;
+      }
+
+      .qualifying-run-browser .qualifying-run-lap-button:hover {
+        border-color: rgba(68, 194, 255, 0.65);
+        background: rgba(33, 52, 86, 0.96) !important;
+        box-shadow: inset 0 0 0 1px transparent;
+      }
+
+      .qualifying-run-browser .qualifying-run-lap-button.active,
+      .qualifying-run-browser .qualifying-run-lap-button:focus-visible {
+        border-color: rgba(68, 194, 255, 0.85);
+        background: linear-gradient(180deg, rgba(68, 194, 255, 0.18), rgba(21, 35, 59, 0.98)) !important;
+        box-shadow: inset 0 0 0 1px rgba(68, 194, 255, 0.2), 0 0 0 2px rgba(68, 194, 255, 0.18);
+      }
+
+      .qualifying-run-browser .qualifying-run-grid {
+        gap: 10px;
+      }
+
+      .qualifying-run-browser .qualifying-run-badge {
+        min-width: 210px;
+      }
+
+      @media (max-width: 1100px) {
+        .qualifying-run-browser-body {
+          grid-template-columns: 1fr;
+        }
+      }
+
       .selection-panel-top.centered {
         justify-content: center;
       }
@@ -1358,8 +1457,29 @@
         overflow: hidden;
       }
 
+      .qualifying-run-panel--embedded {
+        margin-top: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        overflow: visible;
+      }
+
       .qualifying-run-panel header {
         padding: 18px 20px 10px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .qualifying-run-panel header > div {
+        min-width: 0;
+      }
+
+      .qualifying-run-panel--embedded header {
+        padding: 0 0 10px;
       }
 
       .qualifying-run-viewport {
@@ -1367,6 +1487,10 @@
         display: flex;
         justify-content: center;
         overflow-x: auto;
+      }
+
+      .qualifying-run-panel--embedded .qualifying-run-browser {
+        padding: 0;
       }
 
       .qualifying-run-row {
@@ -1585,6 +1709,16 @@
         border-radius: 18px;
         background: linear-gradient(180deg, rgba(17, 28, 47, 0.98), rgba(11, 18, 31, 0.98));
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      }
+
+      .stint-graph-actions {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-start;
+        align-items: center;
+        margin: 0 0 -2px;
       }
 
       .stint-graph-driver {
@@ -2125,16 +2259,28 @@
 
       .lap-support-header {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 14px 18px;
         flex-wrap: wrap;
         padding: 0;
       }
 
+      .lap-support-header-main {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        flex: 1 1 280px;
+      }
+
       .lap-support-header h2 {
         margin: 0;
         flex: 0 0 auto;
+      }
+
+      .lap-support-header-main .lap-navigation-actions {
+        margin: 0;
       }
 
       .lap-support-header p {
@@ -2516,24 +2662,25 @@
 
       .qualifying-timeline-phase-end {
         pointer-events: none;
+        filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.5));
       }
 
       .qualifying-timeline-phase-end rect {
-        fill: rgba(7, 16, 29, 0.95);
-        stroke: rgba(96, 165, 250, 0.82);
-        stroke-width: 1.2;
+        fill: rgba(8, 20, 38, 0.98);
+        stroke: rgba(125, 211, 252, 0.98);
+        stroke-width: 1.35;
       }
 
       .qualifying-timeline-phase-end text {
-        fill: #dbeafe;
+        fill: #f0f9ff;
         font-size: 8.5px;
         font-weight: 900;
         letter-spacing: 0.08em;
       }
 
       .qualifying-timeline-phase-end line {
-        stroke: rgba(96, 165, 250, 0.94);
-        stroke-width: 1.8;
+        stroke: rgba(125, 211, 252, 1);
+        stroke-width: 2.1;
         stroke-linecap: round;
       }
 
@@ -2574,6 +2721,10 @@
 
       .qualifying-fullpage .qualifying-timeline-viewport::-webkit-scrollbar {
         display: none;
+      }
+
+      .qualifying-fullpage .qualifying-overview-track-map {
+        margin-top: 0;
       }
 
       .pit-strategy-panel header {
@@ -3077,6 +3228,80 @@
                     </div>
                   </div>
                   <div class="qualifying-telemetry-divider"></div>
+                  {% set display_qualifying_run = selected_qualifying_run if selected_qualifying_run else (qualifying_phase_runs[0] if qualifying_phase_runs else none) %}
+                  {% set display_other_runs = qualifying_phase_other_runs if selected_qualifying_run else (qualifying_phase_runs | rejectattr('run_number', 'equalto', display_qualifying_run.run_number) | list) if display_qualifying_run else [] %}
+                  {% if qualifying_phase_runs and display_qualifying_run %}
+                    <section class="qualifying-run-panel qualifying-run-panel--embedded">
+                      <header>
+                        <div>
+                          <h2>{{ qualifying_phase }} Run {{ display_qualifying_run.run_number }}</h2>
+                          <p class="subtle">
+                            {% if display_other_runs %}
+                              Review every lap in this run, then switch to another run from the same phase.
+                            {% else %}
+                              Review every lap in this run.
+                            {% endif %}
+                          </p>
+                        </div>
+                        <div class="qualifying-run-browser-summary">
+                          <span class="qualifying-run-fastest">{{ display_qualifying_run.laps|length }} lap{{ 's' if display_qualifying_run.laps|length != 1 else '' }}</span>
+                          <span>{{ display_qualifying_run.flying_time }}</span>
+                          <span>{{ selected_driver_data.full_name if selected_driver_data else selected_driver }}</span>
+                        </div>
+                      </header>
+                      <div class="qualifying-run-browser">
+                        <div class="qualifying-run-browser-body {% if not display_other_runs %}single-column{% endif %}">
+                          <div class="qualifying-run-group">
+                            <header>
+                              <h3>Selected run laps</h3>
+                              <div class="qualifying-run-meta">
+                                <span>Run {{ display_qualifying_run.run_number }}</span>
+                                <span>{{ display_qualifying_run.flying_time }}</span>
+                              </div>
+                            </header>
+                            <div class="qualifying-run-choices">
+                              {% for lap in display_qualifying_run.laps %}
+                                <a
+                                  class="qualifying-run-lap-button {% if lap.value == selected_lap %}active{% endif %}"
+                                  href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ display_qualifying_run.representative|urlencode }}&lap={{ lap.value|urlencode }}"
+                                >
+                                  <strong>Lap {{ lap.lap_number }}</strong>
+                                  <span>{{ lap.lap_type }}</span>
+                                  <span>{{ lap.lap_time }}</span>
+                                  <span>{{ lap.compound }}</span>
+                                </a>
+                              {% endfor %}
+                            </div>
+                          </div>
+                          {% if display_other_runs %}
+                            <div class="qualifying-run-group">
+                              <header>
+                                <h3>Other runs in {{ qualifying_phase }}</h3>
+                                <div class="qualifying-run-meta">
+                                  <span>{{ display_other_runs|length }} run{{ 's' if display_other_runs|length != 1 else '' }}</span>
+                                </div>
+                              </header>
+                              <div class="qualifying-run-grid">
+                                {% for run in display_other_runs %}
+                                  <a
+                                    class="qualifying-run-badge"
+                                    href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ run.representative|urlencode }}&lap={{ run.representative|urlencode }}"
+                                  >
+                                    <span class="qualifying-run-badge-copy">
+                                      <strong>Run {{ run.run_number }}</strong>
+                                      <span>{{ run.lap_count }} lap{{ 's' if run.lap_count != 1 else '' }} · {{ run.compound }}</span>
+                                    </span>
+                                    <span class="run-time">{{ run.flying_time }}</span>
+                                  </a>
+                                {% endfor %}
+                              </div>
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </section>
+                  {% endif %}
+                  <div class="qualifying-telemetry-divider"></div>
                   <div class="qualifying-telemetry-phases">
                     {% for phase_code in ['Q1', 'Q2', 'Q3'] %}
                       <a
@@ -3092,36 +3317,6 @@
             </div>
           </div>
         </form>
-        {% if session_is_qualifying and selected_lap and selected_driver and qualifying_run_graph %}
-          <section class="qualifying-run-panel">
-            <header>
-              <div>
-                <h2>{{ qualifying_run_graph.title }}</h2>
-                <p class="subtle">
-                  Each run is laid out as a timing bar and each segment is labeled by lap type. Click a segment to open that lap.
-                </p>
-              </div>
-            </header>
-            <div class="qualifying-run-viewport">
-              <svg
-                class="qualifying-run-svg"
-                id="qualifying-run-svg"
-                viewBox="0 0 1118 420"
-                role="img"
-                aria-label="Qualifying run breakdown"
-                data-year="{{ form.year }}"
-                data-gp="{{ form.gp }}"
-                data-session="{{ form.session }}"
-                data-phase="{{ qualifying_phase }}"
-                data-driver="{{ selected_driver }}"
-                data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
-                data-selected-lap="{{ selected_lap }}"
-                data-selected-run-number="{{ selected_qualifying_run.run_number if selected_qualifying_run else '' }}"
-              ></svg>
-            </div>
-            <script id="qualifying-run-json" type="application/json">{{ qualifying_run_graph | tojson }}</script>
-          </section>
-        {% endif %}
       {% endif %}
 
       {% if error %}
@@ -3231,18 +3426,18 @@
           </aside>
         </section>
       {% elif page == 'lap' and (selected_stint_data or selected_lap) %}
-        {% if lap_back_to_driver_table_url %}
-          <div class="lap-navigation-actions">
-            <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers table</a>
-            {% if lap_back_to_overview_url %}
-              <a class="workflow-back" href="{{ lap_back_to_overview_url }}">Back to overview</a>
-            {% endif %}
-          </div>
-        {% endif %}
         {% if selected_stint_data %}
           <section class="stint-graph-panel" id="lap-stint-panel">
             <div class="stint-graph-layout">
               <div class="stint-graph-meta">
+                {% if lap_back_to_driver_table_url %}
+                  <div class="stint-graph-actions">
+                    <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers list</a>
+                    {% if lap_back_to_overview_url %}
+                      <a class="workflow-back" href="{{ lap_back_to_overview_url }}">Back to overview</a>
+                    {% endif %}
+                  </div>
+                {% endif %}
                 {% if selected_driver_data %}
                   <div class="stint-graph-driver">
                     <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
@@ -3303,16 +3498,18 @@
                   </div>
                 {% endif %}
               </div>
-              <div
-                class="stint-graph-viewport"
-                data-stint-graph
-                data-year="{{ form.year }}"
-                data-gp="{{ form.gp }}"
-                data-session="{{ form.session }}"
-                data-driver="{{ selected_driver }}"
-                data-stint="{{ selected_stint }}"
-                data-selected-lap="{{ selected_lap }}"
-              ></div>
+              {% if not session_is_qualifying %}
+                <div
+                  class="stint-graph-viewport"
+                  data-stint-graph
+                  data-year="{{ form.year }}"
+                  data-gp="{{ form.gp }}"
+                  data-session="{{ form.session }}"
+                  data-driver="{{ selected_driver }}"
+                  data-stint="{{ selected_stint }}"
+                  data-selected-lap="{{ selected_lap }}"
+                ></div>
+              {% endif %}
             </div>
           </section>
         {% endif %}
@@ -3322,10 +3519,16 @@
             <header class="qualifying-timeline-header">
               <div>
                 <h2>{{ qualifying_phase }} Overview</h2>
-                <p class="subtle">{{ qualifying_phase }} qualifying overview timeline.</p>
+                <p class="subtle">
+                  {% if qualifying_phase == 'ALL' %}
+                    Fastest sector times across the full qualifying session.
+                  {% else %}
+                    Fastest sector times from {{ qualifying_phase }} qualifying.
+                  {% endif %}
+                </p>
               </div>
             </header>
-            <section class="qualifying-timeline-panel">
+            <section class="track-map qualifying-overview-track-map">
               <header>
                 <div class="qualifying-telemetry-phases">
                   {% for phase_code in ['ALL', 'Q1', 'Q2', 'Q3'] %}
@@ -3335,25 +3538,27 @@
                     >
                       {% if phase_code == 'ALL' %}All{% else %}{{ phase_code }}{% endif %}
                     </a>
-                  {% endfor %}
+                    {% endfor %}
                 </div>
-                <p class="subtle">{% if qualifying_phase == 'ALL' %}Showing all qualifying runs.{% else %}Showing runs for {{ qualifying_phase }} only.{% endif %}</p>
+                <p class="subtle">Each sector badge shows the fastest sector from the selected qualifying window.</p>
               </header>
-              <div class="qualifying-timeline-viewport">
-                {% if qualifying_timeline_graph %}
+              <div class="track-map-viewport">
+                {% if qualifying_overview_track_map %}
                   <svg
-                    class="qualifying-timeline-svg"
-                    id="qualifying-timeline-svg"
-                    viewBox="0 0 1600 980"
+                    class="track-svg"
+                    id="track-svg"
+                    viewBox="0 0 1000 700"
                     role="img"
-                    aria-label="Qualifying run timeline"
+                    aria-label="Qualifying overview track map"
+                    data-driver-abbr="{{ qualifying_overview_track_map.driver_abbr }}"
+                    data-driver-color="{{ qualifying_overview_track_map.driver_color }}"
                   ></svg>
                 {% else %}
-                  <div class="empty">No qualifying run timeline available.</div>
+                  <div class="empty">No qualifying track map available.</div>
                 {% endif %}
               </div>
-              {% if qualifying_timeline_graph %}
-                <script id="qualifying-timeline-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
+              {% if qualifying_overview_track_map %}
+                <script id="track-map-json" type="application/json">{{ qualifying_overview_track_map | tojson }}</script>
               {% endif %}
             </section>
           </section>
@@ -3407,7 +3612,17 @@
         {% if selected_lap %}
           <section class="lap-support-panel">
             <header class="lap-support-header">
-              <h2>Track map and telemetry</h2>
+              <div class="lap-support-header-main">
+                <h2>Track map and telemetry</h2>
+                {% if lap_back_to_driver_table_url %}
+                  <div class="lap-navigation-actions">
+                    <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers table</a>
+                    {% if lap_back_to_overview_url %}
+                      <a class="workflow-back" href="{{ lap_back_to_overview_url }}">Back to overview</a>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
               <div class="track-map-header-summary">
                 <div class="stint-graph-summary">
                   <div class="lap-summary">
@@ -3436,6 +3651,92 @@
                 </div>
               </div>
             </header>
+            {% if session_is_qualifying and qualifying_phase_runs %}
+              {% set display_qualifying_run = selected_qualifying_run if selected_qualifying_run else (qualifying_phase_runs[0] if qualifying_phase_runs else none) %}
+              {% set display_other_runs = qualifying_phase_other_runs if selected_qualifying_run else (qualifying_phase_runs | rejectattr('run_number', 'equalto', display_qualifying_run.run_number) | list) if display_qualifying_run else [] %}
+              {% if display_qualifying_run %}
+                <section class="qualifying-run-panel qualifying-run-panel--embedded">
+                  <header>
+                    <div>
+                      <h2>{{ qualifying_phase }} Run {{ display_qualifying_run.run_number }}</h2>
+                      <p class="subtle">
+                        {% if display_other_runs %}
+                          Review every lap in this run, then switch to another run from the same phase.
+                        {% else %}
+                          Review every lap in this run.
+                        {% endif %}
+                      </p>
+                    </div>
+                    <div class="qualifying-run-browser-summary">
+                      <span class="qualifying-run-fastest">{{ display_qualifying_run.laps|length }} lap{{ 's' if display_qualifying_run.laps|length != 1 else '' }}</span>
+                      <span>{{ display_qualifying_run.flying_time }}</span>
+                      <span>{{ selected_driver_data.full_name if selected_driver_data else selected_driver }}</span>
+                    </div>
+                  </header>
+                  <div class="qualifying-run-browser">
+                    <div class="qualifying-run-browser-body {% if not display_other_runs %}single-column{% endif %}">
+                      <div class="qualifying-run-group">
+                        <header>
+                          <h3>Selected run laps</h3>
+                          <div class="qualifying-run-meta">
+                            <span>Run {{ display_qualifying_run.run_number }}</span>
+                            <span>{{ display_qualifying_run.flying_time }}</span>
+                          </div>
+                        </header>
+                        <div class="qualifying-run-choices">
+                          {% for lap in display_qualifying_run.laps %}
+                            <a
+                              class="qualifying-run-lap-button {% if lap.value == selected_lap %}active{% endif %}"
+                              href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ display_qualifying_run.representative|urlencode }}&lap={{ lap.value|urlencode }}"
+                            >
+                              <strong>Lap {{ lap.lap_number }}</strong>
+                              <span>{{ lap.lap_type }}</span>
+                              <span>{{ lap.lap_time }}</span>
+                              <span>{{ lap.compound }}</span>
+                            </a>
+                          {% endfor %}
+                        </div>
+                      </div>
+                      {% if display_other_runs %}
+                        <div class="qualifying-run-group">
+                          <header>
+                            <h3>Other runs in {{ qualifying_phase }}</h3>
+                            <div class="qualifying-run-meta">
+                              <span>{{ display_other_runs|length }} run{{ 's' if display_other_runs|length != 1 else '' }}</span>
+                            </div>
+                          </header>
+                          <div class="qualifying-run-grid">
+                            {% for run in display_other_runs %}
+                              <a
+                                class="qualifying-run-badge"
+                                href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ run.representative|urlencode }}&lap={{ run.representative|urlencode }}"
+                              >
+                                <span class="qualifying-run-badge-copy">
+                                  <strong>Run {{ run.run_number }}</strong>
+                                  <span>{{ run.lap_count }} lap{{ 's' if run.lap_count != 1 else '' }} · {{ run.compound }}</span>
+                                </span>
+                                <span class="run-time">{{ run.flying_time }}</span>
+                              </a>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </section>
+              {% endif %}
+              <div class="qualifying-telemetry-divider"></div>
+              <div class="qualifying-telemetry-phases">
+                {% for phase_code in ['Q1', 'Q2', 'Q3'] %}
+                  <a
+                    class="session-chip qualifying-phase-chip {% if phase_code == qualifying_phase %}active{% endif %}"
+                    href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ phase_code }}&driver={{ selected_driver }}{% if selected_lap %}&lap={{ selected_lap }}{% endif %}"
+                  >
+                    {{ phase_code }}
+                  </a>
+                {% endfor %}
+              </div>
+            {% endif %}
             <div class="lap-support-grid">
               <section class="lap-support-card lap-track-card">
                 <div class="track-map-viewport">
@@ -3464,7 +3765,7 @@
       {% endif %}
     </div>
       {% if page == 'data' or page == 'results' or page == 'lap' %}
-      {% if selected_stint_data %}
+      {% if selected_stint_data and not session_is_qualifying %}
       <script id="stint-graph-json" type="application/json">{{ selected_stint_data | tojson }}</script>
       {% endif %}
       <script>
@@ -3752,7 +4053,7 @@
             });
           });
 
-          document.querySelectorAll(".qualifying-run-badge, .qualifying-lap-badge, .qualifying-run-segment").forEach((badge) => {
+          document.querySelectorAll(".qualifying-run-badge, .qualifying-lap-badge, .qualifying-run-segment, .qualifying-run-lap-button").forEach((badge) => {
             badge.addEventListener("pointerdown", () => {
               badge.classList.add("pending-selected");
             });
@@ -3763,7 +4064,7 @@
 
         })();
       </script>
-      {% if selected_stint_data %}
+      {% if selected_stint_data and not session_is_qualifying %}
       <script>
         (() => {
           const container = document.querySelector("[data-stint-graph]");
@@ -4290,7 +4591,7 @@
                   <circle cx="9" cy="9" r="1.5" fill="rgba(7,16,29,0.42)"></circle>
                 </pattern>
                 <marker id="qualifying-phase-end-arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(96,165,250,0.94)"></path>
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
                 </marker>
               </defs>
             `;
@@ -4376,278 +4677,6 @@
           };
 
           renderQualifyingTimeline("qualifying-timeline-svg", "qualifying-timeline-json");
-        })();
-      </script>
-      {% endif %}
-      {% if qualifying_run_graph %}
-      <script>
-        (() => {
-          const renderQualifyingRunGraph = (svgId, dataId) => {
-            const svg = document.getElementById(svgId);
-            const dataEl = document.getElementById(dataId);
-            if (!svg || !dataEl) {
-              return;
-            }
-
-            const graph = JSON.parse(dataEl.textContent || "null");
-            if (!graph || !Array.isArray(graph.runs) || !graph.runs.length) {
-              svg.innerHTML = "";
-              return;
-            }
-
-            const escapeHtml = (value) => String(value)
-              .replaceAll("&", "&amp;")
-              .replaceAll("<", "&lt;")
-              .replaceAll(">", "&gt;")
-              .replaceAll('"', "&quot;");
-            const parseSeconds = (value) => {
-              const numeric = Number(value);
-              return Number.isFinite(numeric) ? numeric : null;
-            };
-            const formatAxisTime = (seconds) => {
-              const total = Math.max(0, Number(seconds) || 0);
-              const minutes = Math.floor(total / 60);
-              const secs = Math.floor(total % 60);
-              return `${minutes}:${String(secs).padStart(2, "0")}`;
-            };
-            const chooseTickStep = (rangeSeconds) => {
-              if (rangeSeconds <= 180) {
-                return 15;
-              }
-              if (rangeSeconds <= 420) {
-                return 30;
-              }
-              if (rangeSeconds <= 900) {
-                return 60;
-              }
-              return 120;
-            };
-            const buildHref = (lapValue) => {
-              const params = new URLSearchParams();
-              params.set("year", svg.dataset.year || "");
-              params.set("gp", svg.dataset.gp || "");
-              params.set("session", svg.dataset.session || "");
-              params.set("phase", svg.dataset.phase || "Q1");
-              params.set("driver", svg.dataset.driver || "");
-              if (lapValue) {
-                params.set("lap", lapValue);
-              }
-              return `/data?${params.toString()}`;
-            };
-            const segmentStyle = (lapType) => {
-              const normalized = String(lapType || "").trim().toLowerCase();
-              if (normalized === "out lap") {
-                return { key: "out", label: "OUT", short: "OUT", fill: "#ffbf69" };
-              }
-              if (normalized === "in lap") {
-                return { key: "in", label: "IN", short: "IN", fill: "#44c2ff" };
-              }
-              if (normalized === "cool lap") {
-                return { key: "cool", label: "COOL", short: "COOL", fill: "#94a3b8" };
-              }
-              if (normalized === "out / in lap") {
-                return {
-                  key: "out-in",
-                  label: "OUT/IN",
-                  short: "OUT/IN",
-                  outFill: "#ffbf69",
-                  inFill: "#44c2ff",
-                };
-              }
-              return { key: "flying", label: "FLYING", short: "FLY", fill: "#77f0d1" };
-            };
-
-            const normalizedRuns = (graph.runs || []).map((run) => {
-              const laps = Array.isArray(run.laps) ? run.laps : [];
-              const segments = laps.map((lap) => {
-                const lapStart = parseSeconds(lap.lap_start_seconds);
-                const lapEnd = parseSeconds(lap.lap_end_seconds);
-                const lapTime = parseSeconds(lap.lap_time_seconds);
-                const fallbackStart = parseSeconds(run.start_seconds);
-                const segmentStart = lapStart ?? fallbackStart;
-                const segmentEnd = lapEnd ?? (segmentStart !== null && lapTime !== null ? segmentStart + lapTime : null);
-                return {
-                  ...lap,
-                  segment_start_seconds: segmentStart,
-                  segment_end_seconds: segmentEnd,
-                };
-              }).filter((lap) => Number.isFinite(lap.segment_start_seconds) && Number.isFinite(lap.segment_end_seconds) && lap.segment_end_seconds > lap.segment_start_seconds);
-
-              const runStart = segments.length
-                ? Math.min(...segments.map((lap) => Number(lap.segment_start_seconds)))
-                : parseSeconds(run.start_seconds);
-              const runEnd = segments.length
-                ? Math.max(...segments.map((lap) => Number(lap.segment_end_seconds)))
-                : parseSeconds(run.end_seconds);
-
-              return {
-                ...run,
-                segments,
-                run_start_seconds: runStart,
-                run_end_seconds: runEnd,
-              };
-            }).filter((run) => Number.isFinite(run.run_start_seconds) && Number.isFinite(run.run_end_seconds));
-
-            if (!normalizedRuns.length) {
-              svg.innerHTML = "";
-              return;
-            }
-
-            const driverColor = svg.dataset.driverColor || "#44c2ff";
-            const selectedLap = String(svg.dataset.selectedLap || "");
-            const selectedRunNumber = Number(svg.dataset.selectedRunNumber || 0) || null;
-            let activeRunNumber = Number.isFinite(selectedRunNumber) && selectedRunNumber > 0 ? selectedRunNumber : null;
-            if (!activeRunNumber && selectedLap) {
-              const activeRun = normalizedRuns.find((run) => (run.segments || []).some((lap) => String(lap.value || "") === selectedLap));
-              if (activeRun) {
-                activeRunNumber = Number(activeRun.run_number || 0) || null;
-              }
-            }
-
-            const minTime = Math.min(...normalizedRuns.map((run) => Number(run.run_start_seconds)));
-            const maxTime = Math.max(...normalizedRuns.map((run) => Number(run.run_end_seconds)));
-            const timeRange = Math.max(maxTime - minTime, 1);
-            const plotWidth = 1000;
-            const labelColumnWidth = 118;
-            const width = plotWidth + labelColumnWidth;
-            const pad = { top: 34, right: 8, bottom: 44, left: 64 };
-            const rowStep = 30;
-            const rowHeight = 16;
-            const height = Math.max(320, pad.top + pad.bottom + (normalizedRuns.length * rowStep));
-            const innerWidth = plotWidth - pad.left - pad.right;
-            const scale = innerWidth / timeRange;
-            const toX = (seconds) => pad.left + (Math.max(minTime, Number(seconds) || minTime) - minTime) * scale;
-            const clampX = (value) => Math.max(pad.left, Math.min(plotWidth - pad.right, value));
-            const tickStep = chooseTickStep(timeRange);
-            const ticks = [];
-            for (let time = Math.ceil(minTime / tickStep) * tickStep; time <= maxTime; time += tickStep) {
-              ticks.push(time);
-            }
-
-            const defs = `
-              <defs>
-                <linearGradient id="qualifying-run-out-in" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#ffbf69"></stop>
-                  <stop offset="49.5%" stop-color="#ffbf69"></stop>
-                  <stop offset="49.5%" stop-color="#44c2ff"></stop>
-                  <stop offset="100%" stop-color="#44c2ff"></stop>
-                </linearGradient>
-              </defs>
-            `;
-
-            const grid = ticks.map((time) => {
-              const x = clampX(toX(time));
-              return `
-                <line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>
-                <text x="${x.toFixed(2)}" y="${height - 15}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="8.5" font-weight="800">${formatAxisTime(time)}</text>
-              `;
-            }).join("");
-
-            let rows = "";
-            normalizedRuns.forEach((run, index) => {
-              const yCenter = pad.top + (index * rowStep) + Math.floor(rowStep / 2);
-              const rowTop = yCenter - (rowHeight / 2);
-              const runNumber = Number(run.run_number || index + 1);
-              const isSelectedRun = activeRunNumber !== null && Number(activeRunNumber) === runNumber;
-              const rowTimeLabel = String(run.flying_time || run.lap_time || "-").trim() || "-";
-
-              const segmentsMarkup = (run.segments || []).map((segment, segmentIndex) => {
-                const style = segmentStyle(segment.lap_type);
-                const segmentStart = clampX(toX(segment.segment_start_seconds));
-                const segmentEnd = clampX(toX(segment.segment_end_seconds));
-                const segmentWidth = Math.max(6, segmentEnd - segmentStart);
-                const labelText = segmentWidth >= 52 ? style.label : style.short;
-                const selectedSegment = String(segment.value || "") === selectedLap;
-                const labelX = segmentStart + (segmentWidth / 2);
-                const labelY = yCenter + 0.6;
-                const ariaLabel = `Run ${runNumber}, ${style.label}${segment.lap_number ? `, lap ${segment.lap_number}` : ""}${segment.lap_time ? `, ${segment.lap_time}` : ""}`;
-                const strokeWidth = selectedSegment ? 1.6 : 1;
-                const stroke = selectedSegment ? "#f8fbff" : "rgba(7,16,29,0.72)";
-                const rectMarkup = style.key === "out-in"
-                  ? `
-                    <rect class="segment-fill" x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${(segmentWidth / 2).toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="5" fill="${style.outFill}" opacity="0.92" stroke="${stroke}" stroke-width="${strokeWidth}"></rect>
-                    <rect class="segment-fill" x="${(segmentStart + (segmentWidth / 2)).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${(segmentWidth / 2).toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="5" fill="${style.inFill}" opacity="0.92" stroke="${stroke}" stroke-width="${strokeWidth}"></rect>
-                  `
-                  : `
-                    <rect class="segment-fill" x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentWidth.toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="5" fill="${style.fill}" opacity="0.92" stroke="${stroke}" stroke-width="${strokeWidth}"></rect>
-                  `;
-
-                return `
-                  <a class="qualifying-run-segment ${selectedSegment ? "is-selected" : ""}" href="${escapeHtml(buildHref(segment.value || ""))}" data-href="${escapeHtml(buildHref(segment.value || ""))}" data-run-number="${runNumber}" data-segment-index="${segmentIndex}" tabindex="0" role="link" aria-label="${escapeHtml(ariaLabel)}" aria-current="${selectedSegment ? "true" : "false"}">
-                    ${rectMarkup}
-                    ${segmentWidth >= 26 ? `<text x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" fill="#07101d" font-size="8.5" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(labelText)}</text>` : ""}
-                  </a>
-                `;
-              }).join("");
-
-              rows += `
-                <g class="qualifying-run-row ${isSelectedRun ? "is-selected" : ""} ${run.is_fastest ? "is-fastest" : ""}" data-run-number="${runNumber}" style="--run-accent: ${escapeHtml(driverColor)};">
-                  <line x1="${pad.left}" y1="${yCenter.toFixed(2)}" x2="${(plotWidth - pad.right).toFixed(2)}" y2="${yCenter.toFixed(2)}" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
-                  <text class="qualifying-run-row-label" x="${(pad.left - 4).toFixed(2)}" y="${(yCenter + 4).toFixed(2)}" text-anchor="end">${escapeHtml(`Run ${runNumber}`)}</text>
-                  <text class="qualifying-run-time-label" x="${(plotWidth + (labelColumnWidth / 2)).toFixed(2)}" y="${(yCenter + 4).toFixed(2)}" text-anchor="middle">${escapeHtml(rowTimeLabel)}</text>
-                  ${segmentsMarkup}
-                </g>
-              `;
-            });
-
-            svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-            svg.style.width = "100%";
-            svg.style.maxWidth = "100%";
-            svg.style.height = `${height}px`;
-            svg.innerHTML = `
-              <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-              ${defs}
-              <g class="qualifying-run-axis">${grid}</g>
-              ${rows}
-            `;
-
-            const segmentLinks = Array.from(svg.querySelectorAll(".qualifying-run-segment"));
-            const rowGroups = Array.from(svg.querySelectorAll(".qualifying-run-row"));
-            const clearSegments = () => {
-              segmentLinks.forEach((segment) => {
-                segment.classList.remove("is-hovered");
-                segment.style.opacity = "";
-              });
-              rowGroups.forEach((row) => {
-                row.classList.remove("is-hovered");
-              });
-            };
-            const activateSegment = (segment) => {
-              const activeRun = Number(segment.dataset.runNumber || 0);
-              segmentLinks.forEach((item) => {
-                const selected = item === segment || item.classList.contains("is-selected");
-                item.classList.toggle("is-hovered", item === segment);
-                item.style.opacity = selected ? "1" : "0.28";
-              });
-              rowGroups.forEach((row) => {
-                const selected = Number(row.dataset.runNumber || 0) === activeRun;
-                row.classList.toggle("is-hovered", selected);
-              });
-            };
-
-            segmentLinks.forEach((segment) => {
-              const href = segment.getAttribute("data-href");
-              if (!href) {
-                return;
-              }
-
-              segment.addEventListener("mouseenter", () => activateSegment(segment));
-              segment.addEventListener("click", (event) => {
-                event.preventDefault();
-                window.location.assign(href);
-              });
-              segment.addEventListener("keydown", (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  window.location.assign(href);
-                }
-              });
-            });
-
-            svg.addEventListener("mouseleave", clearSegments);
-          };
-
-          renderQualifyingRunGraph("qualifying-run-svg", "qualifying-run-json");
         })();
       </script>
       {% endif %}
@@ -5183,6 +5212,7 @@
               case "gear":
                 return `${Math.round(numeric)}`;
               case "gap to driver ahead":
+              case "gap to fastest lap":
                 return formatTelemetrySeconds(numeric);
               default:
                 if (String(chart && chart.unit ? chart.unit : "").trim() === "%") {
@@ -5219,6 +5249,8 @@
                   }
                 }
                 return "Gap Ahead";
+              case "gap to fastest lap":
+                return "Gap to Fastest Lap";
               default:
                 return String(chart && chart.title ? chart.title : "").trim() || "Value";
             }
@@ -5777,6 +5809,40 @@
             return `<g id="track-acceleration-line" filter="url(#glow)">${markup}</g>`;
           }
 
+          function renderTrackSurface(points) {
+            if (!points.length) {
+              return "";
+            }
+
+            const surfaceWidth = Math.max(12, Math.min(24, Math.round(Math.min(width, height) * 0.02)));
+            const innerWidth = Math.max(8, surfaceWidth - 4);
+            const outerPath = path(points);
+            return `
+              <g id="track-surface" pointer-events="none">
+                <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.26)" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="${outerPath}" fill="none" stroke="rgba(11, 17, 30, 0.96)" stroke-width="${innerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
+              </g>
+            `;
+          }
+
+          function distanceSquaredToSegment(px, py, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            if (dx === 0 && dy === 0) {
+              const diffX = px - x1;
+              const diffY = py - y1;
+              return (diffX * diffX) + (diffY * diffY);
+            }
+
+            const projection = ((px - x1) * dx + (py - y1) * dy) / ((dx * dx) + (dy * dy));
+            const t = Math.max(0, Math.min(1, projection));
+            const closestX = x1 + (dx * t);
+            const closestY = y1 + (dy * t);
+            const diffX = px - closestX;
+            const diffY = py - closestY;
+            return (diffX * diffX) + (diffY * diffY);
+          }
+
           function sample(points, count) {
             if (points.length <= count) {
               return points;
@@ -5942,22 +6008,78 @@
           function renderSectorBadge(marker, index, anchor, color, trackCenter) {
             const centerX = anchor.centerX ?? anchor.x;
             const centerY = anchor.centerY ?? anchor.y;
-            const badgeOffset = 86;
-            const badgeDirection = ((anchor.unitX || 0) * (centerX - trackCenter.x) + (anchor.unitY || 0) * (centerY - trackCenter.y)) >= 0 ? 1 : -1;
-            const badgeX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (anchor.unitX || 0) * badgeOffset * badgeDirection));
-            const badgeY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (anchor.unitY || 0) * badgeOffset * badgeDirection));
             const badgeWidth = 124;
             const badgeHeight = 50;
             const backgroundFill = "rgba(21, 35, 59, 0.95)";
             const backgroundStroke = color;
+            const badgeDirection = ((anchor.unitX || 0) * (centerX - trackCenter.x) + (anchor.unitY || 0) * (centerY - trackCenter.y)) >= 0 ? 1 : -1;
+            const badgeOffsets = [78, 92, 106, 120, 134, 148, 162, 176, 190];
+            const badgeDirections = [badgeDirection, -badgeDirection];
+            const tangentOffsets = [0, 20, -20, 36, -36, 52, -52];
+            const normalX = anchor.unitX || 0;
+            const normalY = anchor.unitY || 0;
+            const tangentX = normalY;
+            const tangentY = -normalX;
+            const clearanceRadius = (Math.hypot(badgeWidth, badgeHeight) / 2) + 14;
+            const clearanceRadiusSq = clearanceRadius * clearanceRadius;
+            const badgeIntersectsRacingLine = (badgeX, badgeY) => {
+              for (let index = 1; index < racingScreen.length; index += 1) {
+                const [x1, y1] = racingScreen[index - 1];
+                const [x2, y2] = racingScreen[index];
+                if (distanceSquaredToSegment(badgeX, badgeY, x1, y1, x2, y2) <= clearanceRadiusSq) {
+                  return true;
+                }
+              }
+              return false;
+            };
+            const fallbackX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (normalX * badgeOffsets[0] * badgeDirection) + (tangentX * tangentOffsets[0])));
+            const fallbackY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (normalY * badgeOffsets[0] * badgeDirection) + (tangentY * tangentOffsets[0])));
+            let badgeX = fallbackX;
+            let badgeY = fallbackY;
+            let foundClearSpot = !badgeIntersectsRacingLine(fallbackX, fallbackY);
+
+            for (const direction of badgeDirections) {
+              for (const offset of badgeOffsets) {
+                for (const tangentOffset of tangentOffsets) {
+                  const candidateX = Math.max(markerEdgeX, Math.min(width - markerEdgeX, centerX + (normalX * offset * direction) + (tangentX * tangentOffset)));
+                  const candidateY = Math.max(markerEdgeY, Math.min(height - markerEdgeY, centerY + (normalY * offset * direction) + (tangentY * tangentOffset)));
+                  if (!badgeIntersectsRacingLine(candidateX, candidateY)) {
+                    badgeX = candidateX;
+                    badgeY = candidateY;
+                    foundClearSpot = true;
+                    break;
+                  }
+                }
+                if (foundClearSpot) {
+                  break;
+                }
+              }
+              if (foundClearSpot) {
+                break;
+              }
+            }
+
+            const leaderStartX = centerX + (normalX * 18 * badgeDirection);
+            const leaderStartY = centerY + (normalY * 18 * badgeDirection);
+
             const labelY = badgeY - 9;
             const valueY = badgeY + 13;
+            const rawTime = String(marker.time ?? "").trim();
+            let displayTime = rawTime.replace(/^(?:0+:)+/, "");
+            displayTime = displayTime.replace(/^0+(?=\d)/, "");
+            if (displayTime.startsWith(".")) {
+              displayTime = `0${displayTime}`;
+            }
+            if (!displayTime) {
+              displayTime = "-";
+            }
             return `
               <g class="sector-marker" style="pointer-events:none">
                 <line x1="${(centerX + (anchor.unitX || 0) * 16).toFixed(2)}" y1="${(centerY + (anchor.unitY || 0) * 16).toFixed(2)}" x2="${(centerX - (anchor.unitX || 0) * 16).toFixed(2)}" y2="${(centerY - (anchor.unitY || 0) * 16).toFixed(2)}" stroke="${color}" stroke-width="4" stroke-linecap="round"></line>
+                <line x1="${leaderStartX.toFixed(2)}" y1="${leaderStartY.toFixed(2)}" x2="${badgeX.toFixed(2)}" y2="${badgeY.toFixed(2)}" stroke="${color}" stroke-width="1.8" stroke-linecap="round" opacity="0.78"></line>
                 <rect x="${(badgeX - (badgeWidth / 2)).toFixed(2)}" y="${(badgeY - (badgeHeight / 2)).toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="14" fill="${backgroundFill}" stroke="${backgroundStroke}" stroke-width="1.2"></rect>
                 <text class="sector-marker-label" x="${badgeX.toFixed(2)}" y="${labelY.toFixed(2)}" fill="${color}" text-anchor="middle">Sector ${index + 1}</text>
-                <text class="sector-marker-time" x="${badgeX.toFixed(2)}" y="${valueY.toFixed(2)}" fill="${color}" font-variant-numeric="tabular-nums" text-anchor="middle">${escapeHtml(marker.time)}</text>
+                <text class="sector-marker-time" x="${badgeX.toFixed(2)}" y="${valueY.toFixed(2)}" fill="${color}" font-variant-numeric="tabular-nums" text-anchor="middle">${escapeHtml(displayTime)}</text>
               </g>
             `;
           }
@@ -5973,6 +6095,7 @@
               </filter>
             </defs>
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+            ${renderTrackSurface(outline.length > 1 ? outline : racing)}
             ${renderAccelerationLine(racing, samples)}
             ${sectorMarkers.map((marker, index) => {
               const anchor = markerAnchor(marker.cumulative_seconds || 0) || { x: 0, y: 0 };
