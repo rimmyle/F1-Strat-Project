@@ -919,7 +919,13 @@
 
       .qualifying-telemetry-strip {
         display: grid;
-        gap: 14px;
+        gap: 18px;
+        padding: 28px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(14, 23, 39, 0.98), rgba(9, 16, 29, 0.98));
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
       }
 
       .qualifying-telemetry-top {
@@ -1168,6 +1174,105 @@
       .driver-picker {
         display: grid;
         gap: 0;
+      }
+
+      .practice-stint-panel {
+        margin-top: 18px;
+      }
+
+      .practice-stint-selector {
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .practice-stint-selector-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px 14px;
+      }
+
+      .practice-stint-selector-head span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .practice-stint-selector-head strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--text);
+        font-size: 0.98rem;
+        font-weight: 800;
+      }
+
+      .practice-stint-selector-count {
+        padding: 0.55rem 0.8rem;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 999px;
+        background: rgba(21, 35, 59, 0.88);
+        color: rgba(226, 232, 240, 0.92);
+        font-size: 0.78rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .practice-stint-selector-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+
+      .practice-stint-chip {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 16px;
+        background: rgba(21, 35, 59, 0.92);
+        color: var(--text);
+        text-align: left;
+        cursor: pointer;
+        transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+      }
+
+      .practice-stint-chip:hover {
+        transform: translateY(-1px);
+        border-color: rgba(68, 194, 255, 0.45);
+        background: rgba(28, 44, 71, 0.98);
+      }
+
+      .practice-stint-chip.active {
+        border-color: rgba(68, 194, 255, 0.72);
+        box-shadow: 0 0 0 1px rgba(68, 194, 255, 0.18), 0 14px 30px rgba(0, 0, 0, 0.18);
+      }
+
+      .practice-stint-chip span {
+        display: block;
+        color: #dbeafe;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .practice-stint-chip strong {
+        display: block;
+        font-size: 1rem;
+        line-height: 1.05;
+      }
+
+      .practice-stint-chip small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.15;
       }
 
       .selection-panel {
@@ -2072,7 +2177,8 @@
         position: absolute;
         inset: 0;
         background: var(--stint-color, #94a3b8);
-        opacity: 0.86;
+        opacity: 0.96;
+        filter: saturate(1.1) brightness(1.08);
       }
 
       .stint-bar-label {
@@ -2488,7 +2594,7 @@
       }
 
       .lap-track-card .track-map-sector-badge-label {
-        color: var(--sector-color, #38bdf8);
+        color: var(--sector-color, #ff4d4d);
         font-size: 0.72rem;
         font-weight: 900;
         letter-spacing: 0.08em;
@@ -2611,6 +2717,107 @@
         overflow: hidden;
       }
 
+      .results-graph-shell {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(16, 26, 45, 0.92);
+        overflow: hidden;
+      }
+
+      .results-graph-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px 16px;
+        padding: 18px 20px 10px;
+      }
+
+      .results-graph-title {
+        margin: 0;
+        color: var(--text);
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .results-graph-stage {
+        position: relative;
+        min-height: 620px;
+        overflow: hidden;
+        transition: height 220ms ease;
+      }
+
+      .results-graph-svg {
+        width: 100%;
+        height: 620px;
+        display: block;
+        background: rgba(10, 16, 28, 0.98);
+        border-top: 1px solid rgba(148, 163, 184, 0.14);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .results-graph-switcher {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0;
+        align-items: stretch;
+        padding: 4px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(21, 35, 59, 0.9);
+        overflow: hidden;
+        isolation: isolate;
+        cursor: pointer;
+      }
+
+      .results-graph-switcher::before {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        bottom: 4px;
+        width: calc(50% - 4px);
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(29, 46, 74, 0.98), rgba(24, 38, 62, 0.98));
+        box-shadow: 0 0 0 1px rgba(68, 194, 255, 0.16), 0 8px 18px rgba(0, 0, 0, 0.18);
+        transform: translateX(0);
+        transition: transform 180ms ease, box-shadow 180ms ease;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .results-graph-switcher[data-active="pit-strategy"]::before {
+        transform: translateX(100%);
+      }
+
+      .results-graph-switcher button {
+        position: relative;
+        z-index: 1;
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: rgba(210, 218, 231, 0.82);
+        padding: 0.72rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: color 120ms ease, transform 120ms ease;
+      }
+
+      .results-graph-switcher button:hover {
+        transform: translateY(-1px);
+        color: #eef4ff;
+      }
+
+      .results-graph-switcher button.active {
+        color: #f8fbff;
+      }
+
       .race-position-panel header {
         padding: 18px 20px 10px;
       }
@@ -2683,6 +2890,10 @@
       .pit-stint-bar.is-hovered rect.pit-stint-fill {
         filter: brightness(1.18);
         stroke-width: 1.5;
+      }
+
+      .pit-stint-fill {
+        filter: saturate(1.1) brightness(1.06);
       }
 
       .pit-stint-length {
@@ -3004,6 +3215,63 @@
         padding: 0 20px 20px;
       }
 
+      .qualifying-overview-track-map .track-map-viewport {
+        position: relative;
+      }
+
+      .qualifying-overview-sector-stack {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: min(188px, calc(100% - 36px));
+        pointer-events: none;
+      }
+
+      .qualifying-overview-track-map .track-map-sector-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-height: 74px;
+        padding: 11px 14px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(21, 35, 59, 0.96), rgba(12, 19, 34, 0.98));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      }
+
+      .qualifying-overview-track-map .track-map-sector-badge-label {
+        color: var(--sector-color, #ff4d4d);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+
+      .qualifying-overview-track-map .track-map-sector-badge-time {
+        color: #f8fbff;
+        font-size: 1rem;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.05;
+        text-shadow: 0 1px 0 rgba(7, 16, 29, 0.6);
+      }
+
+      .qualifying-overview-track-map .track-map-sector-badge-driver {
+        color: rgba(229, 236, 247, 0.92);
+        font-size: 0.72rem;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: 0.02em;
+        text-align: center;
+      }
+
       .track-svg {
         width: 100%;
         height: min(70vh, 720px);
@@ -3313,6 +3581,7 @@
           <input type="hidden" name="gp" value="{{ form.gp }}" />
           <input type="hidden" name="session" value="{{ form.session }}" />
           <input type="hidden" name="phase" value="{{ form.phase }}" />
+          <input type="hidden" name="stint" value="{{ selected_stint or '' }}" data-stint-input />
           <div class="field">
             <label for="driver">{% if session_is_qualifying and selected_lap %}Qualifying laps{% elif session_is_qualifying %}{{ qualifying_phase }} Results{% else %}Driver{% endif %}</label>
             <div class="driver-picker" data-driver-picker>
@@ -3345,6 +3614,47 @@
               {% endif %}
               {% if not session_is_qualifying %}
                 {{ render_driver_options(drivers, selected_driver, driver_result_times) }}
+              {% endif %}
+              {% if not session_is_qualifying and form.session in ['FP1', 'FP2', 'FP3'] and selected_driver and race_stints and race_stints.stints %}
+                <section class="stint-graph-panel practice-stint-panel">
+                  <div class="stint-graph-layout">
+                    <div class="stint-graph-meta practice-stint-meta">
+                      <div class="practice-stint-selector">
+                        <div class="practice-stint-selector-head">
+                          <div>
+                            <span>Stint selector</span>
+                            <strong>{{ selected_driver_data.full_name if selected_driver_data else 'Selected driver' }}</strong>
+                          </div>
+                          <span class="practice-stint-selector-count">{{ race_stints.stints|length }} stint{{ 's' if race_stints.stints|length != 1 else '' }}</span>
+                        </div>
+                        <div class="practice-stint-selector-grid">
+                          {% for stint in race_stints.stints %}
+                            <button
+                              type="button"
+                              class="practice-stint-chip {% if stint.stint == selected_stint %}active{% endif %}"
+                              data-stint-button
+                              data-stint-value="{{ stint.stint }}"
+                            >
+                              <span>Stint {{ stint.stint }}</span>
+                              <strong>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</strong>
+                              <small>{% if stint.stint_note %}{{ stint.stint_note }}{% else %}{{ stint.compound }}{% endif %}</small>
+                            </button>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="stint-graph-viewport"
+                      data-stint-graph
+                      data-year="{{ form.year }}"
+                      data-gp="{{ form.gp }}"
+                      data-session="{{ form.session }}"
+                      data-driver="{{ selected_driver }}"
+                      data-stint="{{ selected_stint }}"
+                      data-selected-lap="{{ selected_lap }}"
+                    ></div>
+                  </div>
+                </section>
               {% endif %}
               {% if session_is_qualifying and selected_lap and selected_driver %}
                 <div class="qualifying-telemetry-strip">
@@ -3567,9 +3877,6 @@
                 {% if lap_back_to_driver_table_url %}
                   <div class="stint-graph-actions">
                     <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers list</a>
-                    {% if lap_back_to_overview_url %}
-                      <a class="workflow-back" href="{{ lap_back_to_overview_url }}">Back to overview</a>
-                    {% endif %}
                   </div>
                 {% endif %}
                 {% if selected_driver_data %}
@@ -3699,9 +4006,20 @@
                     </a>
                     {% endfor %}
                 </div>
-                <p class="subtle">Each sector badge shows the fastest sector from the selected qualifying window.</p>
               </header>
               <div class="track-map-viewport">
+                {% if qualifying_overview_track_map and qualifying_overview_track_map.sector_markers %}
+                  {% set sector_colors = ['#ff4d4d', '#ffffff', '#ffd84d'] %}
+                  <div class="track-map-sector-stack qualifying-overview-sector-stack" aria-label="Sector split times">
+                    {% for marker in qualifying_overview_track_map.sector_markers %}
+                      <div class="track-map-sector-badge" style="--sector-color: {{ sector_colors[loop.index0] if loop.index0 < sector_colors|length else '#0f766e' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
+                        <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
+                        <span class="track-map-sector-badge-time">{{ marker.time }}</span>
+                        <span class="track-map-sector-badge-driver">{{ marker.source_driver_display }}</span>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
                 {% if qualifying_overview_track_map %}
                   <svg
                     class="track-svg"
@@ -3711,6 +4029,7 @@
                     aria-label="Qualifying overview track map"
                     data-driver-abbr="{{ qualifying_overview_track_map.driver_abbr }}"
                     data-driver-color="{{ qualifying_overview_track_map.driver_color }}"
+                    data-sector-badge-mode="stack"
                   ></svg>
                 {% else %}
                   <div class="empty">No qualifying track map available.</div>
@@ -3722,45 +4041,36 @@
             </section>
           </section>
         {% endif %}
-        {% if view == 'results' and data %}
+          {% if view == 'results' and data %}
           <section class="results-layout">
             <div class="results-main">
-              {% if race_position_graph %}
-                <section class="race-position-panel">
-                  <header>
-                    <h2>{{ race_position_graph.title }}</h2>
-                  </header>
-                  <div class="race-position-viewport">
-                    <div class="race-position-layout">
-                      <svg
-                        class="race-position-svg"
-                        id="race-position-svg"
-                        viewBox="0 0 1000 620"
-                        role="img"
-                        aria-label="Race position changes chart"
-                      ></svg>
+              {% if race_position_graph or pit_strategy_graph %}
+                <section class="results-graph-shell">
+                  <header class="results-graph-header">
+                    <h2 class="results-graph-title" data-results-graph-title>
+                      {{ race_position_graph.title if race_position_graph else pit_strategy_graph.title }}
+                    </h2>
+                  {% if race_position_graph and pit_strategy_graph %}
+                    <div class="results-graph-switcher" role="group" aria-label="Race overview graph selector" data-active="race-position">
+                      <button type="button" class="active" data-results-graph-toggle="race-position" aria-pressed="true">Race position</button>
+                      <button type="button" data-results-graph-toggle="pit-strategy" aria-pressed="false">Pit strategy</button>
                     </div>
-                  </div>
-                  <script id="race-position-json" type="application/json">{{ race_position_graph | tojson }}</script>
-                </section>
-              {% endif %}
-              {% if pit_strategy_graph %}
-                <section class="pit-strategy-panel">
-                  <header>
-                    <h2>{{ pit_strategy_graph.title }}</h2>
+                  {% endif %}
                   </header>
-                  <div class="pit-strategy-viewport">
-                    <div class="pit-strategy-layout">
-                      <svg
-                        class="pit-strategy-svg"
-                        id="pit-strategy-svg"
-                        viewBox="0 0 1000 700"
-                        role="img"
-                        aria-label="Pit strategy chart"
-                      ></svg>
-                    </div>
+                  <div class="results-graph-stage" data-results-graph-stage>
+                    <svg
+                      class="results-graph-svg"
+                      id="results-graph-svg"
+                      role="img"
+                      aria-label="Race overview graph"
+                    ></svg>
+                    {% if race_position_graph %}
+                      <script id="race-position-json" type="application/json">{{ race_position_graph | tojson }}</script>
+                    {% endif %}
+                    {% if pit_strategy_graph %}
+                      <script id="pit-strategy-json" type="application/json">{{ pit_strategy_graph | tojson }}</script>
+                    {% endif %}
                   </div>
-                  <script id="pit-strategy-json" type="application/json">{{ pit_strategy_graph | tojson }}</script>
                 </section>
               {% endif %}
             </div>
@@ -3897,10 +4207,10 @@
                     </div>
                     <div class="track-map-body">
                       {% if track_map and track_map.sector_markers %}
-                        {% set sector_colors = ['#38bdf8', '#2563eb', '#14b8a6'] %}
+                        {% set sector_colors = ['#ff4d4d', '#ffffff', '#ffd84d'] %}
                         <div class="track-map-sector-stack" aria-label="Sector split times">
                           {% for marker in track_map.sector_markers %}
-                            {% set sector_color = sector_colors[loop.index0] if loop.index0 < sector_colors|length else '#14b8a6' %}
+                            {% set sector_color = sector_colors[loop.index0] if loop.index0 < sector_colors|length else '#0f766e' %}
                             <div class="track-map-sector-badge" style="--sector-color: {{ sector_color }};">
                               <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
                               <span class="track-map-sector-badge-time">{{ marker.time }}</span>
@@ -3935,21 +4245,32 @@
       {% endif %}
       <script>
         (async () => {
-          const picker = document.querySelector("[data-driver-picker]");
-          if (picker) {
-            const input = picker.querySelector("[data-driver-input]");
-            const form = picker.closest("form");
+            const picker = document.querySelector("[data-driver-picker]");
+            if (picker) {
+              const input = picker.querySelector("[data-driver-input]");
+              const form = picker.closest("form");
+              const stintInput = form ? form.querySelector("[data-stint-input]") : null;
 
-            picker.addEventListener("click", (event) => {
-              const option = event.target.closest("[data-driver-button]");
-              if (!option) {
-                return;
-              }
+              picker.addEventListener("click", (event) => {
+                const option = event.target.closest("[data-driver-button]");
+                if (!option) {
+                  const stintOption = event.target.closest("[data-stint-button]");
+                  if (!stintOption || !stintInput) {
+                    return;
+                  }
 
-              input.value = option.getAttribute("data-driver-value") || "";
-              form.submit();
-            });
-          }
+                  stintInput.value = stintOption.getAttribute("data-stint-value") || "";
+                  form.submit();
+                  return;
+                }
+
+                input.value = option.getAttribute("data-driver-value") || "";
+                if (stintInput) {
+                  stintInput.value = "";
+                }
+                form.submit();
+              });
+            }
 
           const qualifyingRows = document.querySelectorAll(".qualifying-result-row");
           qualifyingRows.forEach((row) => {
@@ -4414,9 +4735,11 @@
               `;
             }
 
-            const bubbleText = tooltipNames.join(", ");
-            const bubbleWidth = Math.max(52, Math.min(width - padding.left - padding.right - 8, Math.ceil((bubbleText.length * 5.4) + 18)));
-            const bubbleHeight = 18;
+            const longestNameLength = tooltipNames.reduce((max, name) => Math.max(max, name.length), 0);
+            const bubbleWidth = Math.max(52, Math.min(width - padding.left - padding.right - 8, Math.ceil((longestNameLength * 6.2) + 18)));
+            const bubbleLineHeight = 10;
+            const bubbleTextTop = 6;
+            const bubbleHeight = Math.max(18, Math.ceil((tooltipNames.length * bubbleLineHeight) + bubbleTextTop));
             const bubbleGap = 8;
             const bubbleTopMin = padding.top + 2;
             const bubbleTopMax = height - padding.bottom - bubbleHeight - 4;
@@ -4429,10 +4752,14 @@
               Math.min(width - padding.right - bubbleWidth - 2, x - (bubbleWidth / 2)),
             );
             const bubbleCenterX = bubbleLeft + (bubbleWidth / 2);
-            const bubbleCenterY = bubbleTop + (bubbleHeight / 2) + 0.5;
+            const bubbleTextStartY = bubbleTop + 7.5;
             const lineX = badgeCenterX.toFixed(2);
             const lineY1 = bubbleAbove ? (bubbleTop + bubbleHeight).toFixed(2) : (bubbleTop).toFixed(2);
             const lineY2 = badgeCenterY.toFixed(2);
+            const bubbleTextMarkup = tooltipNames.map((name, index) => {
+              const yOffset = bubbleTextStartY + (index * bubbleLineHeight);
+              return `<tspan x="${bubbleCenterX.toFixed(2)}" y="${yOffset.toFixed(2)}">${escapeHtml(name)}</tspan>`;
+            }).join("");
 
             return `
               <g class="stint-graph-position-change ${String(lap.position_change_direction || "").trim() === "gain" ? "is-gain" : "is-loss"}">
@@ -4441,7 +4768,7 @@
                 <g class="stint-graph-position-change-tooltip">
                   <line x1="${lineX}" y1="${lineY1}" x2="${bubbleCenterX.toFixed(2)}" y2="${lineY2}" stroke="rgba(255,255,255,0.28)" stroke-width="1.1" stroke-linecap="round"></line>
                   <rect x="${bubbleLeft.toFixed(2)}" y="${bubbleTop.toFixed(2)}" width="${bubbleWidth}" height="${bubbleHeight}" rx="9"></rect>
-                  <text x="${bubbleCenterX.toFixed(2)}" y="${bubbleCenterY.toFixed(2)}" fill="#f8fafc" font-size="8.9" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(bubbleText)}</text>
+                  <text x="${bubbleCenterX.toFixed(2)}" y="${bubbleTextStartY.toFixed(2)}" fill="#f8fafc" font-size="8.6" font-weight="800" text-anchor="middle" dominant-baseline="hanging">${bubbleTextMarkup}</text>
                 </g>
               </g>
             `;
@@ -4930,7 +5257,560 @@
         })();
       </script>
       {% endif %}
-      {% if race_position_graph %}
+      {% if race_position_graph or pit_strategy_graph %}
+      <script>
+        (() => {
+          const shell = document.querySelector(".results-graph-shell");
+          const stage = shell ? shell.querySelector("[data-results-graph-stage]") : null;
+          const switcher = shell ? shell.querySelector(".results-graph-switcher") : null;
+          const title = shell ? shell.querySelector("[data-results-graph-title]") : null;
+          const svg = document.getElementById("results-graph-svg");
+          const raceDataEl = document.getElementById("race-position-json");
+          const pitDataEl = document.getElementById("pit-strategy-json");
+          if (!shell || !stage || !svg) {
+            return;
+          }
+
+          const raceGraph = raceDataEl ? JSON.parse(raceDataEl.textContent || "null") : null;
+          const pitGraph = pitDataEl ? JSON.parse(pitDataEl.textContent || "null") : null;
+          const availableGraphs = [];
+          if (raceGraph && raceGraph.series && raceGraph.series.length) {
+            availableGraphs.push({ key: "race-position", title: raceGraph.title || "Race position changes", graph: raceGraph });
+          }
+          if (pitGraph && pitGraph.drivers && pitGraph.drivers.length) {
+            availableGraphs.push({ key: "pit-strategy", title: pitGraph.title || "Pit strategy", graph: pitGraph });
+          }
+          if (!availableGraphs.length) {
+            svg.innerHTML = "";
+            return;
+          }
+
+          const graphByKey = new Map(availableGraphs.map((entry) => [entry.key, entry]));
+          const titleByView = new Map(availableGraphs.map((entry) => [entry.key, entry.title]));
+          const buttons = switcher ? Array.from(switcher.querySelectorAll("[data-results-graph-toggle]")) : [];
+          let heightTimer = null;
+          let currentTarget = buttons.find((button) => button.classList.contains("active"))
+            ? buttons.find((button) => button.classList.contains("active")).getAttribute("data-results-graph-toggle")
+            : availableGraphs[0].key;
+
+          const escapeHtml = (value) => String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;");
+
+          const ensureResultsGraphLayers = (width, height) => {
+            svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            svg.style.width = "100%";
+            svg.style.height = `${height}px`;
+            svg.style.pointerEvents = "auto";
+
+            let baseLayer = svg.querySelector("[data-results-graph-base]");
+            let overlayLayer = svg.querySelector("[data-results-graph-overlay]");
+            if (!baseLayer || !overlayLayer) {
+              svg.innerHTML = `
+                <g data-results-graph-base></g>
+                <g data-results-graph-overlay></g>
+              `;
+              baseLayer = svg.querySelector("[data-results-graph-base]");
+              overlayLayer = svg.querySelector("[data-results-graph-overlay]");
+            }
+
+            return { baseLayer, overlayLayer };
+          };
+
+          const setStageHeight = (height) => {
+            const currentHeight = Math.ceil(stage.getBoundingClientRect().height || 0);
+            const nextHeight = Math.max(currentHeight, height);
+            stage.style.height = `${nextHeight}px`;
+            if (heightTimer) {
+              window.clearTimeout(heightTimer);
+              heightTimer = null;
+            }
+            if (nextHeight !== height) {
+              heightTimer = window.setTimeout(() => {
+                stage.style.height = `${height}px`;
+              }, 220);
+            }
+          };
+
+          const updateSwitcher = (target) => {
+            if (switcher) {
+              switcher.setAttribute("data-active", target);
+            }
+            buttons.forEach((button) => {
+              const active = button.getAttribute("data-results-graph-toggle") === target;
+              button.classList.toggle("active", active);
+              button.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+            if (title && titleByView.has(target)) {
+              title.textContent = titleByView.get(target) || title.textContent;
+            }
+          };
+
+          function renderRacePositionGraph(graph) {
+            const width = 1000;
+            const height = 620;
+            const pad = { top: 34, right: 12, bottom: 42, left: 40 };
+            const innerWidth = width - pad.left - pad.right;
+            const innerHeight = height - pad.top - pad.bottom;
+            const lapTotal = Math.max(Number(graph.lap_total || 0), 1);
+            const maxPosition = Math.max(Number(graph.max_position || 0), 1);
+            const xScale = innerWidth / Math.max(lapTotal, 1);
+            const yScale = maxPosition === 1 ? 1 : innerHeight / (maxPosition - 1);
+            const statusBandTop = height - 34;
+            const statusBandBottom = height - 16;
+            const xAxisLabelY = height - 6;
+            const statusLineTop = statusBandTop + 1;
+            const statusLineBottom = statusBandBottom - 1;
+            const statusLabelY = statusBandTop + 10;
+
+            function ordinal(value) {
+              const suffix = ["th", "st", "nd", "rd"];
+              const mod100 = value % 100;
+              const mod10 = value % 10;
+              return `${value}${suffix[(mod100 - mod10) % 10] || suffix[0]}`;
+            }
+
+            function xForLap(lap) {
+              return pad.left + Math.max(lap, 0) * xScale;
+            }
+
+            function xForLapEdge(lap, edge) {
+              const center = xForLap(lap);
+              if (lapTotal <= 1) {
+                return center;
+              }
+              const offset = xScale * 0.5;
+              if (edge === "start") {
+                return Math.max(pad.left, center - offset);
+              }
+              return Math.min(width - pad.right, center + offset);
+            }
+
+            function yForPosition(position) {
+              return pad.top + (Math.max(position, 1) - 1) * yScale;
+            }
+
+            function path(points) {
+              return points
+                .map(([lap, position], index) => {
+                  const x = xForLap(lap);
+                  const y = yForPosition(position);
+                  return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+                })
+                .join(" ");
+            }
+
+            const axisStatusMarkup = (graph.status_segments || [])
+              .filter((segment) => segment.label === "Safety Car" || segment.label === "Virtual Safety Car" || segment.label === "Red Flag")
+              .map((segment) => {
+                const startX = xForLapEdge(segment.start_lap, "start");
+                const endX = xForLapEdge(segment.end_lap, "end");
+                if (endX <= startX) {
+                  return "";
+                }
+                const fill = segment.label === "Safety Car" ? "#facc15" : segment.label === "Virtual Safety Car" ? "#38bdf8" : "#ef4444";
+                const label = segment.label === "Safety Car" ? "SC" : segment.label === "Virtual Safety Car" ? "VSC" : "RF";
+                const labelWidth = segment.label === "Safety Car" ? 28 : segment.label === "Virtual Safety Car" ? 36 : 28;
+                return `
+                  <g pointer-events="none">
+                    <line x1="${startX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${startX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                    <line x1="${endX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${endX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                    <g>
+                      <rect x="${((startX + endX) / 2 - (labelWidth / 2)).toFixed(2)}" y="${statusBandTop.toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
+                      <text x="${((startX + endX) / 2).toFixed(2)}" y="${statusLabelY.toFixed(2)}" fill="${fill}" font-size="9" font-weight="900" text-anchor="middle">${label}</text>
+                    </g>
+                  </g>
+                `;
+              })
+              .join("");
+
+            let grid = "";
+            for (let position = 1; position <= maxPosition; position += 1) {
+              const y = yForPosition(position);
+              grid += `<line x1="${pad.left}" y1="${y.toFixed(2)}" x2="${width - pad.right}" y2="${y.toFixed(2)}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+              grid += `<text x="${pad.left - 6}" y="${(y + 4).toFixed(2)}" fill="rgba(151,167,194,0.9)" font-size="10" text-anchor="end">${ordinal(position)}</text>`;
+            }
+
+            grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+            grid += `<text x="${pad.left}" y="${xAxisLabelY}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">0</text>`;
+
+            const tickStep = lapTotal > 12 ? 5 : 1;
+            for (let lap = 1; lap <= lapTotal; lap += tickStep) {
+              const x = xForLap(lap);
+              grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+              grid += `<text x="${x.toFixed(2)}" y="${xAxisLabelY}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lap}</text>`;
+            }
+            if ((lapTotal - 1) % tickStep !== 0) {
+              const x = xForLap(lapTotal);
+              grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+              grid += `<text x="${x.toFixed(2)}" y="${xAxisLabelY}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lapTotal}</text>`;
+            }
+
+            const lanes = graph.series.map((series, index) => {
+              const points = series.points || [];
+              const d = path(points);
+              const last = points[points.length - 1] || [1, series.current_position || 1];
+              const lastX = xForLap(last[0]);
+              const lastY = yForPosition(last[1]);
+              const isFinishedAtEnd = Number(last[0] || 0) >= lapTotal;
+              const abbrev = escapeHtml(series.abbreviation || "");
+              const tagWidth = Math.max(28, Math.min(38, 16 + (abbrev.length * 6)));
+              const tagX = isFinishedAtEnd
+                ? Math.min(width - pad.right - tagWidth, lastX + 10)
+                : Math.min(width - pad.right - tagWidth, lastX - tagWidth / 2);
+              const driverValue = encodeURIComponent(series.value || "");
+              const href = String(series.href || "").trim() || `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position#lap-stint-panel`;
+              return `
+                <a class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" href="${escapeHtml(href)}" xlink:href="${escapeHtml(href)}" tabindex="0" role="link" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
+                  <path class="race-position-hit" d="${d}" data-href="${href}"></path>
+                  <path class="race-position-line" d="${d}" data-href="${href}" fill="none" stroke="${series.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                </a>
+              `;
+            }).join("");
+
+            const badgeMarkup = graph.series.map((series, index) => {
+              const points = series.points || [];
+              const last = points[points.length - 1] || [1, series.current_position || 1];
+              const lastX = xForLap(last[0]);
+              const lastY = yForPosition(last[1]);
+              const isFinishedAtEnd = Number(last[0] || 0) >= lapTotal;
+              const abbrev = escapeHtml(series.abbreviation || "");
+              const tagWidth = Math.max(28, Math.min(38, 16 + (abbrev.length * 6)));
+              const tagX = isFinishedAtEnd
+                ? Math.min(width - pad.right - tagWidth, lastX + 10)
+                : Math.min(width - pad.right - tagWidth, lastX - tagWidth / 2);
+              return `
+                <g class="race-position-badge" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" aria-hidden="true">
+                  <rect x="${tagX.toFixed(2)}" y="${(lastY - 8).toFixed(2)}" width="${tagWidth.toFixed(2)}" height="16" rx="8" fill="${series.color}" stroke="#07101d" stroke-width="1.25"></rect>
+                  <text x="${(tagX + tagWidth / 2).toFixed(2)}" y="${(lastY + 3).toFixed(2)}" fill="#07101d" font-size="9.5" font-weight="800" text-anchor="middle">${abbrev}</text>
+                </g>
+              `;
+            }).join("");
+
+            const { baseLayer, overlayLayer } = ensureResultsGraphLayers(width, height);
+            baseLayer.innerHTML = `
+              <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+              ${grid}
+              ${axisStatusMarkup}
+            `;
+            overlayLayer.innerHTML = `
+              <g data-race-position-line-layer>${lanes}</g>
+              <g data-race-position-badge-layer>${badgeMarkup}</g>
+            `;
+
+            const lineLayer = overlayLayer.querySelector("[data-race-position-line-layer]");
+            const badgeLayer = overlayLayer.querySelector("[data-race-position-badge-layer]");
+            const seriesGroups = Array.from(overlayLayer.querySelectorAll(".race-position-series"));
+            const badgeGroups = Array.from(overlayLayer.querySelectorAll(".race-position-badge"));
+            const openDriver = (group) => {
+              const href = group
+                ? (group.getAttribute("href") || group.getAttribute("xlink:href") || group.getAttribute("data-href") || "").trim()
+                : "";
+              if (!href) {
+                return;
+              }
+              window.location.assign(href);
+            };
+
+            const restoreSeriesOrder = () => {
+              const ordered = [...seriesGroups].sort((a, b) => Number(a.dataset.seriesIndex || 0) - Number(b.dataset.seriesIndex || 0));
+              ordered.forEach((group) => lineLayer.appendChild(group));
+
+              const orderedBadges = [...badgeGroups].sort((a, b) => Number(a.dataset.seriesIndex || 0) - Number(b.dataset.seriesIndex || 0));
+              orderedBadges.forEach((badge) => badgeLayer.appendChild(badge));
+            };
+
+            const activateSeries = (group) => {
+              if (!group) {
+                return;
+              }
+              const activeIndex = Number(group.dataset.seriesIndex || 0);
+              seriesGroups.forEach((item) => {
+                const active = Number(item.dataset.seriesIndex || 0) === activeIndex;
+                item.classList.toggle("is-hovered", active);
+                item.style.opacity = active ? "1" : "0.26";
+              });
+              badgeGroups.forEach((item) => {
+                const active = Number(item.dataset.seriesIndex || 0) === activeIndex;
+                item.style.opacity = active ? "1" : "0.26";
+              });
+              lineLayer.appendChild(group);
+              const activeBadge = badgeGroups.find((item) => Number(item.dataset.seriesIndex || 0) === activeIndex);
+              if (activeBadge) {
+                badgeLayer.appendChild(activeBadge);
+              }
+            };
+
+            const clearSeries = () => {
+              seriesGroups.forEach((item) => {
+                item.classList.remove("is-hovered");
+                item.style.opacity = "1";
+              });
+              badgeGroups.forEach((item) => {
+                item.style.opacity = "1";
+              });
+              restoreSeriesOrder();
+            };
+
+            seriesGroups.forEach((group) => {
+              group.style.cursor = "pointer";
+              group.addEventListener("mouseenter", () => activateSeries(group));
+              group.addEventListener("mouseleave", clearSeries);
+              group.addEventListener("focus", () => activateSeries(group));
+              group.addEventListener("blur", clearSeries);
+              group.addEventListener("click", (event) => {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                  return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                openDriver(group);
+              });
+              group.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openDriver(group);
+                }
+              });
+            });
+            svg.onmouseleave = clearSeries;
+            svg.onpointerleave = clearSeries;
+            return height;
+          }
+
+          function renderPitStrategyGraph(graph) {
+            const plotWidth = 1000;
+            const labelColumnWidth = 118;
+            const width = plotWidth + labelColumnWidth;
+            const pad = { top: 34, right: 8, bottom: 42, left: 64 };
+            const rowStep = 28;
+            const rowHeight = 14;
+            const height = Math.max(560, pad.top + pad.bottom + graph.drivers.length * rowStep);
+            const innerWidth = plotWidth - pad.left - pad.right;
+            const lapTotal = Math.max(Number(graph.lap_total || 0), 1);
+            const xScale = lapTotal === 1 ? 1 : innerWidth / (lapTotal - 1);
+            const statusBandTop = height - 34;
+            const statusBandBottom = height - 16;
+            const xAxisLabelY = height - 6;
+            const statusLineTop = statusBandTop + 1;
+            const statusLineBottom = statusBandBottom - 1;
+            const statusLabelY = statusBandTop + 10;
+
+            function normalizeDriverListTime(value) {
+              const text = String(value ?? "").trim();
+              if (!text || text === "-") {
+                return "-";
+              }
+              const prefix = text.startsWith("+") ? "+" : "";
+              const body = prefix ? text.slice(1) : text;
+              const minutesMatch = body.match(/^(\d+):(\d{1,2})(?:\.(\d{1,3}))?$/);
+              if (minutesMatch) {
+                const minutes = Number(minutesMatch[1]);
+                const seconds = Number(minutesMatch[2]);
+                const millis = (minutesMatch[3] || "000").slice(0, 3).padEnd(3, "0");
+                return `${prefix}${minutes}:${String(seconds).padStart(2, "0")}.${millis}`;
+              }
+              const secondsMatch = body.match(/^(\d+)(?:\.(\d{1,3}))?$/);
+              if (secondsMatch) {
+                const seconds = Number(secondsMatch[1]);
+                const millis = (secondsMatch[2] || "000").slice(0, 3).padEnd(3, "0");
+                return `${prefix}${seconds}.${millis}`;
+              }
+              return text;
+            }
+
+            function xForLap(lap) {
+              return pad.left + (Math.max(lap, 1) - 1) * xScale;
+            }
+
+            function xForEndLap(lap) {
+              if (lapTotal <= 1) {
+                return plotWidth - pad.right;
+              }
+              return Math.min(plotWidth - pad.right, pad.left + Math.max(lap, 1) * xScale);
+            }
+
+            const axisStatusMarkup = (graph.status_segments || [])
+              .filter((segment) => segment.label === "Safety Car" || segment.label === "Virtual Safety Car")
+              .map((segment) => {
+                const startX = xForLap(segment.start_lap);
+                const endX = xForEndLap(segment.end_lap);
+                if (endX <= startX) {
+                  return "";
+                }
+                const fill = segment.label === "Safety Car" ? "#facc15" : "#38bdf8";
+                const label = segment.label === "Safety Car" ? "SC" : "VSC";
+                const labelWidth = segment.label === "Safety Car" ? 28 : 36;
+                return `
+                  <line x1="${startX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${startX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                  <line x1="${endX.toFixed(2)}" y1="${statusLineTop.toFixed(2)}" x2="${endX.toFixed(2)}" y2="${statusLineBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.5" opacity="0.9"></line>
+                  <g>
+                    <rect x="${((startX + endX) / 2 - (labelWidth / 2)).toFixed(2)}" y="${statusBandTop.toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
+                    <text x="${((startX + endX) / 2).toFixed(2)}" y="${statusLabelY.toFixed(2)}" fill="${fill}" font-size="9" font-weight="900" text-anchor="middle">${label}</text>
+                  </g>
+                `;
+              })
+              .join("");
+
+            let grid = "";
+            const tickStep = lapTotal > 12 ? 5 : 1;
+            for (let lap = 1; lap <= lapTotal; lap += tickStep) {
+              const x = xForLap(lap);
+              grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+              grid += `<text x="${x.toFixed(2)}" y="${xAxisLabelY}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lap}</text>`;
+            }
+            if ((lapTotal - 1) % tickStep !== 0) {
+              const x = xForLap(lapTotal);
+              grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+              grid += `<text x="${x.toFixed(2)}" y="${xAxisLabelY}" fill="rgba(151,167,194,0.98)" font-size="10" text-anchor="middle">${lapTotal}</text>`;
+            }
+
+            let rows = "";
+            graph.drivers.forEach((driver, index) => {
+              const y = pad.top + index * rowStep + rowHeight;
+              const rowTop = y - (rowHeight / 2);
+              rows += `<line x1="${pad.left}" y1="${y.toFixed(2)}" x2="${plotWidth - pad.right}" y2="${y.toFixed(2)}" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>`;
+              rows += `<text x="${pad.left - 4}" y="${(y + 4).toFixed(2)}" fill="${driver.team_color || '#cbd5e1'}" font-size="11" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.driver || '')}</text>`;
+
+              (driver.stints || []).forEach((stint) => {
+                const startX = xForLap(stint.start_lap);
+                const endX = xForEndLap(stint.end_lap);
+                const barWidth = Math.max(6, endX - startX - 2);
+                const driverValue = encodeURIComponent(driver.driver_number || "");
+                const href = `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&stint=${encodeURIComponent(stint.stint || "")}{% if form.phase %}&phase={{ form.phase }}{% endif %}&source=pit-strategy#lap-stint-panel`;
+                const separatorX = endX - 2;
+                const stintLengthLabel = `${stint.lap_count || 0} lap${Number(stint.lap_count || 0) === 1 ? "" : "s"}`;
+                const labelWidth = Math.max(48, stintLengthLabel.length * 6.4 + 16);
+                const labelX = startX + Math.max(10, (barWidth - labelWidth) / 2);
+                const labelY = rowTop + 1;
+                rows += `
+                  <g class="pit-stint-bar" data-href="${href}" tabindex="0" role="button" aria-label="Driver ${escapeHtml(driver.abbreviation || driver.driver || '')} stint ${escapeHtml(stint.stint || '')}">
+                    <rect class="pit-stint-hit" x="${(startX + 1).toFixed(2)}" y="${(rowTop - 3).toFixed(2)}" width="${(barWidth + 4).toFixed(2)}" height="${(rowHeight + 6).toFixed(2)}" rx="8"></rect>
+                    <rect class="pit-stint-fill" x="${(startX + 1).toFixed(2)}" y="${(rowTop).toFixed(2)}" width="${barWidth.toFixed(2)}" height="${rowHeight.toFixed(2)}" rx="6" fill="${stint.tyre_color || '#94a3b8'}" opacity="0.92" stroke="rgba(7,16,29,0.72)" stroke-width="1"></rect>
+                    <g class="pit-stint-length" aria-hidden="true">
+                      <rect x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" width="${labelWidth.toFixed(2)}" height="13" rx="6.5"></rect>
+                      <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="${(labelY + 9.5).toFixed(2)}" text-anchor="middle">${escapeHtml(stintLengthLabel)}</text>
+                    </g>
+                  </g>
+                `;
+                rows += `
+                  <g aria-hidden="true">
+                    <rect x="${(separatorX - 3).toFixed(2)}" y="${(y - 3).toFixed(2)}" width="6" height="6" rx="1.5" transform="rotate(45 ${separatorX.toFixed(2)} ${y.toFixed(2)})" fill="rgba(226,232,240,0.72)"></rect>
+                  </g>
+                `;
+              });
+
+              const timeLabel = escapeHtml(normalizeDriverListTime(driver.time_label || "-"));
+              const timeColumnCenter = plotWidth + (labelColumnWidth / 2);
+              rows += `<text x="${timeColumnCenter.toFixed(2)}" y="${(y + 4).toFixed(2)}" fill="rgba(226,232,240,0.96)" font-size="12" font-weight="800" text-anchor="middle">${timeLabel}</text>`;
+
+              (driver.pit_laps || []).forEach((lap) => {
+                const x = xForLap(lap);
+                rows += `<line x1="${x.toFixed(2)}" y1="${(y - 11).toFixed(2)}" x2="${x.toFixed(2)}" y2="${(y + 11).toFixed(2)}" stroke="rgba(231,238,250,0.75)" stroke-width="1.5"></line>`;
+                rows += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4.5" fill="#07101d" stroke="#e7eefc" stroke-width="1.5"></circle>`;
+              });
+            });
+
+            const { baseLayer, overlayLayer } = ensureResultsGraphLayers(width, height);
+            baseLayer.innerHTML = `
+              <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+              <line x1="${plotWidth}" y1="18" x2="${plotWidth}" y2="${height - 18}" stroke="rgba(148,163,184,0.16)" stroke-width="1"></line>
+              ${grid}
+              ${axisStatusMarkup}
+            `;
+            overlayLayer.innerHTML = `
+              ${rows}
+            `;
+
+            const stintBars = Array.from(overlayLayer.querySelectorAll(".pit-stint-bar"));
+            const openStint = (bar) => {
+              const href = bar ? (bar.getAttribute("data-href") || "").trim() : "";
+              if (!href) {
+                return;
+              }
+              window.location.assign(href);
+            };
+
+            const clearStints = () => {
+              stintBars.forEach((item) => {
+                item.classList.remove("is-hovered");
+                item.style.opacity = "";
+              });
+            };
+
+            const activateStint = (bar) => {
+              stintBars.forEach((item) => {
+                const active = item === bar;
+                item.classList.toggle("is-hovered", active);
+                item.style.opacity = active ? "1" : "0.26";
+              });
+            };
+
+            stintBars.forEach((bar) => {
+              bar.addEventListener("mouseenter", () => {
+                activateStint(bar);
+              });
+              bar.addEventListener("mouseleave", () => {
+                clearStints();
+              });
+              bar.addEventListener("click", (event) => {
+                event.preventDefault();
+                openStint(bar);
+              });
+              bar.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openStint(bar);
+                }
+              });
+            });
+
+            svg.onmouseleave = clearStints;
+            svg.onpointerleave = clearStints;
+            return height;
+          }
+
+          const initialTarget = graphByKey.has(currentTarget) ? currentTarget : availableGraphs[0].key;
+          const renderActiveGraph = (target) => {
+            const entry = graphByKey.get(target) || availableGraphs[0];
+            if (!entry) {
+              svg.innerHTML = "";
+              return;
+            }
+            currentTarget = entry.key;
+            svg.setAttribute("aria-label", entry.title || "Race overview graph");
+            updateSwitcher(entry.key);
+            const nextHeight = entry.key === "pit-strategy"
+              ? renderPitStrategyGraph(entry.graph)
+              : renderRacePositionGraph(entry.graph);
+            setStageHeight(nextHeight);
+          };
+
+          if (switcher) {
+            switcher.addEventListener("click", (event) => {
+              const button = event.target && event.target.closest ? event.target.closest("[data-results-graph-toggle]") : null;
+              if (button && switcher.contains(button)) {
+                renderActiveGraph(button.getAttribute("data-results-graph-toggle"));
+                return;
+              }
+              if (buttons.length >= 2) {
+                renderActiveGraph(currentTarget === buttons[0].getAttribute("data-results-graph-toggle")
+                  ? buttons[1].getAttribute("data-results-graph-toggle")
+                  : buttons[0].getAttribute("data-results-graph-toggle"));
+              }
+            });
+          }
+
+          renderActiveGraph(initialTarget);
+          window.addEventListener("resize", () => {
+            renderActiveGraph(currentTarget);
+          });
+        })();
+      </script>
+      {% endif %}
+      {% if false and race_position_graph %}
       <script>
         (() => {
           const svg = document.getElementById("race-position-svg");
@@ -5119,9 +5999,11 @@
           const badgeLayer = svg.querySelector("[data-race-position-badge-layer]");
           const seriesGroups = Array.from(svg.querySelectorAll(".race-position-series"));
           const badgeGroups = Array.from(svg.querySelectorAll(".race-position-badge"));
+          const interactiveTargets = Array.from(svg.querySelectorAll(".race-position-line, .race-position-hit"));
           const openDriver = (group) => {
-            const href = group
-              ? (group.getAttribute("href") || group.getAttribute("xlink:href") || group.getAttribute("data-href") || "").trim()
+            const link = group && group.closest ? (group.closest(".race-position-series") || group) : group;
+            const href = link
+              ? (link.getAttribute("href") || link.getAttribute("xlink:href") || link.getAttribute("data-href") || "").trim()
               : "";
             if (!href) {
               return;
@@ -5174,6 +6056,14 @@
             group.addEventListener("mouseleave", clearSeries);
             group.addEventListener("focus", () => activateSeries(group));
             group.addEventListener("blur", clearSeries);
+            group.addEventListener("click", (event) => {
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+              }
+              event.preventDefault();
+              event.stopPropagation();
+              openDriver(group);
+            });
             group.addEventListener("keydown", (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
@@ -5181,12 +6071,26 @@
               }
             });
           });
+          interactiveTargets.forEach((target) => {
+            target.style.cursor = "pointer";
+          });
+          svg.addEventListener("click", (event) => {
+            const target = event.target && event.target.closest ? event.target.closest(".race-position-series, .race-position-line, .race-position-hit") : null;
+            if (!target) {
+              return;
+            }
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+              return;
+            }
+            event.preventDefault();
+            openDriver(target);
+          });
           svg.addEventListener("pointerleave", clearSeries);
           svg.addEventListener("mouseleave", clearSeries);
         })();
       </script>
       {% endif %}
-      {% if pit_strategy_graph %}
+      {% if false and pit_strategy_graph %}
       <script>
         (() => {
           const svg = document.getElementById("pit-strategy-svg");
@@ -5400,6 +6304,92 @@
         })();
       </script>
       {% endif %}
+      {% if false and race_position_graph and pit_strategy_graph %}
+      <script>
+        (() => {
+          const shell = document.querySelector(".results-graph-shell");
+          const switcher = shell ? shell.querySelector(".results-graph-switcher") : null;
+          const stage = shell ? shell.querySelector("[data-results-graph-stage]") : null;
+          const title = shell ? shell.querySelector("[data-results-graph-title]") : null;
+          const views = Array.from(shell ? shell.querySelectorAll("[data-results-graph-view]") : []);
+          if (!shell || !switcher || !stage || !views.length) {
+            return;
+          }
+
+          const buttons = Array.from(switcher.querySelectorAll("[data-results-graph-toggle]"));
+          const titleByView = new Map(
+            views.map((view) => [
+              view.getAttribute("data-results-graph-view") || "",
+              view.getAttribute("data-graph-title") || "",
+            ]),
+          );
+          let heightTimer = null;
+          let currentTarget = buttons.find((button) => button.classList.contains("active"))
+            ? buttons.find((button) => button.classList.contains("active")).getAttribute("data-results-graph-toggle")
+            : (buttons[0] ? buttons[0].getAttribute("data-results-graph-toggle") : "race-position");
+
+          const syncStageHeight = (target) => {
+            const activeView = views.find((view) => view.getAttribute("data-results-graph-view") === target) || views[0];
+            if (!activeView) {
+              return;
+            }
+
+            const activeHeight = Math.ceil(activeView.scrollHeight || activeView.getBoundingClientRect().height);
+            const currentHeight = Math.ceil(stage.getBoundingClientRect().height || 0);
+            const nextHeight = Math.max(currentHeight, activeHeight);
+            stage.style.height = `${nextHeight}px`;
+
+            if (heightTimer) {
+              window.clearTimeout(heightTimer);
+              heightTimer = null;
+            }
+
+            if (nextHeight !== activeHeight) {
+              heightTimer = window.setTimeout(() => {
+                stage.style.height = `${activeHeight}px`;
+              }, 220);
+            }
+          };
+
+          const setActiveView = (target) => {
+            currentTarget = target;
+            views.forEach((view) => {
+              const active = view.getAttribute("data-results-graph-view") === target;
+              view.setAttribute("data-active", active ? "true" : "false");
+              view.setAttribute("aria-hidden", active ? "false" : "true");
+              view.toggleAttribute("inert", !active);
+            });
+            switcher.setAttribute("data-active", target);
+            if (title && titleByView.has(target)) {
+              title.textContent = titleByView.get(target) || title.textContent;
+            }
+            buttons.forEach((button) => {
+              const active = button.getAttribute("data-results-graph-toggle") === target;
+              button.classList.toggle("active", active);
+              button.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+            syncStageHeight(target);
+          };
+
+          switcher.addEventListener("click", () => {
+            setActiveView(currentTarget === "race-position" ? "pit-strategy" : "race-position");
+          });
+
+          const initialTarget = views.find((view) => view.getAttribute("data-active") === "true");
+          setActiveView(initialTarget ? initialTarget.getAttribute("data-results-graph-view") : currentTarget);
+          window.addEventListener("resize", () => {
+            const activeView = views.find((view) => view.getAttribute("data-active") === "true");
+            if (activeView) {
+              stage.style.transition = "none";
+              syncStageHeight(activeView.getAttribute("data-results-graph-view") || "race-position");
+              window.requestAnimationFrame(() => {
+                stage.style.transition = "";
+              });
+            }
+          });
+        })();
+      </script>
+      {% endif %}
       <script id="primary-telemetry-json" type="application/json">{{ primary_telemetry_charts | default([], true) | tojson }}</script>
       <script id="secondary-telemetry-json" type="application/json">{{ secondary_telemetry_charts | default([], true) | tojson }}</script>
       <script id="track-map-json" type="application/json">{{ track_map | default(none) | tojson }}</script>
@@ -5460,17 +6450,23 @@
             return ticks;
           }
 
-          function formatTelemetrySeconds(seconds) {
-            const total = Math.max(0, Number(seconds) || 0);
+          function formatTelemetrySeconds(seconds, signed = false) {
+            const numeric = Number(seconds);
+            if (!Number.isFinite(numeric)) {
+              return "-";
+            }
+
+            const total = Math.abs(numeric);
             const totalMilliseconds = Math.round(total * 1000);
             const wholeSeconds = Math.floor(totalMilliseconds / 1000);
             const milliseconds = totalMilliseconds % 1000;
+            const prefix = signed && totalMilliseconds !== 0 ? (numeric < 0 ? "-" : "+") : "";
             if (wholeSeconds >= 60) {
               const minutes = Math.floor(wholeSeconds / 60);
               const remainderSeconds = wholeSeconds % 60;
-              return `${minutes}:${String(remainderSeconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")} s`;
+              return `${prefix}${minutes}:${String(remainderSeconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")} s`;
             }
-            return milliseconds ? `${wholeSeconds}.${String(milliseconds).padStart(3, "0")} s` : `${wholeSeconds} s`;
+            return `${prefix}${milliseconds ? `${wholeSeconds}.${String(milliseconds).padStart(3, "0")}` : `${wholeSeconds}`} s`;
           }
 
           function formatTelemetryValue(chart, value) {
@@ -5493,7 +6489,7 @@
                 return `${Math.round(numeric)}`;
               case "gap to driver ahead":
               case "gap to fastest lap":
-                return formatTelemetrySeconds(numeric);
+                return formatTelemetrySeconds(numeric, title === "gap to fastest lap");
               default:
                 if (String(chart && chart.unit ? chart.unit : "").trim() === "%") {
                   return `${numeric.toFixed(0)}%`;
@@ -6203,7 +7199,7 @@
               : [];
             const sectorGap = Math.max(2.5, 8 / Math.max(scale, 0.001));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, sectorGap);
-            const sectorColors = ["#38bdf8", "#2563eb", "#14b8a6"];
+            const sectorColors = ["#ff4d4d", "#ffffff", "#ffd84d"];
             const sectorSurfaceMarkup = sectorSegments.length > 1
               ? sectorSegments.map((segment, index) => {
                 const segmentPath = path(segment);
@@ -6299,10 +7295,47 @@
           const [endX, endY] = toPoint(racing[racing.length - 1]);
           const duration = Number(map.duration || 0) || 0;
           const sectorMarkers = Array.isArray(map.sector_markers) ? map.sector_markers : [];
+          const showSectorMarkersOnTrack = (String(svg.dataset.sectorBadgeMode || "").trim().toLowerCase() !== "stack");
           const maxSpeedMarker = map.max_speed_marker || null;
           const minSpeedMarker = map.min_speed_marker || null;
           const driverAbbr = (svg.dataset.driverAbbr || "DRI").trim() || "DRI";
           const driverColor = (svg.dataset.driverColor || "#44c2ff").trim() || "#44c2ff";
+          const fallbackMarkerState = {
+            abbr: driverAbbr,
+            color: driverColor,
+            title: driverAbbr,
+          };
+          function sectorMarkerStateForElapsed(elapsedSeconds) {
+            if (!showSectorMarkersOnTrack || !sectorMarkers.length) {
+              return fallbackMarkerState;
+            }
+
+            const elapsed = Number(elapsedSeconds);
+            if (!Number.isFinite(elapsed)) {
+              return fallbackMarkerState;
+            }
+
+            let activeMarker = sectorMarkers[0];
+            for (const sectorMarker of sectorMarkers) {
+              const boundary = Number(sectorMarker && sectorMarker.cumulative_seconds);
+              if (!Number.isFinite(boundary)) {
+                continue;
+              }
+              activeMarker = sectorMarker;
+              if (elapsed <= boundary) {
+                break;
+              }
+            }
+
+            const abbr = String(activeMarker && (activeMarker.source_driver_abbr || activeMarker.source_driver_display || activeMarker.label) || driverAbbr).trim() || driverAbbr;
+            const color = String(activeMarker && (activeMarker.source_driver_color || activeMarker.color) || driverColor).trim() || driverColor;
+            const title = String(activeMarker && (activeMarker.source_driver_display || activeMarker.source_driver_name || activeMarker.source_driver_abbr) || abbr).trim() || abbr;
+            return {
+              abbr,
+              color,
+              title,
+            };
+          }
           const trackImageCandidates = Array.from(new Set(Array.isArray(map.track_image_candidates) ? map.track_image_candidates.filter(Boolean) : []));
           const referenceTrack = trackImageCandidates.length
             ? await resolveTrackReference(trackImageCandidates, rawRacing)
@@ -6332,6 +7365,7 @@
             x: (trackSurfaceBounds.minX + trackSurfaceBounds.maxX) / 2,
             y: (trackSurfaceBounds.minY + trackSurfaceBounds.maxY) / 2,
           };
+          const initialMarkerState = sectorMarkerStateForElapsed(0);
 
           function loadTrackImage(url) {
             return new Promise((resolve) => {
@@ -6956,7 +7990,11 @@
             if (!displayTime) {
               displayTime = "-";
             }
-            return `
+              if (!showSectorMarkersOnTrack) {
+                return "";
+              }
+
+              return `
               <g class="sector-marker" style="pointer-events:none">
                 <rect x="${(badgeX - (badgeWidth / 2)).toFixed(2)}" y="${(badgeY - (badgeHeight / 2)).toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="14" fill="${backgroundFill}" stroke="${backgroundStroke}" stroke-width="1.2"></rect>
                 <text class="sector-marker-label" x="${badgeX.toFixed(2)}" y="${labelY.toFixed(2)}" fill="${color}" text-anchor="middle">Sector ${index + 1}</text>
@@ -6986,12 +8024,14 @@
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
             <circle cx="${endX.toFixed(2)}" cy="${endY.toFixed(2)}" r="7" fill="#ffbf69"></circle>
             <g id="lap-marker" transform="translate(${startX.toFixed(2)} ${startY.toFixed(2)})">
-              <circle cx="0" cy="0" r="19" fill="rgba(7,16,29,0.92)" stroke="${driverColor}" stroke-width="2"></circle>
-              <text x="0" y="1" fill="${driverColor}" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(driverAbbr)}</text>
+              <circle cx="0" cy="0" r="19" fill="rgba(7,16,29,0.92)" stroke="${initialMarkerState.color}" stroke-width="2"></circle>
+              <text x="0" y="1" fill="${initialMarkerState.color}" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(initialMarkerState.abbr)}</text>
             </g>
           `;
 
           const marker = svg.querySelector("#lap-marker");
+          const markerCircle = marker ? marker.querySelector("circle") : null;
+          const markerText = marker ? marker.querySelector("text") : null;
           if (!marker || duration <= 0) {
             return;
           }
@@ -7008,6 +8048,14 @@
             if (point) {
               const [x, y] = toPoint([point.x, point.y]);
               marker.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+            }
+            const markerState = sectorMarkerStateForElapsed(elapsed / 1000);
+            if (markerCircle) {
+              markerCircle.setAttribute("stroke", markerState.color);
+            }
+            if (markerText) {
+              markerText.setAttribute("fill", markerState.color);
+              markerText.textContent = markerState.abbr;
             }
             rafId = window.requestAnimationFrame(frame);
           }

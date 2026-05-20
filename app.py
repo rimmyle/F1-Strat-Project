@@ -88,19 +88,19 @@ TEAM_LOCAL_LOGOS = {
 TEAM_DEFAULT_LOGO = "team-logos/team-default.svg"
 DRIVER_HEADSHOT_DIR = Path(__file__).with_name("static") / "driver-headshots"
 TYRE_COMPOUND_COLORS = {
-    "SOFT": "#ff4d4d",
-    "MEDIUM": "#ffd84d",
-    "HARD": "#ffffff",
-    "INTERMEDIATE": "#34d399",
-    "WET": "#4d9cff",
-    "FULL WET": "#4d9cff",
-    "EXTREME WET": "#4d9cff",
-    "INTERS": "#34d399",
-    "C1": "#f3f4f6",
-    "C2": "#e5e7eb",
-    "C3": "#d1d5db",
-    "C4": "#ffd84d",
-    "C5": "#ff6b6b",
+    "SOFT": "#ff6161",
+    "MEDIUM": "#ffe65a",
+    "HARD": "#f8fbff",
+    "INTERMEDIATE": "#55e6aa",
+    "WET": "#63adff",
+    "FULL WET": "#63adff",
+    "EXTREME WET": "#63adff",
+    "INTERS": "#55e6aa",
+    "C1": "#f8fbff",
+    "C2": "#e9eef5",
+    "C3": "#d7dfea",
+    "C4": "#ffe65a",
+    "C5": "#ff7a7a",
 }
 _SESSION_LOAD_LOCK = Lock()
 _SESSION_LOAD_STATE = {}
@@ -130,6 +130,27 @@ def _clean_value(value):
     if hasattr(value, "isoformat") and not isinstance(value, str):
         return value.isoformat()
     return str(value)
+
+
+def _safe_int_value(value, default=0):
+    if value is None or pd.isna(value):
+        return default
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        text = _clean_value(value).strip()
+        if not text or text == "-":
+            return default
+        try:
+            numeric = float(text)
+        except (TypeError, ValueError):
+            return default
+    if pd.isna(numeric):
+        return default
+    try:
+        return int(numeric)
+    except (TypeError, ValueError, OverflowError):
+        return default
 
 
 def _format_stint_tyre_note(tyre_life, fresh_tyre):
@@ -2617,19 +2638,32 @@ def _race_stints(session, driver_number, session_code):
 
     if not stints:
         results = getattr(session, "results", None)
-        if results is None or results.empty:
+        row = None
+        if results is not None and not results.empty:
+            result_row = results[results["DriverNumber"].astype(str).str.strip() == str(driver_number).strip()]
+            if not result_row.empty:
+                row = result_row.iloc[0]
+
+        lap_total = None
+        if driver_laps is not None and not driver_laps.empty and "LapNumber" in driver_laps.columns:
+            lap_numbers = pd.to_numeric(driver_laps["LapNumber"], errors="coerce").dropna()
+            if not lap_numbers.empty:
+                try:
+                    lap_total = int(float(lap_numbers.max()))
+                except (TypeError, ValueError):
+                    lap_total = None
+
+        if (lap_total is None or lap_total <= 0) and row is not None:
+            try:
+                lap_total = int(float(row.get("Laps", 0) or 0))
+            except (TypeError, ValueError):
+                lap_total = None
+
+        if lap_total is None or lap_total <= 0:
             return None
 
-        result_row = results[results["DriverNumber"].astype(str).str.strip() == str(driver_number).strip()]
-        if result_row.empty:
-            return None
-
-        row = result_row.iloc[0]
-        lap_total = int(float(row.get("Laps", 0) or 0))
-        if lap_total <= 0:
-            return None
-
-        driver_name = _clean_value(row.get("FullName", driver_name))
+        if row is not None:
+            driver_name = _clean_value(row.get("FullName", driver_name))
         inferred_compound = "-"
         if driver_laps is not None and not driver_laps.empty and "Compound" in driver_laps.columns:
             compound_series = driver_laps["Compound"].dropna().astype(str)
@@ -2748,7 +2782,7 @@ def _pit_strategy_graph(session):
 
     def classify_result_label(result_row, leader_laps):
         status_text = _clean_value(result_row.get("Status", "")).strip().lower()
-        driver_laps = int(float(result_row.get("Laps", 0) or 0))
+        driver_laps = _safe_int_value(result_row.get("Laps", 0))
         if "dns" in status_text or driver_laps <= 0:
             return "DNS"
         if any(token in status_text for token in ("retired", "dnf", "disqualified", "withdrawn", "accident", "damage", "engine", "mechanical", "suspension", "gearbox", "spin", "collision", "stopped")):
@@ -2900,7 +2934,7 @@ def _pit_strategy_graph(session):
     elif results_ordered is not None and not results_ordered.empty:
         leader_row = results_ordered.iloc[0]
         leader_time = format_session_time(leader_row.get("Time", ""))
-        leader_laps = int(float(leader_row.get("Laps", 0) or 0))
+        leader_laps = _safe_int_value(leader_row.get("Laps", 0))
         for row in rows:
             driver_row = results_ordered[results_ordered["DriverNumber"].astype(str).str.strip() == str(row["driver_number"]).strip()]
             if driver_row.empty:
@@ -3842,6 +3876,13 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
     if payload is None:
         return None
 
+    driver_lookup = {}
+    if driver_options:
+        for option in driver_options:
+            driver_key = _normalize_driver_number(option.get("value", ""))
+            if driver_key:
+                driver_lookup[driver_key] = option
+
     sector_columns = [("Sector1Time", "S1"), ("Sector2Time", "S2"), ("Sector3Time", "S3")]
     sector_markers = []
     cumulative_seconds = 0.0
@@ -3870,8 +3911,24 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
             "cumulative_seconds": float(cumulative_seconds),
         }
         if best_lap is not None:
+            source_driver_number = _normalize_driver_number(best_lap.get("DriverNumber", ""))
+            source_option = driver_lookup.get(source_driver_number)
+            source_driver_abbr = _clean_value((source_option or {}).get("abbreviation", "")).strip()
+            if not source_driver_abbr:
+                source_driver_abbr = _clean_value(best_lap.get("Driver", "")).strip()
+            source_driver_name = _clean_value((source_option or {}).get("full_name", "")).strip()
+            source_driver_color = _clean_value((source_option or {}).get("team_badge_color", "")).strip()
+            if not source_driver_name:
+                source_driver_name = source_driver_abbr or source_driver_number or "BEST"
             marker["source_lap_number"] = _clean_value(best_lap.get("LapNumber", "")).strip()
-            marker["source_driver_number"] = _normalize_driver_number(best_lap.get("DriverNumber", ""))
+            marker["source_driver_number"] = source_driver_number
+            marker["source_driver_abbr"] = source_driver_abbr or source_driver_number or "BEST"
+            marker["source_driver_name"] = source_driver_name
+            marker["source_driver_color"] = source_driver_color or "#44c2ff"
+            if marker["source_driver_abbr"] and marker["source_driver_name"] and marker["source_driver_name"] != marker["source_driver_abbr"]:
+                marker["source_driver_display"] = f'{marker["source_driver_abbr"]} · {marker["source_driver_name"]}'
+            else:
+                marker["source_driver_display"] = marker["source_driver_name"] or marker["source_driver_abbr"] or "BEST"
         sector_markers.append(marker)
 
     reference_driver_number = _normalize_driver_number(reference_lap.get("DriverNumber", ""))
@@ -4400,6 +4457,8 @@ def results():
     session = data.get("session") if data and data.get("session") is not None else None
     if session is None and data and (session_is_race or session_is_qualifying):
         session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
+    if session is None and data and session_code.startswith("FP"):
+        session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
     if session is None and session_is_qualifying:
         try:
             session = fastf1.get_session(int(ctx["year"]), ctx["gp"], ctx["session_code"])
@@ -4593,6 +4652,8 @@ def data():
         driver_number = _resolve_driver(session, driver_number, driver_options) if session else driver_number
     else:
         driver_number = None
+        if session and session_code.startswith("FP") and driver_options:
+            driver_number = driver_options[0]["value"]
     selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
     if selected_driver_data is None and driver_requested and driver_options:
         selected_driver_data = next((option for option in driver_options if option["value"] == request.args.get("driver", "").strip()), None)
@@ -4665,10 +4726,31 @@ def data():
                 selected_lap_value = f"{_clean_value(driver_number)}:{_clean_value(selected_lap_data.get('LapNumber', ''))}"
                 if selected_stint is None:
                     selected_stint = _parse_stint_value(selected_lap_data.get("Stint", None))
+    if (
+        session
+        and driver_number
+        and not session_is_qualifying
+        and session_code.startswith("FP")
+        and selected_stint is None
+        and race_stints
+        and race_stints.get("stints")
+    ):
+        selected_stint = _parse_stint_value(race_stints["stints"][0].get("stint", None))
     if lap_page_requested and selected_stint is None and session and driver_number and race_stints and race_stints.get("stints"):
         selected_stint = _parse_stint_value(race_stints["stints"][0].get("stint", None))
     selected_stint_data = None
     if race_stints and race_stints.get("stints") and selected_stint is not None:
+        selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
+    if (
+        session
+        and driver_number
+        and not session_is_qualifying
+        and session_code.startswith("FP")
+        and race_stints
+        and race_stints.get("stints")
+        and selected_stint_data is None
+    ):
+        selected_stint = _parse_stint_value(race_stints["stints"][0].get("stint", None))
         selected_stint_data = next((item for item in race_stints["stints"] if item["stint"] == selected_stint), None)
     if lap_page_requested and not selected_lap_value and selected_stint_data is not None:
         # Default to a representative lap so /lap opens with populated telemetry.
@@ -4759,13 +4841,11 @@ def data():
             track_map is not None,
         )
     lap_entry_source = request.args.get("source", "").strip().lower()
-    lap_back_driver_value = driver_number or request.args.get("driver", "").strip()
     lap_back_to_driver_table_url = url_for(
         "data",
         year=ctx["year"],
         gp=ctx["gp"],
         session=ctx["session_code"],
-        **({"driver": lap_back_driver_value} if lap_back_driver_value else {}),
     )
     lap_back_to_overview_url = (
         url_for("results", year=ctx["year"], gp=ctx["gp"], session=ctx["session_code"])
