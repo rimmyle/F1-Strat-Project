@@ -2594,7 +2594,7 @@
       }
 
       .lap-track-card .track-map-sector-badge-label {
-        color: var(--sector-color, #ff4d4d);
+        color: var(--sector-color, #ff8a80);
         font-size: 0.72rem;
         font-weight: 900;
         letter-spacing: 0.08em;
@@ -2862,7 +2862,8 @@
         fill: none;
         stroke: rgba(255, 255, 255, 0.001);
         stroke-width: 22;
-        pointer-events: stroke;
+        pointer-events: all;
+        cursor: pointer;
       }
 
       .race-position-series rect,
@@ -3227,8 +3228,51 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
-        width: min(188px, calc(100% - 36px));
+        width: min(220px, calc(100% - 36px));
         pointer-events: none;
+      }
+
+      .qualifying-overview-sector-entry {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+      }
+
+      .qualifying-overview-track-map .track-map-sector-driver-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 8px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(21, 35, 59, 0.94), rgba(12, 19, 34, 0.98));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      }
+
+      .qualifying-overview-track-map .track-map-sector-driver-headshot {
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        object-fit: cover;
+        flex: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 0 0 1px rgba(7, 16, 29, 0.45);
+        background: #07101d;
+      }
+
+      .qualifying-overview-track-map .track-map-sector-driver-name {
+        color: #f8fbff;
+        font-size: 0.76rem;
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: 0.02em;
+        text-align: left;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .qualifying-overview-track-map .track-map-sector-badge {
@@ -3246,7 +3290,7 @@
       }
 
       .qualifying-overview-track-map .track-map-sector-badge-label {
-        color: var(--sector-color, #ff4d4d);
+        color: var(--sector-color, #ff8a80);
         font-size: 0.72rem;
         font-weight: 900;
         letter-spacing: 0.08em;
@@ -4009,13 +4053,17 @@
               </header>
               <div class="track-map-viewport">
                 {% if qualifying_overview_track_map and qualifying_overview_track_map.sector_markers %}
-                  {% set sector_colors = ['#ff4d4d', '#ffffff', '#ffd84d'] %}
                   <div class="track-map-sector-stack qualifying-overview-sector-stack" aria-label="Sector split times">
                     {% for marker in qualifying_overview_track_map.sector_markers %}
-                      <div class="track-map-sector-badge" style="--sector-color: {{ sector_colors[loop.index0] if loop.index0 < sector_colors|length else '#0f766e' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
-                        <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
-                        <span class="track-map-sector-badge-time">{{ marker.time }}</span>
-                        <span class="track-map-sector-badge-driver">{{ marker.source_driver_display }}</span>
+                      <div class="qualifying-overview-sector-entry">
+                        <div class="track-map-sector-driver-badge" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
+                          <img class="track-map-sector-driver-headshot" src="{{ marker.source_driver_headshot_url }}" alt="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }} headshot" loading="lazy" />
+                          <span class="track-map-sector-driver-name">{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}</span>
+                        </div>
+                        <div class="track-map-sector-badge" style="--sector-color: {{ marker.source_driver_color if marker.source_driver_color else '#0f766e' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
+                          <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
+                          <span class="track-map-sector-badge-time">{{ marker.time }}</span>
+                        </div>
                       </div>
                     {% endfor %}
                   </div>
@@ -4028,6 +4076,8 @@
                     role="img"
                     aria-label="Qualifying overview track map"
                     data-driver-abbr="{{ qualifying_overview_track_map.driver_abbr }}"
+                    data-driver-circle-label="{{ qualifying_overview_track_map.driver_circle_label }}"
+                    data-driver-name="{{ qualifying_overview_track_map.reference_driver_name if qualifying_overview_track_map.reference_driver_name else qualifying_overview_track_map.driver_abbr }}"
                     data-driver-color="{{ qualifying_overview_track_map.driver_color }}"
                     data-sector-badge-mode="stack"
                   ></svg>
@@ -4207,10 +4257,9 @@
                     </div>
                     <div class="track-map-body">
                       {% if track_map and track_map.sector_markers %}
-                        {% set sector_colors = ['#ff4d4d', '#ffffff', '#ffd84d'] %}
                         <div class="track-map-sector-stack" aria-label="Sector split times">
                           {% for marker in track_map.sector_markers %}
-                            {% set sector_color = sector_colors[loop.index0] if loop.index0 < sector_colors|length else '#0f766e' %}
+                            {% set sector_color = marker.source_driver_color if marker.source_driver_color else '#0f766e' %}
                             <div class="track-map-sector-badge" style="--sector-color: {{ sector_color }};">
                               <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
                               <span class="track-map-sector-badge-time">{{ marker.time }}</span>
@@ -4225,6 +4274,8 @@
                         role="img"
                         aria-label="Track map with racing line"
                         data-driver-abbr="{% if selected_driver_data %}{{ selected_driver_data.abbreviation }}{% elif telemetry_summary %}{{ telemetry_summary.driver }}{% endif %}"
+                        data-driver-circle-label="{{ selected_driver_data.full_name if selected_driver_data else (telemetry_summary.driver if telemetry_summary else (track_map.driver_circle_label if track_map and track_map.driver_circle_label else '')) }}"
+                        data-driver-name="{% if selected_driver_data %}{{ selected_driver_data.full_name }}{% elif telemetry_summary %}{{ telemetry_summary.driver }}{% endif %}"
                         data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
                       ></svg>
                     </div>
@@ -5463,7 +5514,7 @@
               const driverValue = encodeURIComponent(series.value || "");
               const href = String(series.href || "").trim() || `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position#lap-stint-panel`;
               return `
-                <a class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" href="${escapeHtml(href)}" xlink:href="${escapeHtml(href)}" tabindex="0" role="link" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
+                <a class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" data-href="${escapeHtml(href)}" href="${escapeHtml(href)}" xlink:href="${escapeHtml(href)}" tabindex="0" role="link" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
                   <path class="race-position-hit" d="${d}" data-href="${href}"></path>
                   <path class="race-position-line" d="${d}" data-href="${href}" fill="none" stroke="${series.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
                 </a>
@@ -5504,9 +5555,19 @@
             const badgeLayer = overlayLayer.querySelector("[data-race-position-badge-layer]");
             const seriesGroups = Array.from(overlayLayer.querySelectorAll(".race-position-series"));
             const badgeGroups = Array.from(overlayLayer.querySelectorAll(".race-position-badge"));
-            const openDriver = (group) => {
-              const href = group
-                ? (group.getAttribute("href") || group.getAttribute("xlink:href") || group.getAttribute("data-href") || "").trim()
+            const resolveDriverTarget = (target) => {
+              if (!target) {
+                return null;
+              }
+              if (target.closest) {
+                return target.closest(".race-position-series, .race-position-line, .race-position-hit");
+              }
+              return target;
+            };
+            const openDriver = (target) => {
+              const link = resolveDriverTarget(target);
+              const href = link
+                ? (link.getAttribute("href") || link.getAttribute("xlink:href") || link.getAttribute("data-href") || "").trim()
                 : "";
               if (!href) {
                 return;
@@ -5574,6 +5635,21 @@
                   openDriver(group);
                 }
               });
+            });
+            overlayLayer.querySelectorAll(".race-position-series, .race-position-line, .race-position-hit").forEach((target) => {
+              target.style.cursor = "pointer";
+            });
+            svg.addEventListener("click", (event) => {
+              const target = event.target && event.target.closest ? event.target.closest(".race-position-series, .race-position-line, .race-position-hit") : null;
+              if (!target) {
+                return;
+              }
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+              }
+              event.preventDefault();
+              event.stopPropagation();
+              openDriver(target);
             });
             svg.onmouseleave = clearSeries;
             svg.onpointerleave = clearSeries;
@@ -7059,7 +7135,7 @@
             return `hsl(${hue.toFixed(0)} ${saturation.toFixed(0)}% ${lightness.toFixed(0)}%)`;
           }
 
-          function renderAccelerationLine(points, pointsWithAcceleration) {
+          function renderAccelerationLine(points, pointsWithAcceleration, strokeWidth = 3.2) {
             if (!points.length || !pointsWithAcceleration.length) {
               return "";
             }
@@ -7079,7 +7155,7 @@
                 ? (firstAcceleration + secondAcceleration) / 2
                 : (Number.isFinite(firstAcceleration) ? firstAcceleration : (Number.isFinite(secondAcceleration) ? secondAcceleration : null));
               const stroke = acceleration === null ? "#94a3b8" : accelerationColor(acceleration);
-              markup += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${stroke}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></line>`;
+              markup += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"></line>`;
             }
 
             return `<g id="track-acceleration-line" filter="url(#glow)">${markup}</g>`;
@@ -7197,21 +7273,124 @@
                 .filter((seconds) => Number.isFinite(seconds) && seconds > 0 && seconds < duration)
                 .map((seconds) => seconds / duration)
               : [];
-            const sectorGap = Math.max(2.5, 8 / Math.max(scale, 0.001));
-            const sectorSegments = splitPolylineByFractions(points, sectorFractions, sectorGap);
-            const sectorColors = ["#ff4d4d", "#ffffff", "#ffd84d"];
+            const sectorSegments = splitPolylineByFractions(points, sectorFractions, 0);
+            const defaultSectorColors = ["#ff8a80", "#ffffff", "#fff176"];
+            const sectorColors = sectorSegments.map((_, index) => {
+              const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
+              const markerColor = String(marker && (marker.source_driver_color || marker.color) || "").trim();
+              return markerColor || defaultSectorColors[index] || defaultSectorColors[defaultSectorColors.length - 1];
+            });
+            const boundaryMetrics = points.reduce((acc, point, index) => {
+              if (index === 0) {
+                return acc;
+              }
+
+              const [x1, y1] = points[index - 1];
+              const [x2, y2] = point;
+              acc.totalLength += Math.hypot(x2 - x1, y2 - y1);
+              acc.cumulativeLengths[index] = acc.totalLength;
+              return acc;
+            }, {
+              cumulativeLengths: [0],
+              totalLength: 0,
+            });
+            const boundaryPointAtLength = (targetLength) => {
+              if (targetLength <= 0) {
+                return points[0];
+              }
+              if (targetLength >= boundaryMetrics.totalLength) {
+                return points[points.length - 1];
+              }
+
+              for (let index = 1; index < points.length; index += 1) {
+                const prevLength = boundaryMetrics.cumulativeLengths[index - 1];
+                const nextLength = boundaryMetrics.cumulativeLengths[index];
+                if (targetLength > nextLength) {
+                  continue;
+                }
+
+                const span = nextLength - prevLength || 1;
+                const ratio = Math.max(0, Math.min(1, (targetLength - prevLength) / span));
+                const prev = points[index - 1];
+                const next = points[index];
+                return [
+                  prev[0] + ((next[0] - prev[0]) * ratio),
+                  prev[1] + ((next[1] - prev[1]) * ratio),
+                ];
+              }
+
+              return points[points.length - 1];
+            };
+            const boundaryTangentAtLength = (targetLength) => {
+              if (points.length < 2) {
+                return null;
+              }
+
+              let index = 1;
+              while (index < points.length && targetLength > boundaryMetrics.cumulativeLengths[index]) {
+                index += 1;
+              }
+
+              const prev = points[Math.max(0, index - 1)];
+              const next = points[Math.min(points.length - 1, index)];
+              let dx = next[0] - prev[0];
+              let dy = next[1] - prev[1];
+              if (dx === 0 && dy === 0) {
+                for (let backIndex = Math.max(0, index - 2); backIndex >= 0; backIndex -= 1) {
+                  const backPoint = points[backIndex];
+                  dx = next[0] - backPoint[0];
+                  dy = next[1] - backPoint[1];
+                  if (dx !== 0 || dy !== 0) {
+                    break;
+                  }
+                }
+              }
+
+              const length = Math.hypot(dx, dy) || 1;
+              return {
+                x: prev[0] + ((next[0] - prev[0]) * 0.5),
+                y: prev[1] + ((next[1] - prev[1]) * 0.5),
+                normalX: -dy / length,
+                normalY: dx / length,
+              };
+            };
+            const sectorBoundaryMarkup = sectorFractions.length && boundaryMetrics.totalLength > 0
+              ? sectorFractions.map((fraction) => {
+                const boundaryLength = fraction * boundaryMetrics.totalLength;
+                const anchor = boundaryPointAtLength(boundaryLength);
+                const tangent = boundaryTangentAtLength(boundaryLength);
+                if (!anchor || !tangent) {
+                  return "";
+                }
+
+                const dividerLength = Math.max(surfaceWidth * 1.15, 16);
+                const dividerHalf = dividerLength / 2;
+                const separatorWidth = Math.max(2.4, Math.min(4.4, surfaceWidth * 0.18));
+                const x1 = anchor[0] + (tangent.normalX * dividerHalf);
+                const y1 = anchor[1] + (tangent.normalY * dividerHalf);
+                const x2 = anchor[0] - (tangent.normalX * dividerHalf);
+                const y2 = anchor[1] - (tangent.normalY * dividerHalf);
+                return `
+                  <g class="track-sector-divider" style="pointer-events:none">
+                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(10, 18, 32, 0.96)" stroke-width="${separatorWidth.toFixed(2)}" stroke-linecap="round"></line>
+                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1.1" stroke-linecap="round"></line>
+                  </g>
+                `;
+              }).join("")
+              : "";
             const sectorSurfaceMarkup = sectorSegments.length > 1
               ? sectorSegments.map((segment, index) => {
                 const segmentPath = path(segment);
                 const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
-                return `<path d="${segmentPath}" fill="none" stroke="${sectorColor}" stroke-opacity="0.52" stroke-width="${surfaceWidth}" stroke-linecap="butt" stroke-linejoin="round"></path>`;
+                return `<path d="${segmentPath}" fill="none" stroke="${sectorColor}" stroke-opacity="0.82" stroke-width="${surfaceWidth}" stroke-linecap="butt" stroke-linejoin="round"></path>`;
               }).join("")
               : `<path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.26)" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
             return `
               <g id="track-surface" pointer-events="none">
-                <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.18)" stroke-width="${outerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.14)" stroke-width="${outerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
                 ${sectorSurfaceMarkup}
                 <path d="${outerPath}" fill="none" stroke="rgba(11, 17, 30, 0.96)" stroke-width="${innerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
+                ${sectorBoundaryMarkup}
               </g>
             `;
           }
@@ -7295,15 +7474,17 @@
           const [endX, endY] = toPoint(racing[racing.length - 1]);
           const duration = Number(map.duration || 0) || 0;
           const sectorMarkers = Array.isArray(map.sector_markers) ? map.sector_markers : [];
-          const showSectorMarkersOnTrack = (String(svg.dataset.sectorBadgeMode || "").trim().toLowerCase() !== "stack");
+          const showSectorMarkersOnTrack = String(svg.dataset.sectorBadgeMode || "").trim().toLowerCase() === "stack";
           const maxSpeedMarker = map.max_speed_marker || null;
           const minSpeedMarker = map.min_speed_marker || null;
           const driverAbbr = (svg.dataset.driverAbbr || "DRI").trim() || "DRI";
+          const driverName = (svg.dataset.driverName || driverAbbr).trim() || driverAbbr;
+          const driverCircleLabel = (svg.dataset.driverCircleLabel || driverName).trim() || driverName;
           const driverColor = (svg.dataset.driverColor || "#44c2ff").trim() || "#44c2ff";
           const fallbackMarkerState = {
-            abbr: driverAbbr,
+            label: driverCircleLabel,
             color: driverColor,
-            title: driverAbbr,
+            title: driverName,
           };
           function sectorMarkerStateForElapsed(elapsedSeconds) {
             if (!showSectorMarkersOnTrack || !sectorMarkers.length) {
@@ -7327,11 +7508,11 @@
               }
             }
 
-            const abbr = String(activeMarker && (activeMarker.source_driver_abbr || activeMarker.source_driver_display || activeMarker.label) || driverAbbr).trim() || driverAbbr;
+            const label = String(activeMarker && (activeMarker.source_driver_circle_label || activeMarker.source_driver_abbr || activeMarker.source_driver_display || activeMarker.label) || driverCircleLabel).trim() || driverCircleLabel;
             const color = String(activeMarker && (activeMarker.source_driver_color || activeMarker.color) || driverColor).trim() || driverColor;
-            const title = String(activeMarker && (activeMarker.source_driver_display || activeMarker.source_driver_name || activeMarker.source_driver_abbr) || abbr).trim() || abbr;
+            const title = String(activeMarker && (activeMarker.source_driver_display || activeMarker.source_driver_name || activeMarker.source_driver_abbr) || driverCircleLabel).trim() || driverCircleLabel;
             return {
-              abbr,
+              label,
               color,
               title,
             };
@@ -7990,11 +8171,11 @@
             if (!displayTime) {
               displayTime = "-";
             }
-              if (!showSectorMarkersOnTrack) {
-                return "";
-              }
+            if (!showSectorMarkersOnTrack) {
+              return "";
+            }
 
-              return `
+            return `
               <g class="sector-marker" style="pointer-events:none">
                 <rect x="${(badgeX - (badgeWidth / 2)).toFixed(2)}" y="${(badgeY - (badgeHeight / 2)).toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="14" fill="${backgroundFill}" stroke="${backgroundStroke}" stroke-width="1.2"></rect>
                 <text class="sector-marker-label" x="${badgeX.toFixed(2)}" y="${labelY.toFixed(2)}" fill="${color}" text-anchor="middle">Sector ${index + 1}</text>
@@ -8018,14 +8199,14 @@
               ${referenceImageUrl ? renderTrackImage(referenceImageUrl) : ""}
               ${renderTrackSurface(surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing), sectorMarkers)}
             </g>
-            ${renderAccelerationLine(racing, samples)}
+            ${renderAccelerationLine(racing, samples, showSectorMarkersOnTrack ? 3.9 : 3.2)}
             ${renderSpeedMarker(maxSpeedMarker, "MAX", "#fbbf24", 54)}
             ${renderSpeedMarker(minSpeedMarker, "MIN", "#60a5fa", 72)}
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
             <circle cx="${endX.toFixed(2)}" cy="${endY.toFixed(2)}" r="7" fill="#ffbf69"></circle>
             <g id="lap-marker" transform="translate(${startX.toFixed(2)} ${startY.toFixed(2)})">
               <circle cx="0" cy="0" r="19" fill="rgba(7,16,29,0.92)" stroke="${initialMarkerState.color}" stroke-width="2"></circle>
-              <text x="0" y="1" fill="${initialMarkerState.color}" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(initialMarkerState.abbr)}</text>
+              <text x="0" y="1" fill="${initialMarkerState.color}" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="middle" textLength="30" lengthAdjust="spacingAndGlyphs">${escapeHtml(initialMarkerState.label)}</text>
             </g>
           `;
 
@@ -8055,7 +8236,7 @@
             }
             if (markerText) {
               markerText.setAttribute("fill", markerState.color);
-              markerText.textContent = markerState.abbr;
+              markerText.textContent = markerState.label;
             }
             rafId = window.requestAnimationFrame(frame);
           }

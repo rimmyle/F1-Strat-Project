@@ -3738,6 +3738,10 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
         "sector_markers": sector_markers,
         "max_speed_marker": max_speed_marker,
         "min_speed_marker": min_speed_marker,
+        "driver_circle_label": _driver_last_name_abbreviation(
+            _clean_value(lap.get("Driver", "")).strip() or _clean_value(lap.get("DriverNumber", "")).strip() or "DRI",
+            _clean_value(lap.get("Driver", "")).strip() or _clean_value(lap.get("DriverNumber", "")).strip() or "DRI",
+        ),
         "speed_min": float(speed_min) if speed_min is not None else None,
         "speed_max": float(speed_max) if speed_max is not None else None,
         "acceleration_min": float(acceleration_min) if acceleration_min is not None else None,
@@ -3918,12 +3922,22 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
                 source_driver_abbr = _clean_value(best_lap.get("Driver", "")).strip()
             source_driver_name = _clean_value((source_option or {}).get("full_name", "")).strip()
             source_driver_color = _clean_value((source_option or {}).get("team_badge_color", "")).strip()
+            source_driver_headshot_url = _clean_value((source_option or {}).get("headshot_url", "")).strip()
+            if not source_driver_headshot_url:
+                source_driver_id = _clean_value((source_option or {}).get("driver_id", "")).strip() or source_driver_abbr or source_driver_number or ""
+                source_driver_headshot_url = _driver_headshot_url(source_driver_id, "")
+            source_driver_circle_label = _driver_last_name_abbreviation(
+                source_driver_name or source_driver_abbr or source_driver_number or "BEST",
+                source_driver_abbr or source_driver_number or "BEST",
+            )
             if not source_driver_name:
                 source_driver_name = source_driver_abbr or source_driver_number or "BEST"
             marker["source_lap_number"] = _clean_value(best_lap.get("LapNumber", "")).strip()
             marker["source_driver_number"] = source_driver_number
             marker["source_driver_abbr"] = source_driver_abbr or source_driver_number or "BEST"
+            marker["source_driver_circle_label"] = source_driver_circle_label
             marker["source_driver_name"] = source_driver_name
+            marker["source_driver_headshot_url"] = source_driver_headshot_url or ""
             marker["source_driver_color"] = source_driver_color or "#44c2ff"
             if marker["source_driver_abbr"] and marker["source_driver_name"] and marker["source_driver_name"] != marker["source_driver_abbr"]:
                 marker["source_driver_display"] = f'{marker["source_driver_abbr"]} · {marker["source_driver_name"]}'
@@ -3948,6 +3962,12 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
         driver_abbr = _clean_value(reference_lap.get("Driver", "")).strip()
     if not driver_abbr:
         driver_abbr = reference_driver_number or "BEST"
+    reference_driver_name = _clean_value((reference_option or {}).get("full_name", "")).strip()
+    if not reference_driver_name:
+        reference_driver_name = _clean_value(reference_lap.get("Driver", "")).strip()
+    if not reference_driver_name:
+        reference_driver_name = driver_abbr or reference_driver_number or "BEST"
+    driver_circle_label = reference_driver_name
 
     driver_color = _clean_value((reference_option or {}).get("team_badge_color", "")).strip()
     if not driver_color:
@@ -3957,10 +3977,11 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
     payload["title"] = f"{phase_code} fastest sectors" if phase_code != "ALL" else "Qualifying fastest sectors"
     payload["phase_code"] = phase_code
     payload["driver_abbr"] = driver_abbr
+    payload["driver_circle_label"] = driver_circle_label
     payload["driver_color"] = driver_color
     payload["sector_markers"] = sector_markers
     payload["reference_driver_number"] = reference_driver_number
-    payload["reference_driver_name"] = _clean_value(reference_lap.get("Driver", "")).strip()
+    payload["reference_driver_name"] = reference_driver_name
 
     return payload
 
