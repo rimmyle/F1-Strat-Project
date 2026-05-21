@@ -576,11 +576,79 @@
         align-items: center;
         justify-content: center;
         gap: 12px;
-        padding: 24px 20px 20px;
+        padding: 30px 20px 20px;
         border-radius: 18px;
-        background: linear-gradient(180deg, rgba(15, 23, 38, 0.98), rgba(10, 16, 28, 0.98)) !important;
+        border: 2px solid rgba(148, 163, 184, 0.22);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 24%),
+          linear-gradient(180deg, rgba(15, 23, 38, 0.98), rgba(10, 16, 28, 0.98)) !important;
         box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
         text-align: center;
+        overflow: hidden;
+        isolation: isolate;
+      }
+
+      .qualifying-result-row--podium::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.22), transparent 28%),
+          radial-gradient(circle at 88% 0%, rgba(255, 255, 255, 0.14), transparent 24%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 26%);
+        opacity: 0.9;
+        z-index: 0;
+      }
+
+      .qualifying-result-row--podium::after {
+        content: "";
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        top: 0;
+        height: 5px;
+        border-radius: 0 0 999px 999px;
+        background: linear-gradient(90deg, transparent, var(--podium-accent, rgba(68, 194, 255, 0.8)), transparent);
+        box-shadow: 0 0 18px var(--podium-accent, rgba(68, 194, 255, 0.8));
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .qualifying-result-row--podium > * {
+        position: relative;
+        z-index: 2;
+      }
+
+      .qualifying-result-row--podium-p1 {
+        --podium-accent: rgba(255, 225, 130, 0.95);
+        --podium-accent-soft: rgba(255, 225, 130, 0.18);
+        border-color: rgba(255, 225, 130, 0.5);
+        box-shadow:
+          0 0 0 1px rgba(255, 240, 179, 0.22) inset,
+          0 0 0 1px rgba(255, 225, 130, 0.18),
+          0 18px 34px rgba(0, 0, 0, 0.24);
+      }
+
+      .qualifying-result-row--podium-p2 {
+        --podium-accent: rgba(243, 246, 250, 0.92);
+        --podium-accent-soft: rgba(243, 246, 250, 0.16);
+        border-color: rgba(243, 246, 250, 0.42);
+        box-shadow:
+          0 0 0 1px rgba(248, 250, 252, 0.16) inset,
+          0 0 0 1px rgba(243, 246, 250, 0.16),
+          0 18px 34px rgba(0, 0, 0, 0.24);
+      }
+
+      .qualifying-result-row--podium-p3 {
+        --podium-accent: rgba(255, 208, 158, 0.94);
+        --podium-accent-soft: rgba(255, 208, 158, 0.16);
+        border-color: rgba(255, 208, 158, 0.44);
+        box-shadow:
+          0 0 0 1px rgba(255, 223, 188, 0.15) inset,
+          0 0 0 1px rgba(255, 208, 158, 0.16),
+          0 18px 34px rgba(0, 0, 0, 0.24);
       }
 
       .qualifying-result-row--podium:hover,
@@ -611,41 +679,56 @@
 
       .qualifying-result-rank {
         position: absolute;
-        top: 12px;
-        right: 12px;
+        top: 10px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 30px;
-        height: 30px;
+        width: auto;
+        min-width: 66px;
+        height: auto;
+        padding: 0.34rem 0.75rem;
         border: 1px solid rgba(68, 194, 255, 0.26);
         border-radius: 999px;
-        background: rgba(68, 194, 255, 0.14);
+        background: rgba(18, 26, 40, 0.88);
         color: #8bd3ff;
         font-size: 0.72rem;
         font-weight: 900;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
       }
 
       .qualifying-result-rank--p1 {
         border-color: rgba(255, 225, 130, 0.48);
-        background: linear-gradient(180deg, #ffe48a 0%, #c89112 100%);
+        background: linear-gradient(180deg, rgba(255, 232, 157, 0.98), rgba(194, 137, 18, 0.95));
         color: #261700;
-        box-shadow: 0 0 0 1px rgba(255, 240, 179, 0.18), 0 8px 18px rgba(168, 115, 12, 0.24);
+        box-shadow:
+          0 0 0 1px rgba(255, 240, 179, 0.18),
+          0 8px 18px rgba(168, 115, 12, 0.24),
+          0 0 20px rgba(255, 225, 130, 0.18);
       }
 
       .qualifying-result-rank--p2 {
         border-color: rgba(243, 246, 250, 0.48);
-        background: linear-gradient(180deg, #f6fafc 0%, #aeb8c7 100%);
+        background: linear-gradient(180deg, rgba(246, 250, 252, 0.98), rgba(174, 184, 199, 0.95));
         color: #0f172a;
-        box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.16), 0 8px 18px rgba(71, 85, 105, 0.18);
+        box-shadow:
+          0 0 0 1px rgba(248, 250, 252, 0.16),
+          0 8px 18px rgba(71, 85, 105, 0.18),
+          0 0 20px rgba(243, 246, 250, 0.16);
       }
 
       .qualifying-result-rank--p3 {
         border-color: rgba(255, 208, 158, 0.46);
-        background: linear-gradient(180deg, #f2b37f 0%, #b96a2f 100%);
+        background: linear-gradient(180deg, rgba(242, 179, 127, 0.98), rgba(185, 106, 47, 0.95));
         color: #2a1405;
-        box-shadow: 0 0 0 1px rgba(255, 223, 188, 0.15), 0 8px 18px rgba(122, 67, 26, 0.22);
+        box-shadow:
+          0 0 0 1px rgba(255, 223, 188, 0.15),
+          0 8px 18px rgba(122, 67, 26, 0.22),
+          0 0 20px rgba(255, 208, 158, 0.16);
       }
 
       .qualifying-result-headshot {
@@ -661,7 +744,7 @@
         width: 112px;
         height: 112px;
         border-radius: 30px;
-        margin-top: 0;
+        margin-top: 8px;
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
       }
 
@@ -705,6 +788,26 @@
       .qualifying-result-time {
         color: var(--accent);
         font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .qualifying-result-time-stack {
+        display: grid;
+        gap: 2px;
+        justify-items: end;
+        min-width: 0;
+        text-align: right;
+      }
+
+      .qualifying-result-row--podium .qualifying-result-time-stack {
+        justify-items: center;
+        text-align: center;
+      }
+
+      .qualifying-result-gap {
+        color: #c0cede;
+        font-size: 0.74rem;
+        line-height: 1.1;
         white-space: nowrap;
       }
 
@@ -977,29 +1080,43 @@
 
       .qualifying-run-browser-body {
         display: grid;
-        grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.9fr);
-        gap: 16px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
       }
 
       .qualifying-run-browser-body.single-column {
         grid-template-columns: minmax(0, 1fr);
       }
 
-      .qualifying-run-browser-summary {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px 12px;
-        align-items: center;
-        justify-content: flex-end;
-        color: #c0cede;
-        font-size: 0.8rem;
+      .qualifying-run-browser .qualifying-run-group {
+        position: relative;
+        padding: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 18px;
+        background:
+          linear-gradient(180deg, rgba(17, 29, 49, 0.86), rgba(8, 14, 26, 0.42));
+        box-shadow:
+          0 14px 30px rgba(0, 0, 0, 0.12),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        overflow: hidden;
       }
 
-      .qualifying-run-browser .qualifying-run-group {
-        padding: 16px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        border-radius: 16px;
-        background: rgba(8, 14, 26, 0.36);
+      .qualifying-run-browser .qualifying-run-group::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--group-accent, rgba(68, 194, 255, 0.82)), transparent 78%);
+        opacity: 0.9;
+        pointer-events: none;
+      }
+
+      .qualifying-run-browser .qualifying-run-group:nth-child(1) {
+        --group-accent: rgba(68, 194, 255, 0.82);
+      }
+
+      .qualifying-run-browser .qualifying-run-group:nth-child(2) {
+        --group-accent: rgba(255, 191, 105, 0.82);
       }
 
       .qualifying-run-browser .qualifying-run-group header {
@@ -1008,10 +1125,13 @@
         justify-content: space-between;
         gap: 12px;
         flex-wrap: wrap;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
       }
 
       .qualifying-run-browser .qualifying-run-choices {
-        gap: 14px;
+        gap: 12px;
       }
 
       .qualifying-run-browser .qualifying-run-lap-button {
@@ -3201,6 +3321,12 @@
         padding: 0 20px 14px;
       }
 
+      .qualifying-phase-selector-strip {
+        display: flex;
+        justify-content: center;
+        padding: 0 20px 18px;
+      }
+
       .qualifying-fullpage .qualifying-timeline-panel {
         margin-top: 0;
         border-radius: 0;
@@ -3276,6 +3402,43 @@
       .chart-title span {
         color: var(--muted);
         font-weight: 400;
+      }
+
+      .chart-sector-strip {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .chart-sector-chip {
+        display: grid;
+        gap: 2px;
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 7px 10px 8px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-left: 3px solid var(--sector-color, rgba(68, 194, 255, 0.75));
+        border-radius: 12px;
+        background: rgba(7, 16, 29, 0.72);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      }
+
+      .chart-sector-chip strong {
+        color: var(--sector-color, #44c2ff);
+        font-size: 0.67rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+
+      .chart-sector-chip small {
+        color: rgba(226, 232, 240, 0.94);
+        font-size: 0.72rem;
+        font-weight: 800;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
       }
 
       .chart-svg {
@@ -3388,46 +3551,99 @@
       }
 
       .qualifying-overview-track-map .track-map-viewport {
-        display: flex;
-        flex-direction: column;
+        display: block;
+      }
+
+      .qualifying-overview-track-map .track-map-stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(7, 14, 27, 0.95), rgba(12, 19, 34, 0.98));
+        overflow: hidden;
         align-items: stretch;
-        gap: 12px;
+        justify-items: stretch;
+      }
+
+      .qualifying-overview-track-map .track-map-stage > .track-map-telemetry-top {
+        grid-column: 1 / -1;
+      }
+
+      .qualifying-overview-track-map .track-map-stage > .track-map-telemetry-bottom {
+        grid-column: 1 / -1;
+      }
+
+      .qualifying-overview-track-map .track-map-body {
+        display: block;
+        min-width: 0;
+        grid-column: 1 / -1;
       }
 
       .qualifying-overview-sector-stack {
-        z-index: 2;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        width: min(280px, 100%);
-        max-width: 100%;
-        margin: 14px 0 0;
-        pointer-events: none;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        width: 100%;
+        min-width: 0;
+        justify-items: center;
+        align-self: stretch;
+        justify-self: stretch;
+        grid-column: 1 / -1;
+      }
+
+      .qualifying-overview-sector-strip {
+        display: block;
+        margin: 20px 0 18px;
+      }
+
+      .qualifying-overview-sector-stack[aria-label] {
+        margin: 2px 0 4px;
       }
 
       .qualifying-overview-sector-entry {
         display: flex;
         flex-direction: column;
-        gap: 5px;
-        width: 100%;
-      }
-
-      .qualifying-overview-track-map .track-map-sector-driver-badge {
-        display: flex;
         align-items: center;
-        gap: 8px;
-        min-height: 38px;
-        padding: 6px 10px;
+        justify-content: center;
+        gap: 14px;
+        width: min(100%, 348px);
+        min-height: 252px;
+        min-width: 0;
+        padding: 30px 20px 20px;
         border: 1px solid rgba(148, 163, 184, 0.16);
-        border-radius: 999px;
-        background: linear-gradient(180deg, rgba(21, 35, 59, 0.94), rgba(12, 19, 34, 0.98));
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(15, 23, 38, 0.98), rgba(10, 16, 28, 0.98));
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
+        text-align: center;
+        overflow: hidden;
+        isolation: isolate;
       }
 
-      .qualifying-overview-track-map .track-map-sector-driver-headshot {
-        width: 22px;
-        height: 22px;
-        border-radius: 999px;
+      .qualifying-overview-sector-entry:hover,
+      .qualifying-overview-sector-entry:focus-within {
+        border-color: rgba(68, 194, 255, 0.28);
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(68, 194, 255, 0.12);
+      }
+
+      .qualifying-overview-sector-strip .track-map-sector-driver-badge {
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .qualifying-overview-sector-strip .track-map-sector-driver-headshot {
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
         object-fit: cover;
         flex: none;
         border: 1px solid rgba(255, 255, 255, 0.14);
@@ -3435,54 +3651,54 @@
         background: #07101d;
       }
 
-      .qualifying-overview-track-map .track-map-sector-driver-name {
+      .qualifying-overview-sector-strip .track-map-sector-driver-name {
         color: #f8fbff;
-        font-size: 0.72rem;
+        font-size: 0.93rem;
         font-weight: 900;
-        line-height: 1.02;
+        line-height: 1.1;
         letter-spacing: 0.02em;
-        text-align: left;
+        text-align: center;
         min-width: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        word-break: break-word;
       }
 
-      .qualifying-overview-track-map .track-map-sector-badge {
+      .qualifying-overview-sector-strip .track-map-sector-badge {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 2px;
-        min-height: 66px;
-        padding: 8px 12px 9px;
+        gap: 5px;
+        width: min(100%, 280px);
+        min-height: 86px;
+        padding: 12px 14px 13px;
         border: 1px solid rgba(148, 163, 184, 0.16);
         border-radius: 16px;
         background: linear-gradient(180deg, rgba(21, 35, 59, 0.96), rgba(12, 19, 34, 0.98));
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
       }
 
-      .qualifying-overview-track-map .track-map-sector-badge-label {
-        color: var(--sector-color, #ff8a80);
-        font-size: 0.7rem;
+      .qualifying-overview-sector-strip .track-map-sector-badge-label {
+        color: #f8fbff;
+        font-size: 0.68rem;
         font-weight: 900;
         letter-spacing: 0.07em;
         text-transform: uppercase;
         line-height: 1;
       }
 
-      .qualifying-overview-track-map .track-map-sector-badge-time {
+      .qualifying-overview-sector-strip .track-map-sector-badge-time {
         color: #f8fbff;
-        font-size: 0.94rem;
+        font-size: 1.08rem;
         font-weight: 900;
         font-variant-numeric: tabular-nums;
         line-height: 1.02;
         text-shadow: 0 1px 0 rgba(7, 16, 29, 0.6);
       }
 
-      .qualifying-overview-track-map .track-map-sector-badge-driver {
+      .qualifying-overview-sector-strip .track-map-sector-badge-driver {
         color: rgba(229, 236, 247, 0.92);
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         font-weight: 800;
         line-height: 1.02;
         letter-spacing: 0.02em;
@@ -3490,12 +3706,17 @@
       }
 
       .track-svg {
+        position: relative;
+        z-index: 1;
         width: 100%;
-        height: min(70vh, 720px);
+        height: min(70vh, 640px);
         display: block;
-        border: 1px solid rgba(148, 163, 184, 0.12);
+        border: 0;
         border-radius: 16px;
-        background: linear-gradient(180deg, rgba(7, 14, 27, 0.95), rgba(12, 19, 34, 0.98));
+        background: transparent;
+        align-self: stretch;
+        justify-self: stretch;
+        grid-column: 2;
       }
 
       @media (max-width: 900px) {
@@ -3556,29 +3777,50 @@
           justify-content: flex-start;
         }
 
+        .qualifying-overview-track-map .track-map-stage {
+          gap: 12px;
+          padding: 12px;
+        }
+
+        .qualifying-overview-track-map .track-map-body {
+          display: block;
+        }
+
         .qualifying-overview-sector-stack {
-          gap: 6px;
-          width: min(240px, 100%);
+          gap: 10px;
+          grid-template-columns: 1fr;
+          width: 100%;
+          justify-items: stretch;
+        }
+
+        .qualifying-overview-track-map .track-svg,
+        .qualifying-overview-track-map .track-map-stage > .track-map-telemetry-top,
+        .qualifying-overview-track-map .track-map-stage > .track-map-telemetry-bottom {
+          grid-column: auto;
+        }
+
+        .qualifying-overview-sector-strip .track-map-sector-driver-badge {
+          gap: 8px;
+          min-height: 0;
+          padding: 0;
+        }
+
+        .qualifying-overview-sector-strip .track-map-sector-driver-headshot {
+          width: 56px;
+          height: 56px;
         }
 
         .qualifying-overview-sector-entry {
-          gap: 4px;
+          gap: 12px;
+          width: 100%;
+          min-height: 0;
+          padding: 18px 14px 16px;
         }
 
-        .qualifying-overview-track-map .track-map-sector-driver-badge {
-          min-height: 36px;
-          padding: 5px 9px;
-          gap: 7px;
-        }
-
-        .qualifying-overview-track-map .track-map-sector-driver-headshot {
-          width: 20px;
-          height: 20px;
-        }
-
-        .qualifying-overview-track-map .track-map-sector-badge {
-          min-height: 64px;
-          padding: 7px 11px 8px;
+        .qualifying-overview-sector-strip .track-map-sector-badge {
+          width: min(100%, 280px);
+          min-height: 68px;
+          padding: 10px 11px 10px;
         }
 
         .stint-bars-list {
@@ -3640,11 +3882,11 @@
         <div id="driver-row-{{ option.value }}" class="qualifying-result-item {% if podium_rank is not none %}qualifying-result-item--podium qualifying-result-item--podium-{{ podium_slot }}{% endif %} {% if option.value == selected_driver %}active{% endif %}" data-driver-row="{{ option.value }}">
           <button
             type="button"
-            class="qualifying-result-row {% if podium_rank is not none %}qualifying-result-row--podium{% endif %}"
+            class="qualifying-result-row {% if podium_rank is not none %}qualifying-result-row--podium qualifying-result-row--podium-p{{ podium_rank }}{% endif %}"
             data-driver-value="{{ option.value }}"
             data-driver-button
             aria-selected="{% if option.value == selected_driver %}true{% else %}false{% endif %}"
-            aria-label="{{ option.full_name }} {{ option.team_name }} {{ resolved_time }}"
+            aria-label="{{ option.full_name }} {{ option.team_name }} {{ resolved_time }}{% if option.gap_display is defined and option.gap_display %} {{ option.gap_display }}{% endif %}"
           >
             {% if podium_rank is not none %}
               <span class="qualifying-result-rank qualifying-result-rank--p{{ podium_rank }}" aria-hidden="true">P{{ podium_rank }}</span>
@@ -3655,11 +3897,15 @@
               <small>{{ option.team_name }}</small>
               {% if podium_rank is not none %}
                 <span class="qualifying-result-time qualifying-result-time--podium">{{ resolved_time }}</span>
+              {% else %}
+                <span class="qualifying-result-time-stack">
+                  <span class="qualifying-result-time">{{ resolved_time }}</span>
+                  {% if option.gap_display is defined and option.gap_display %}
+                    <span class="qualifying-result-gap">{{ option.gap_display }}</span>
+                  {% endif %}
+                </span>
               {% endif %}
             </span>
-            {% if podium_rank is none %}
-              <span class="qualifying-result-time">{{ resolved_time }}</span>
-            {% endif %}
           </button>
         </div>
       {% endmacro %}
@@ -3951,22 +4197,17 @@
                   {% if qualifying_phase_runs and display_qualifying_run %}
                     <section class="qualifying-run-panel qualifying-run-panel--embedded">
                       <header>
-                        <div>
-                          <h2>{{ qualifying_phase }} Run {{ display_qualifying_run.run_number }}</h2>
-                          <p class="subtle">
-                            {% if display_other_runs %}
-                              Review every lap in this run, then switch to another run from the same phase.
-                            {% else %}
-                              Review every lap in this run.
-                            {% endif %}
-                          </p>
-                        </div>
-                        <div class="qualifying-run-browser-summary">
-                          <span class="qualifying-run-fastest">{{ display_qualifying_run.laps|length }} lap{{ 's' if display_qualifying_run.laps|length != 1 else '' }}</span>
-                          <span>{{ display_qualifying_run.flying_time }}</span>
-                          <span>{{ selected_driver_data.full_name if selected_driver_data else selected_driver }}</span>
-                        </div>
-                      </header>
+                      <div>
+                        <h2>{{ qualifying_phase }} Run {{ display_qualifying_run.run_number }}</h2>
+                        <p class="subtle">
+                          {% if display_other_runs %}
+                            Review every lap in this run, then switch to another run from the same phase.
+                          {% else %}
+                            Review every lap in this run.
+                          {% endif %}
+                        </p>
+                      </div>
+                    </header>
                       <div class="qualifying-run-browser">
                         <div class="qualifying-run-browser-body {% if not display_other_runs %}single-column{% endif %}">
                           <div class="qualifying-run-group">
@@ -4232,30 +4473,24 @@
       {% else %}
         {% if view == 'results' and session_is_qualifying %}
           <section class="qualifying-fullpage">
-            <header class="qualifying-timeline-header">
-              <div>
-                <h2>{{ qualifying_phase }} Overview</h2>
-                <p class="subtle">
-                  {% if qualifying_phase == 'ALL' %}
-                    Fastest sector times across the full qualifying session.
-                  {% else %}
-                    Fastest sector times from {{ qualifying_phase }} qualifying.
-                  {% endif %}
-                </p>
+            <div class="qualifying-phase-selector-strip">
+              <div class="qualifying-telemetry-phases">
+                {% for phase_code in ['ALL', 'Q1', 'Q2', 'Q3'] %}
+                  {% set phase_label = 'All' if phase_code == 'ALL' else (('SQ' ~ phase_code[-1]) if form.session == 'SQ' else phase_code) %}
+                  <a
+                    class="session-chip qualifying-phase-chip {% if phase_code == qualifying_phase %}active{% endif %}"
+                    href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ phase_code }}"
+                  >
+                    {{ phase_label }}
+                  </a>
+                {% endfor %}
               </div>
-            </header>
+            </div>
             {% if qualifying_timeline_graph %}
               <section class="qualifying-timeline-panel">
                 <header>
                   <div>
                     <h2>{{ qualifying_timeline_graph.title }}</h2>
-                    <p class="subtle">
-                      {% if qualifying_phase == 'ALL' %}
-                        Full qualifying session run timeline.
-                      {% else %}
-                        {{ qualifying_phase }} run timeline.
-                      {% endif %}
-                    </p>
                   </div>
                 </header>
                 <div class="qualifying-timeline-viewport">
@@ -4269,56 +4504,78 @@
                 <script id="qualifying-timeline-json" type="application/json">{{ qualifying_timeline_graph | tojson }}</script>
               </section>
             {% endif %}
-            <section class="track-map qualifying-overview-track-map">
-              <header>
-                <div class="qualifying-telemetry-phases">
-                  {% for phase_code in ['ALL', 'Q1', 'Q2', 'Q3'] %}
-                    {% set phase_label = 'All' if phase_code == 'ALL' else (('SQ' ~ phase_code[-1]) if form.session == 'SQ' else phase_code) %}
-                    <a
-                      class="session-chip qualifying-phase-chip {% if phase_code == qualifying_phase %}active{% endif %}"
-                      href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ phase_code }}"
-                    >
-                      {{ phase_label }}
-                    </a>
+            {% if practice_overview_timeline_graph %}
+              <section class="qualifying-timeline-panel">
+                <header>
+                  <div>
+                    <h2>{{ practice_overview_timeline_graph.title }}</h2>
+                    <p class="subtle">Full practice session run timeline.</p>
+                  </div>
+                </header>
+                <div class="qualifying-timeline-viewport">
+                  <svg
+                    class="qualifying-timeline-svg"
+                    id="practice-timeline-svg"
+                    role="img"
+                    aria-label="{{ practice_overview_timeline_graph.title }}"
+                  ></svg>
+                </div>
+                <script id="practice-timeline-json" type="application/json">{{ practice_overview_timeline_graph | tojson }}</script>
+              </section>
+            {% endif %}
+            {% if qualifying_overview_track_map and qualifying_overview_track_map.sector_markers %}
+              <section class="qualifying-overview-sector-strip" aria-label="Sector split times">
+                <div class="qualifying-overview-sector-stack">
+                  {% for marker in qualifying_overview_track_map.sector_markers %}
+                    <div class="qualifying-overview-sector-entry">
+                      <div class="track-map-sector-driver-badge" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
+                        <img class="track-map-sector-driver-headshot" src="{{ marker.source_driver_headshot_url }}" alt="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }} headshot" loading="lazy" />
+                        <span class="track-map-sector-driver-name">{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}</span>
+                      </div>
+                      <div class="track-map-sector-badge" style="--sector-color: {{ marker.source_driver_color if marker.source_driver_color else '#ff4d3d' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
+                        <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
+                        <span class="track-map-sector-badge-time">{{ marker.time }}</span>
+                      </div>
+                    </div>
                   {% endfor %}
                 </div>
+              </section>
+            {% endif %}
+            <section class="track-map lap-track-card qualifying-overview-track-map">
+              <header>
               </header>
               <div class="track-map-viewport">
-                {% if qualifying_overview_track_map and qualifying_overview_track_map.sector_markers %}
-                  <div class="track-map-sector-stack qualifying-overview-sector-stack" aria-label="Sector split times">
-                    {% for marker in qualifying_overview_track_map.sector_markers %}
-                      <div class="qualifying-overview-sector-entry">
-                        <div class="track-map-sector-driver-badge" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
-                          <img class="track-map-sector-driver-headshot" src="{{ marker.source_driver_headshot_url }}" alt="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }} headshot" loading="lazy" />
-                          <span class="track-map-sector-driver-name">{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}</span>
-                        </div>
-                        <div class="track-map-sector-badge" style="--sector-color: {{ marker.source_driver_color if marker.source_driver_color else '#0f766e' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
-                          <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
-                          <span class="track-map-sector-badge-time">{{ marker.time }}</span>
-                        </div>
-                      </div>
-                    {% endfor %}
-                  </div>
-                {% endif %}
-                {% if qualifying_overview_track_map %}
-                  <svg
-                    class="track-svg"
-                    id="track-svg"
-                    viewBox="0 0 1000 700"
-                    role="img"
-                    aria-label="Qualifying overview track map"
-                    data-driver-abbr="{{ qualifying_overview_track_map.driver_abbr }}"
-                    data-driver-circle-label="{{ qualifying_overview_track_map.driver_circle_label }}"
-                    data-driver-name="{{ qualifying_overview_track_map.reference_driver_name if qualifying_overview_track_map.reference_driver_name else qualifying_overview_track_map.driver_abbr }}"
-                    data-driver-color="{{ qualifying_overview_track_map.driver_color }}"
-                    data-sector-badge-mode="stack"
-                  ></svg>
-                {% else %}
-                  <div class="empty">No qualifying track map available.</div>
-                {% endif %}
+                <div class="track-map-stage">
+                  {% if qualifying_overview_track_map %}
+                    <div class="track-map-telemetry track-map-telemetry-top">
+                      <div class="telemetry-composite" id="telemetry-primary-charts"></div>
+                    </div>
+                    <div class="track-map-body">
+                      <svg
+                        class="track-svg"
+                        id="track-svg"
+                        viewBox="0 0 1000 700"
+                        role="img"
+                        aria-label="Qualifying overview track map"
+                        data-driver-abbr="{{ qualifying_overview_track_map.driver_abbr }}"
+                        data-driver-circle-label="{{ qualifying_overview_track_map.driver_circle_label }}"
+                        data-driver-name="{{ qualifying_overview_track_map.reference_driver_name if qualifying_overview_track_map.reference_driver_name else qualifying_overview_track_map.driver_abbr }}"
+                        data-driver-color="{{ qualifying_overview_track_map.driver_color }}"
+                        data-sector-badge-mode="stack"
+                      ></svg>
+                    </div>
+                    <div class="track-map-telemetry track-map-telemetry-bottom">
+                      <div class="telemetry-composite" id="telemetry-secondary-charts"></div>
+                    </div>
+                  {% else %}
+                    <div class="empty">No qualifying track map available.</div>
+                  {% endif %}
+                </div>
               </div>
               {% if qualifying_overview_track_map %}
                 <script id="track-map-json" type="application/json">{{ qualifying_overview_track_map | tojson }}</script>
+                <script id="primary-telemetry-json" type="application/json">{{ qualifying_overview_primary_telemetry_charts | default([], true) | tojson }}</script>
+                <script id="secondary-telemetry-json" type="application/json">{{ qualifying_overview_secondary_telemetry_charts | default([], true) | tojson }}</script>
               {% endif %}
             </section>
           </section>
@@ -4410,11 +4667,6 @@
                         {% endif %}
                       </p>
                     </div>
-                    <div class="qualifying-run-browser-summary">
-                      <span class="qualifying-run-fastest">{{ display_qualifying_run.laps|length }} lap{{ 's' if display_qualifying_run.laps|length != 1 else '' }}</span>
-                      <span>{{ display_qualifying_run.flying_time }}</span>
-                      <span>{{ selected_driver_data.full_name if selected_driver_data else selected_driver }}</span>
-                    </div>
                   </header>
                   <div class="qualifying-run-browser">
                     <div class="qualifying-run-browser-body {% if not display_other_runs %}single-column{% endif %}">
@@ -4492,7 +4744,7 @@
                       {% if track_map and track_map.sector_markers %}
                         <div class="track-map-sector-stack" aria-label="Sector split times">
                           {% for marker in track_map.sector_markers %}
-                            {% set sector_color = marker.source_driver_color if marker.source_driver_color else '#0f766e' %}
+                            {% set sector_color = marker.source_driver_color if marker.source_driver_color else '#ff4d3d' %}
                             <div class="track-map-sector-badge" style="--sector-color: {{ sector_color }};">
                               <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
                               <span class="track-map-sector-badge-time">{{ marker.time }}</span>
@@ -5233,7 +5485,7 @@
         })();
       </script>
       {% endif %}
-      {% if qualifying_timeline_graph %}
+      {% if qualifying_timeline_graph or practice_overview_timeline_graph %}
       <script>
         (() => {
           const renderQualifyingTimeline = (svgId, dataId) => {
@@ -5544,6 +5796,7 @@
           };
 
           renderQualifyingTimeline("qualifying-timeline-svg", "qualifying-timeline-json");
+          renderQualifyingTimeline("practice-timeline-svg", "practice-timeline-json");
         })();
       </script>
       {% endif %}
@@ -5593,6 +5846,7 @@
           const graphCanvasWidth = Math.max(...Array.from(graphLayouts.values(), (layout) => layout.width));
           const graphCanvasHeight = Math.max(...Array.from(graphLayouts.values(), (layout) => layout.height));
           const resultsGraphNamespace = "http://www.w3.org/2000/svg";
+          let resultsGraphBaseSignature = "";
           let currentTarget = buttons.find((button) => button.classList.contains("active"))
             ? buttons.find((button) => button.classList.contains("active")).getAttribute("data-results-graph-toggle")
             : availableGraphs[0].key;
@@ -5786,7 +6040,7 @@
                 ? Math.min(width - pad.right - tagWidth, lastX + 10)
                 : Math.min(width - pad.right - tagWidth, lastX - tagWidth / 2);
               const driverValue = encodeURIComponent(series.value || "");
-              const href = String(series.href || "").trim() || `/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position`;
+              const href = String(series.href || "").trim() || `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position`;
               return `
                 <a class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" data-href="${escapeHtml(href)}" href="${escapeHtml(href)}" xlink:href="${escapeHtml(href)}" tabindex="0" role="link" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
                   <path class="race-position-hit" d="${d}" data-href="${href}"></path>
@@ -5815,12 +6069,16 @@
             }).join("");
 
             const { baseLayer, overlayLayer } = ensureResultsGraphLayers(width);
-            baseLayer.innerHTML = `
-              <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-              ${grid}
-              ${axisStatusMarkup}
-            `;
+            const baseSignature = `${graphCanvasWidth}x${graphCanvasHeight}`;
+            if (resultsGraphBaseSignature !== baseSignature && baseLayer) {
+              baseLayer.innerHTML = "";
+              resultsGraphBaseSignature = baseSignature;
+            }
             overlayLayer.innerHTML = `
+              <g data-race-position-base-layer>
+                ${grid}
+                ${axisStatusMarkup}
+              </g>
               <g data-race-position-line-layer>${lanes}</g>
               <g data-race-position-badge-layer>${badgeMarkup}</g>
             `;
@@ -6128,13 +6386,17 @@
             });
 
             const { baseLayer, overlayLayer } = ensureResultsGraphLayers(width);
-            baseLayer.innerHTML = `
-              <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-              <line x1="${plotWidth}" y1="18" x2="${plotWidth}" y2="${height - 18}" stroke="rgba(148,163,184,0.16)" stroke-width="1"></line>
-              ${grid}
-              ${axisStatusMarkup}
-            `;
+            const baseSignature = `${graphCanvasWidth}x${graphCanvasHeight}`;
+            if (resultsGraphBaseSignature !== baseSignature && baseLayer) {
+              baseLayer.innerHTML = "";
+              resultsGraphBaseSignature = baseSignature;
+            }
             overlayLayer.innerHTML = `
+              <g data-pit-strategy-base-layer>
+                <line x1="${plotWidth}" y1="18" x2="${plotWidth}" y2="${height - 18}" stroke="rgba(148,163,184,0.16)" stroke-width="1"></line>
+                ${grid}
+                ${axisStatusMarkup}
+              </g>
               ${rows}
             `;
 
@@ -6382,7 +6644,7 @@
               ? Math.min(width - pad.right - tagWidth, lastX + 10)
               : Math.min(width - pad.right - tagWidth, lastX - tagWidth / 2);
             const driverValue = encodeURIComponent(series.value || "");
-            const href = String(series.href || "").trim() || `/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position`;
+            const href = String(series.href || "").trim() || `/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver=${driverValue}&source=race-position`;
             return `
               <a class="race-position-series" data-series-index="${index}" data-driver-value="${escapeHtml(series.value || "")}" href="${escapeHtml(href)}" xlink:href="${escapeHtml(href)}" tabindex="0" role="link" aria-label="${escapeHtml(series.driver || series.abbreviation || 'Driver')}: ${escapeHtml(series.team || '')}">
                 <path class="race-position-hit" d="${d}" data-href="${href}"></path>
@@ -7139,6 +7401,64 @@
             return markup;
           }
 
+          function buildSectorMarkup(chart, chartXMin, chartXMax, layout = {}) {
+            const sectorWindows = Array.isArray(chart.sector_windows) ? chart.sector_windows : [];
+            if (!sectorWindows.length) {
+              return "";
+            }
+
+            const sectorWidth = Number(layout.width) || width;
+            const sectorHeight = Number(layout.height) || height;
+            const sectorPadding = layout.padding || padding;
+            const sectorInnerWidth = Number(layout.innerWidth) || (sectorWidth - sectorPadding.left - sectorPadding.right);
+            const sectorInnerHeight = Number(layout.innerHeight) || (sectorHeight - sectorPadding.top - sectorPadding.bottom);
+            const xScale = chartXMax === chartXMin ? 1 : sectorInnerWidth / (chartXMax - chartXMin);
+            const sectorBandTop = sectorPadding.top;
+            const sectorBandHeight = sectorInnerHeight;
+            let markup = "";
+
+            sectorWindows.forEach((sector, index) => {
+              const startSeconds = Number(sector && sector.start_seconds);
+              const endSeconds = Number(sector && sector.end_seconds);
+              if (!Number.isFinite(startSeconds) || !Number.isFinite(endSeconds)) {
+                return;
+              }
+
+              const left = sectorPadding.left + ((startSeconds - chartXMin) * xScale);
+              const right = sectorPadding.left + ((endSeconds - chartXMin) * xScale);
+              const x1 = Math.max(sectorPadding.left, Math.min(sectorWidth - sectorPadding.right, Math.min(left, right)));
+              const x2 = Math.max(sectorPadding.left, Math.min(sectorWidth - sectorPadding.right, Math.max(left, right)));
+              const widthValue = x2 - x1;
+              if (widthValue <= 0) {
+                return;
+              }
+
+            const sectorColor = String(sector && sector.source_driver_color ? sector.source_driver_color : "").trim() || ["#ff4d3d", "#f5f6f8", "#f3de5c"][index % 3];
+              const label = String(sector && sector.label ? sector.label : `S${index + 1}`).trim() || `S${index + 1}`;
+              const timeLabel = String(sector && sector.time ? sector.time : "").trim();
+              const pillLabel = timeLabel ? `${label} · ${timeLabel}` : label;
+              const pillWidth = Math.max(58, Math.min(widthValue - 8, Math.ceil((pillLabel.length * 6.2) + 18)));
+              const pillX = x1 + Math.max(4, (widthValue - pillWidth) / 2);
+              const pillY = sectorBandTop + 5;
+              const pillCenterX = pillX + (pillWidth / 2);
+              const pillCenterY = pillY + 7;
+
+              if (index > 0) {
+                markup += `<line x1="${x1.toFixed(2)}" y1="${sectorBandTop.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${(sectorBandTop + sectorBandHeight).toFixed(2)}" stroke="#000000" stroke-width="3"></line>`;
+              }
+
+              markup += `
+                <rect x="${x1.toFixed(2)}" y="${sectorBandTop.toFixed(2)}" width="${widthValue.toFixed(2)}" height="${sectorBandHeight.toFixed(2)}" fill="${sectorColor}" opacity="0.075"></rect>
+                <g pointer-events="none">
+                  <rect x="${pillX.toFixed(2)}" y="${pillY.toFixed(2)}" width="${pillWidth.toFixed(2)}" height="14" rx="7" fill="rgba(7, 16, 29, 0.84)" stroke="${sectorColor}" stroke-width="1"></rect>
+                  <text x="${pillCenterX.toFixed(2)}" y="${pillCenterY.toFixed(2)}" fill="${sectorColor}" font-size="8.4" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(pillLabel)}</text>
+                </g>
+              `;
+            });
+
+            return markup;
+          }
+
           function renderTelemetryCharts(containerId, dataId, emptyMessage) {
             const container = document.getElementById(containerId);
             const dataEl = document.getElementById(dataId);
@@ -7226,9 +7546,25 @@
                   <div>${escapeHtml(chart.title)}</div>
                   <span>${escapeHtml(chart.unit || "")}</span>
                 </div>
+                ${Array.isArray(chart.sector_windows) && chart.sector_windows.length ? `
+                  <div class="chart-sector-strip" aria-hidden="true">
+                    ${chart.sector_windows.map((sector, sectorIndex) => {
+                      const sectorColor = String(sector && sector.source_driver_color ? sector.source_driver_color : "").trim() || ["#ff4d3d", "#f5f6f8", "#f3de5c"][sectorIndex % 3];
+                      const sectorLabel = String(sector && sector.label ? sector.label : `S${sectorIndex + 1}`).trim() || `S${sectorIndex + 1}`;
+                      const sectorTime = String(sector && sector.time ? sector.time : "").trim();
+                      return `
+                        <span class="chart-sector-chip" style="--sector-color:${escapeHtml(sectorColor)};">
+                          <strong>${escapeHtml(sectorLabel)}</strong>
+                          <small>${escapeHtml(sectorTime)}</small>
+                        </span>
+                      `;
+                    }).join("")}
+                  </div>
+                ` : ""}
                 <svg class="chart-svg" viewBox="0 -40 ${width} 260" role="img" aria-label="${escapeHtml(chart.title)} chart">
                   <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
                   ${buildGrid(chart)}
+                  ${buildSectorMarkup(chart, chartXMin, chartXMax)}
                   <path d="${buildPath(chart.points, chart)}" fill="none" stroke="${chart.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
                   ${speedMarkerMarkup}
                   ${liveCaretMarkup}
@@ -7355,19 +7691,20 @@
               const badgeValueText = formatTelemetryValue(chart, initialPoint.value);
               return `
                 <article class="telemetry-card" data-telemetry-card data-card-index="${index}">
-                  <div class="telemetry-card-head">
-                    <div class="telemetry-card-head-copy">
-                      <span class="telemetry-card-label" data-live-badge-label>${escapeHtml(badgeLabelText.toUpperCase())}</span>
-                    </div>
-                    <strong class="telemetry-card-value" data-live-badge-text>${escapeHtml(badgeValueText)}</strong>
+                <div class="telemetry-card-head">
+                  <div class="telemetry-card-head-copy">
+                    <span class="telemetry-card-label" data-live-badge-label>${escapeHtml(badgeLabelText.toUpperCase())}</span>
                   </div>
-                  <svg class="telemetry-card-svg" viewBox="0 0 ${cardWidth} ${cardHeight}" role="img" aria-label="${escapeHtml(chart.title)} telemetry">
-                    <rect x="0" y="0" width="${cardWidth}" height="${cardHeight}" fill="transparent"></rect>
-                    ${buildGridMarkup(chart, chartXMin, chartXMax, chartYMin, chartYMax)}
-                    <path data-telemetry-path d="${path}" fill="none" stroke="${chart.color}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <line data-live-caret-line x1="${initialDotX.toFixed(2)}" y1="${padding.top.toFixed(2)}" x2="${initialDotX.toFixed(2)}" y2="${(padding.top + innerHeight).toFixed(2)}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 4"></line>
-                    <circle data-live-caret-dot cx="${initialDotX.toFixed(2)}" cy="${initialDotY.toFixed(2)}" r="4.2" fill="${chart.color}" stroke="#07101d" stroke-width="1.4"></circle>
-                  </svg>
+                  <strong class="telemetry-card-value" data-live-badge-text>${escapeHtml(badgeValueText)}</strong>
+                </div>
+                <svg class="telemetry-card-svg" viewBox="0 0 ${cardWidth} ${cardHeight}" role="img" aria-label="${escapeHtml(chart.title)} telemetry">
+                  <rect x="0" y="0" width="${cardWidth}" height="${cardHeight}" fill="transparent"></rect>
+                  ${buildGridMarkup(chart, chartXMin, chartXMax, chartYMin, chartYMax)}
+                  ${buildSectorMarkup(chart, chartXMin, chartXMax, { width: cardWidth, height: cardHeight, padding, innerWidth, innerHeight })}
+                  <path data-telemetry-path d="${path}" fill="none" stroke="${chart.color}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <line data-live-caret-line x1="${initialDotX.toFixed(2)}" y1="${padding.top.toFixed(2)}" x2="${initialDotX.toFixed(2)}" y2="${(padding.top + innerHeight).toFixed(2)}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 4"></line>
+                  <circle data-live-caret-dot cx="${initialDotX.toFixed(2)}" cy="${initialDotY.toFixed(2)}" r="4.2" fill="${chart.color}" stroke="#07101d" stroke-width="1.4"></circle>
+                </svg>
                 </article>
               `;
             }).join("");
@@ -7675,7 +8012,7 @@
               : [];
             const separatorGap = Math.max(6, Math.min(12, surfaceWidth * 0.42));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, separatorGap);
-            const defaultSectorColors = ["#ff8a80", "#ffffff", "#fff176"];
+            const defaultSectorColors = ["#ff4d3d", "#f5f6f8", "#f3de5c"];
             const sectorColors = sectorSegments.map((_, index) => {
               const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
               const markerColor = String(marker && (marker.source_driver_color || marker.color) || "").trim();
@@ -7766,19 +8103,18 @@
 
                 const dividerLength = Math.max(surfaceWidth * 1.55, 22);
                 const dividerHalf = dividerLength / 2;
-                const separatorWidth = Math.max(5.5, Math.min(8.5, surfaceWidth * 0.3));
-                const separatorHighlightWidth = Math.max(1.4, separatorWidth * 0.3);
+                const separatorWidth = Math.max(4.5, Math.min(7.5, surfaceWidth * 0.24));
+                const separatorShadowWidth = Math.max(separatorWidth + 2.5, separatorWidth * 1.5);
                 const x1 = anchor[0] + (tangent.normalX * dividerHalf);
                 const y1 = anchor[1] + (tangent.normalY * dividerHalf);
                 const x2 = anchor[0] - (tangent.normalX * dividerHalf);
                 const y2 = anchor[1] - (tangent.normalY * dividerHalf);
                 return `
                   <g class="track-sector-divider" style="pointer-events:none">
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(7, 16, 29, 0.98)" stroke-width="${(separatorWidth + 2.8).toFixed(2)}" stroke-linecap="round"></line>
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(255, 255, 255, 0.48)" stroke-width="${separatorWidth.toFixed(2)}" stroke-linecap="round"></line>
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(255, 255, 255, 0.18)" stroke-width="${separatorHighlightWidth.toFixed(2)}" stroke-linecap="round"></line>
-                  </g>
-                `;
+                <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="#000000" stroke-width="${separatorShadowWidth.toFixed(2)}" stroke-linecap="round"></line>
+                <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="#000000" stroke-width="${separatorWidth.toFixed(2)}" stroke-linecap="round"></line>
+              </g>
+            `;
               }).join("")
               : "";
             const sectorSurfaceMarkup = sectorSegments.length > 1
