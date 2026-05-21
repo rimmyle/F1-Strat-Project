@@ -463,8 +463,11 @@ def _format_minutes_seconds(value):
                     return _clean_value(value)
 
     total_milliseconds = max(0, int(round(float(total_seconds) * 1000)))
-    minutes, remainder = divmod(total_milliseconds, 60000)
+    hours, remainder = divmod(total_milliseconds, 3600000)
+    minutes, remainder = divmod(remainder, 60000)
     seconds, millis = divmod(remainder, 1000)
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{seconds:02d}.{millis:03d}"
     if minutes > 0:
         return f"{minutes}:{seconds:02d}.{millis:03d}"
     return f"{seconds}.{millis:03d}"
@@ -534,10 +537,13 @@ def _format_gap_seconds(value):
                 return _clean_value(value)
 
     total_milliseconds = max(0, int(round(float(numeric) * 1000)))
-    seconds, millis = divmod(total_milliseconds, 1000)
-    if seconds >= 60:
-        minutes, remainder = divmod(seconds, 60)
-        return f"{minutes}:{remainder:02d}.{millis:03d} s"
+    hours, remainder = divmod(total_milliseconds, 3600000)
+    minutes, remainder = divmod(remainder, 60000)
+    seconds, millis = divmod(remainder, 1000)
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{seconds:02d}.{millis:03d} s"
+    if minutes > 0:
+        return f"{minutes}:{seconds:02d}.{millis:03d} s"
     return f"{seconds}.{millis:03d} s"
 
 
@@ -1201,6 +1207,24 @@ def _qualifying_phase_rows(session, phase):
             }
         )
     return rows
+
+
+def _qualifying_driver_list_rows(phase_rows):
+    if not phase_rows:
+        return []
+
+    leader_seconds = phase_rows[0].get("phase_seconds")
+    list_rows = []
+    for row in phase_rows[3:]:
+        display_row = dict(row)
+        phase_seconds = display_row.get("phase_seconds")
+        if leader_seconds is not None and phase_seconds is not None:
+            gap_seconds = max(float(phase_seconds) - float(leader_seconds), 0.0)
+            display_row["display_time"] = f"+{_format_lap_time(pd.to_timedelta(gap_seconds, unit='s'))}"
+        else:
+            display_row["display_time"] = display_row.get("phase_time") or "No Time"
+        list_rows.append(display_row)
+    return list_rows
 
 
 def _qualifying_phase_fastest_lap(session, phase, phase_rows=None, phase_windows=None):
@@ -2768,6 +2792,7 @@ def _pit_strategy_graph(session):
 
     rows = []
     max_lap = 0
+    max_session_seconds = 0.0
 
     def format_session_time(value, prefix_plus=False):
         text = _clean_value(value).strip()
@@ -2813,14 +2838,38 @@ def _pit_strategy_graph(session):
             if not lap_numbers:
                 continue
 
+            stint_start_candidates = []
+            stint_end_candidates = []
+            for _, stint_lap in stint_laps.iterrows():
+                lap_start_seconds = _lap_time_seconds(stint_lap.get("LapStartTime", None))
+                lap_end_seconds = _lap_time_seconds(stint_lap.get("Time", None))
+                if lap_start_seconds is not None:
+                    stint_start_candidates.append(float(lap_start_seconds))
+                elif lap_end_seconds is not None:
+                    stint_start_candidates.append(float(lap_end_seconds))
+                if lap_end_seconds is not None:
+                    stint_end_candidates.append(float(lap_end_seconds))
+                elif lap_start_seconds is not None:
+                    stint_end_candidates.append(float(lap_start_seconds))
+
+            stint_start_seconds = min(stint_start_candidates) if stint_start_candidates else None
+            stint_end_seconds = max(stint_end_candidates) if stint_end_candidates else None
+            if stint_start_seconds is not None and stint_end_seconds is not None and stint_end_seconds < stint_start_seconds:
+                stint_end_seconds = stint_start_seconds
+
             compound_series = stint_laps["Compound"].dropna().astype(str) if "Compound" in stint_laps.columns else pd.Series([], dtype=str)
             compound = compound_series[compound_series.str.strip() != ""].iloc[0] if not compound_series.empty else "-"
+
+            if stint_end_seconds is not None:
+                max_session_seconds = max(max_session_seconds, float(stint_end_seconds))
 
             stints.append(
                 {
                     "stint": int(stint_number) if pd.notna(stint_number) else 0,
                     "start_lap": min(lap_numbers),
                     "end_lap": max(lap_numbers),
+                    "start_seconds": float(stint_start_seconds) if stint_start_seconds is not None else None,
+                    "end_seconds": float(stint_end_seconds) if stint_end_seconds is not None else None,
                     "lap_count": len(stint_laps),
                     "compound": _clean_value(compound),
                     "tyre_color": _tyre_color(compound),
@@ -2831,9 +2880,13 @@ def _pit_strategy_graph(session):
             continue
 
         pit_laps = []
+        pit_seconds = []
         for stint in stints[1:]:
             pit_laps.append(stint["start_lap"])
+            if stint.get("start_seconds") is not None:
+                pit_seconds.append(stint["start_seconds"])
         pit_laps = sorted(set(pit_laps))
+        pit_seconds = sorted(set(pit_seconds))
 
         max_lap = max(max_lap, max(stint["end_lap"] for stint in stints))
         rows.append(
@@ -2847,6 +2900,7 @@ def _pit_strategy_graph(session):
                 "time_label": driver.get("result_time", "-") if practice_mode else "-",
                 "stints": stints,
                 "pit_laps": pit_laps,
+                "pit_seconds": pit_seconds,
                 "driver_number": driver_number,
             }
         )
@@ -2903,14 +2957,41 @@ def _pit_strategy_graph(session):
             if overlapping_laps.empty:
                 continue
 
+            start_seconds = None
+            end_seconds = None
+            try:
+                start_candidates = laps_for_status.loc[overlapping_laps.index, "LapStartTime"].dropna()
+                if not start_candidates.empty:
+                    start_seconds = _lap_time_seconds(start_candidates.min())
+            except Exception:
+                start_seconds = None
+            try:
+                end_candidates = laps_for_status.loc[overlapping_laps.index, "Time"].dropna()
+                if not end_candidates.empty:
+                    end_seconds = _lap_time_seconds(end_candidates.max())
+            except Exception:
+                end_seconds = None
+            if start_seconds is not None and end_seconds is not None and end_seconds < start_seconds:
+                end_seconds = start_seconds
+
             segment = {
                 "start_lap": int(float(overlapping_laps.min())),
                 "end_lap": int(float(overlapping_laps.max())),
+                "start_seconds": float(start_seconds) if start_seconds is not None else None,
+                "end_seconds": float(end_seconds) if end_seconds is not None else None,
                 **marker,
             }
 
+            if segment.get("end_seconds") is not None:
+                max_session_seconds = max(max_session_seconds, float(segment["end_seconds"]))
+
             if current is not None and current["label"] == segment["label"] and segment["start_lap"] <= current["end_lap"] + 1:
                 current["end_lap"] = max(current["end_lap"], segment["end_lap"])
+                if segment.get("end_seconds") is not None:
+                    if current.get("end_seconds") is None:
+                        current["end_seconds"] = float(segment["end_seconds"])
+                    else:
+                        current["end_seconds"] = max(float(current["end_seconds"]), float(segment["end_seconds"]))
                 continue
 
             if current is not None:
@@ -2949,6 +3030,22 @@ def _pit_strategy_graph(session):
         for row in rows:
             row["time_label"] = "-"
 
+    session_duration_seconds = None
+    if practice_mode:
+        try:
+            session_time_series = session_laps["Time"].dropna() if session_laps is not None and "Time" in session_laps.columns else pd.Series([], dtype="float64")
+        except Exception:
+            session_time_series = pd.Series([], dtype="float64")
+        if not session_time_series.empty:
+            try:
+                session_end_seconds = _lap_time_seconds(session_time_series.max())
+            except Exception:
+                session_end_seconds = None
+            if session_end_seconds is not None:
+                max_session_seconds = max(max_session_seconds, float(session_end_seconds))
+        if max_session_seconds > 0:
+            session_duration_seconds = float(max_session_seconds)
+
     ordered_rows = sorted(rows, key=lambda item: item["current_position"])
     return {
         "title": "Pit strategy",
@@ -2956,6 +3053,9 @@ def _pit_strategy_graph(session):
         "leader_time": leader_time,
         "drivers": ordered_rows,
         "status_segments": status_segments,
+        "practice_mode": practice_mode,
+        "session_duration_seconds": session_duration_seconds,
+        "x_axis_mode": "time" if practice_mode else "laps",
     }
 
 
@@ -3325,53 +3425,7 @@ def _race_position_graph(session, year=None, gp=None, session_code="R"):
                 "driver": driver_number,
                 "source": "race-position",
             }
-            if race_session_code in {"R", "S"}:
-                try:
-                    race_stints = _race_stints(session, driver_number, race_session_code)
-                except Exception:
-                    race_stints = None
-                if race_stints and race_stints.get("stints"):
-                    first_stint = race_stints["stints"][0]
-                    first_stint_number = first_stint.get("stint")
-                    if first_stint_number is not None:
-                        try:
-                            href_params["stint"] = int(float(first_stint_number))
-                        except (TypeError, ValueError):
-                            pass
-                    first_lap_value = _default_stint_lap_value(first_stint)
-                    if first_lap_value:
-                        href_params["lap"] = first_lap_value
-            if "lap" not in href_params:
-                fallback_lap_value = ""
-                try:
-                    driver_laps = _safe_driver_laps(session, driver_number)
-                except Exception:
-                    driver_laps = None
-                if driver_laps is not None and not driver_laps.empty and "LapNumber" in driver_laps.columns:
-                    fastest_lap = None
-                    try:
-                        fastest_lap = driver_laps.pick_fastest()
-                    except Exception:
-                        fastest_lap = None
-                    if fastest_lap is not None and not fastest_lap.empty:
-                        lap_number = fastest_lap.get("LapNumber")
-                        if lap_number is not None:
-                            try:
-                                fallback_lap_value = f"{driver_number}:{int(float(lap_number))}"
-                            except (TypeError, ValueError):
-                                fallback_lap_value = ""
-                    if not fallback_lap_value:
-                        valid_laps = driver_laps[driver_laps["LapNumber"].notna()].copy()
-                        if not valid_laps.empty:
-                            valid_laps = valid_laps.sort_values(by=["LapNumber", "Time"])
-                            lap_number = valid_laps.iloc[0].get("LapNumber")
-                            if lap_number is not None:
-                                try:
-                                    fallback_lap_value = f"{driver_number}:{int(float(lap_number))}"
-                                except (TypeError, ValueError):
-                                    fallback_lap_value = ""
-                href_params["lap"] = fallback_lap_value or driver_number
-            href = f"/lap?{urlencode(href_params)}#lap-stint-panel"
+            href = f"/data?{urlencode(href_params)}"
 
         driver_results[driver_number] = {
             "value": driver_number,
@@ -3458,7 +3512,7 @@ def _race_position_graph(session, year=None, gp=None, session_code="R"):
     ordered_series = sorted(driver_results.values(), key=lambda item: item["current_position"])
 
     return {
-        "title": "Race position changes",
+        "title": "Sprint position changes" if race_session_code == "S" else "Race position changes",
         "lap_total": max_lap,
         "max_position": max_position,
         "series": ordered_series,
@@ -3861,19 +3915,21 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
         return None
 
     reference_duration = _lap_time_seconds(reference_lap.get("LapTime", None))
-    payload = None
     try:
-        payload = _track_map_payload(session, reference_lap, reference_duration)
+        reference_telemetry = reference_lap.get_telemetry(frequency="original").reset_index(drop=True)
     except Exception:
-        payload = None
+        reference_telemetry = None
+
+    payload = None
+    if reference_telemetry is not None:
+        try:
+            payload = _track_map_payload(session, reference_lap, reference_duration, reference_telemetry)
+        except Exception:
+            payload = None
 
     if payload is None:
         try:
-            reference_telemetry = reference_lap.get_telemetry(frequency="original")
-        except Exception:
-            reference_telemetry = None
-        try:
-            payload = _track_map_payload(session, reference_lap, reference_duration, reference_telemetry)
+            payload = _track_map_payload(session, reference_lap, reference_duration)
         except Exception:
             payload = None
 
@@ -3967,7 +4023,7 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
         reference_driver_name = _clean_value(reference_lap.get("Driver", "")).strip()
     if not reference_driver_name:
         reference_driver_name = driver_abbr or reference_driver_number or "BEST"
-    driver_circle_label = reference_driver_name
+    driver_circle_label = driver_abbr or reference_driver_number or "BEST"
 
     driver_color = _clean_value((reference_option or {}).get("team_badge_color", "")).strip()
     if not driver_color:
@@ -4267,7 +4323,7 @@ def _load_session_data(year, gp, session_code):
     rows = _session_rows(session)
     race_position_graph = None
     pit_strategy_graph = None
-    if str(session_code).strip().upper() == "R":
+    if _supports_race_position_markers(session_code):
         try:
             race_position_graph = _race_position_graph(session, year=year, gp=gp, session_code=session_code)
         except Exception:
@@ -4475,8 +4531,9 @@ def results():
     session_code = str(ctx["session_code"]).strip().upper()
     session_is_race = session_code == "R"
     session_is_qualifying = session_code in {"Q", "SQ"}
+    session_supports_position_graph = _supports_race_position_markers(session_code)
     session = data.get("session") if data and data.get("session") is not None else None
-    if session is None and data and (session_is_race or session_is_qualifying):
+    if session is None and data and (session_supports_position_graph or session_is_qualifying):
         session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
     if session is None and data and session_code.startswith("FP"):
         session = _session_object(ctx["year"], ctx["gp"], ctx["session_code"])
@@ -4493,7 +4550,7 @@ def results():
     qualifying_rows_phase = qualifying_phase if qualifying_phase in {"Q1", "Q2", "Q3"} else "Q1"
     race_position_graph = data.get("race_position_graph") if data else None
     pit_strategy_graph = data.get("pit_strategy_graph") if data else None
-    if session_is_race and session:
+    if session_supports_position_graph and session:
         if race_position_graph is None:
             try:
                 race_position_graph = _race_position_graph(session, year=ctx["year"], gp=ctx["gp"], session_code=ctx["session_code"])
@@ -4504,13 +4561,14 @@ def results():
                 pit_strategy_graph = _pit_strategy_graph(session)
             except Exception:
                 pit_strategy_graph = None
-    if not session_is_race and _supports_pit_strategy_graph(session_code) and session and pit_strategy_graph is None:
+    if not session_supports_position_graph and _supports_pit_strategy_graph(session_code) and session and pit_strategy_graph is None:
         try:
             pit_strategy_graph = _pit_strategy_graph(session)
         except Exception:
             pit_strategy_graph = None
     qualifying_results = _qualifying_driver_results(session, qualifying_rows_phase) if session_is_qualifying else None
     qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_rows_phase) if session_is_qualifying else []
+    qualifying_driver_list_rows = _qualifying_driver_list_rows(qualifying_phase_rows) if session_is_qualifying else []
     qualifying_timeline_graph = _qualifying_timeline_graph(
         session,
         qualifying_phase,
@@ -4523,22 +4581,6 @@ def results():
     qualifying_run_options = _qualifying_run_options(session, driver_number) if session_is_qualifying and session and driver_number else []
     qualifying_run_laps = _qualifying_run_laps(session, driver_number) if session_is_qualifying and session and driver_number else []
     qualifying_phase = qualifying_phase if qualifying_phase in {"Q1", "Q2", "Q3", "ALL"} else "Q1"
-    if session_is_qualifying and qualifying_phase_rows:
-        leader_seconds = None
-        for row in qualifying_phase_rows:
-            if str(row.get("position", "")).strip() == "1":
-                leader_seconds = row.get("phase_seconds")
-                break
-        for row in qualifying_phase_rows:
-            if str(row.get("position", "")).strip() == "1":
-                row["display_time"] = _format_lap_time(row.get("phase_time"))
-            else:
-                phase_seconds = row.get("phase_seconds")
-                if leader_seconds is not None and phase_seconds is not None:
-                    gap = max(phase_seconds - leader_seconds, 0.0)
-                    row["display_time"] = f"+{_format_lap_time(pd.to_timedelta(gap, unit='s'))}"
-                else:
-                    row["display_time"] = _format_lap_time(row.get("phase_time"))
     qualifying_overview_track_map = _qualifying_overview_track_map_payload(
         session,
         qualifying_phase,
@@ -4556,6 +4598,7 @@ def results():
         session_is_qualifying=session_is_qualifying,
         qualifying_phase=qualifying_phase,
         qualifying_phase_rows=qualifying_phase_rows,
+        qualifying_driver_list_rows=qualifying_driver_list_rows,
         qualifying_timeline_graph=qualifying_timeline_graph,
         qualifying_timeline_combined_graph=qualifying_timeline_combined_graph,
         qualifying_overview_track_map=qualifying_overview_track_map,
@@ -4613,6 +4656,7 @@ def data():
 
     qualifying_results = _qualifying_driver_results(session, qualifying_phase) if session_is_qualifying else None
     qualifying_phase_rows = _qualifying_phase_rows(session, qualifying_phase) if session_is_qualifying else []
+    qualifying_driver_list_rows = _qualifying_driver_list_rows(qualifying_phase_rows) if session_is_qualifying else []
     qualifying_timeline_graph = _qualifying_timeline_graph(session, qualifying_phase, split_sections=True) if session_is_qualifying else None
     qualifying_timeline_combined_graph = _qualifying_timeline_graph(session, qualifying_phase, split_sections=False) if session_is_qualifying else None
     race_stints = None
@@ -4631,7 +4675,7 @@ def data():
     selected_lap_value = lap_key if lap_requested else ""
     selected_lap_data = None
     stint_cache = data_state.get("stint_cache", {}) if data_state else {}
-    if session_is_race and session:
+    if session_supports_position_graph and session:
         try:
             race_position_graph = _race_position_graph(session, year=ctx["year"], gp=ctx["gp"], session_code=ctx["session_code"])
         except Exception:
@@ -4896,6 +4940,7 @@ def data():
         track_map=track_map,
         qualifying_phase=qualifying_phase,
         qualifying_phase_rows=qualifying_phase_rows,
+        qualifying_driver_list_rows=qualifying_driver_list_rows,
         qualifying_timeline_graph=qualifying_timeline_graph,
         qualifying_timeline_combined_graph=qualifying_timeline_combined_graph,
         qualifying_run_options=qualifying_run_options,
