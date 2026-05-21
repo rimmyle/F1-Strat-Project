@@ -1277,7 +1277,7 @@ def _qualifying_driver_list_rows(phase_rows):
         else:
             display_row["gap_display"] = ""
         list_rows.append(display_row)
-    return list_rows
+    return list_rows[3:] if len(list_rows) > 3 else []
 
 
 def _qualifying_phase_fastest_lap(session, phase, phase_rows=None, phase_windows=None):
@@ -5136,7 +5136,7 @@ def data():
         driver_number = _resolve_driver(session, driver_number, driver_options) if session else driver_number
     else:
         driver_number = None
-        if session and driver_options and (session_code.startswith("FP") or session_code in {"R", "S"}):
+        if session and driver_options and session_code.startswith("FP"):
             driver_number = driver_options[0]["value"]
     selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
     if selected_driver_data is None and driver_requested and driver_options:
@@ -5340,10 +5340,8 @@ def data():
         year=ctx["year"],
         gp=ctx["gp"],
         session=ctx["session_code"],
-        **({"driver": driver_number} if driver_number else {}),
     )
-    if driver_number:
-        lap_back_to_driver_table_url = f"{lap_back_to_driver_table_url}#driver-picker"
+    lap_back_to_driver_table_url = f"{lap_back_to_driver_table_url}#driver-picker"
     lap_back_to_overview_url = (
         url_for("results", year=ctx["year"], gp=ctx["gp"], session=ctx["session_code"])
         if lap_entry_source in {"pit-strategy", "race-position"}

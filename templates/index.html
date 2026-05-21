@@ -1026,29 +1026,56 @@
         flex-wrap: wrap;
         gap: 10px;
         padding-left: 0;
+        justify-content: center;
+        align-items: stretch;
+        width: 100%;
       }
 
       .qualifying-run-lap-button {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 0.55rem 0.8rem;
-        border: 1px solid rgba(148, 163, 184, 0.16);
-        border-radius: 999px;
-        background: #0d1320 !important;
-        background-image: none !important;
+        --lap-accent: rgba(68, 194, 255, 0.8);
+        --lap-soft: rgba(68, 194, 255, 0.12);
+        --lap-glow: rgba(68, 194, 255, 0.18);
+        display: grid;
+        gap: 7px;
+        min-width: 168px;
+        padding: 0.72rem 0.85rem 0.8rem;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 16px;
+        background:
+          linear-gradient(180deg, rgba(16, 25, 40, 0.96), rgba(10, 16, 27, 0.96)),
+          var(--lap-soft);
         color: var(--text);
         text-decoration: none;
         font-size: 0.8rem;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          0 10px 22px rgba(0, 0, 0, 0.18);
+        position: relative;
+        overflow: hidden;
       }
 
       .qualifying-run-lap-button:hover,
       .qualifying-run-lap-button:focus-visible,
       .qualifying-run-lap-button.active {
-        border-color: rgba(68, 194, 255, 0.6);
-        background: #121a28 !important;
-        background-image: none !important;
-        box-shadow: 0 0 0 2px rgba(68, 194, 255, 0.18), 0 0 16px rgba(68, 194, 255, 0.12);
+        border-color: var(--lap-accent);
+        background:
+          linear-gradient(180deg, rgba(20, 32, 50, 0.98), rgba(12, 18, 31, 0.98)),
+          var(--lap-soft);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.05),
+          0 0 0 2px var(--lap-glow),
+          0 16px 28px rgba(0, 0, 0, 0.24);
+      }
+
+      .qualifying-run-lap-button::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 100%;
+        height: 3px;
+        background: var(--lap-accent);
+        opacity: 0.9;
+        pointer-events: none;
       }
 
       .qualifying-run-lap-button strong {
@@ -1057,6 +1084,70 @@
 
       .qualifying-run-lap-button span {
         color: #c0cede;
+      }
+
+      .qualifying-run-lap-button .qualifying-run-lap-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .qualifying-run-lap-button .qualifying-run-lap-kind {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 20px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: var(--lap-soft);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--lap-accent);
+        font-size: 0.64rem;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .qualifying-run-lap-button .qualifying-run-lap-time {
+        color: var(--text);
+        font-size: 0.88rem;
+        font-weight: 800;
+        line-height: 1.15;
+      }
+
+      .qualifying-run-lap-button .qualifying-run-lap-compound {
+        color: var(--muted);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .qualifying-run-lap-button.lap-type-out-lap {
+        --lap-accent: #ff9a4d;
+        --lap-soft: rgba(255, 154, 77, 0.12);
+        --lap-glow: rgba(255, 154, 77, 0.22);
+      }
+
+      .qualifying-run-lap-button.lap-type-cool-lap {
+        --lap-accent: #7ad7ff;
+        --lap-soft: rgba(122, 215, 255, 0.12);
+        --lap-glow: rgba(122, 215, 255, 0.22);
+      }
+
+      .qualifying-run-lap-button.lap-type-flying-lap {
+        --lap-accent: #ffcf72;
+        --lap-soft: rgba(255, 207, 114, 0.12);
+        --lap-glow: rgba(255, 207, 114, 0.22);
+      }
+
+      .qualifying-run-lap-button.lap-type-in-lap {
+        --lap-accent: #c49bff;
+        --lap-soft: rgba(196, 155, 255, 0.12);
+        --lap-glow: rgba(196, 155, 255, 0.22);
       }
 
       .qualifying-run-browser {
@@ -1117,48 +1208,39 @@
 
       .qualifying-run-browser .qualifying-run-choices {
         gap: 12px;
+        justify-content: center;
       }
 
       .qualifying-run-browser .qualifying-run-lap-button {
         width: auto;
-        min-width: 0;
-        flex: 1 1 220px;
-        max-width: 260px;
-        display: grid;
-        gap: 8px;
-        padding: 10px 10px 12px;
-        border: 1px solid rgba(148, 163, 184, 0.14);
-        border-radius: 14px;
-        background: rgba(21, 35, 59, 0.88) !important;
-        background-image: none !important;
-        align-items: start;
-        justify-items: start;
+        min-width: 176px;
+        flex: 0 1 232px;
+        max-width: 248px;
         text-align: left;
-        box-shadow: inset 0 0 0 1px transparent;
       }
 
       .qualifying-run-browser .qualifying-run-lap-button strong {
         color: var(--text);
-        font-size: 0.82rem;
-        line-height: 1.1;
+        font-size: 0.86rem;
+        line-height: 1.08;
       }
 
       .qualifying-run-browser .qualifying-run-lap-button span {
         color: var(--muted);
-        font-size: 0.76rem;
+        font-size: 0.72rem;
       }
 
       .qualifying-run-browser .qualifying-run-lap-button:hover {
-        border-color: rgba(68, 194, 255, 0.65);
-        background: rgba(33, 52, 86, 0.96) !important;
-        box-shadow: inset 0 0 0 1px transparent;
+        background:
+          linear-gradient(180deg, rgba(20, 32, 50, 0.98), rgba(12, 18, 31, 0.98)),
+          var(--lap-soft) !important;
       }
 
       .qualifying-run-browser .qualifying-run-lap-button.active,
       .qualifying-run-browser .qualifying-run-lap-button:focus-visible {
-        border-color: rgba(68, 194, 255, 0.85);
-        background: linear-gradient(180deg, rgba(68, 194, 255, 0.18), rgba(21, 35, 59, 0.98)) !important;
-        box-shadow: inset 0 0 0 1px rgba(68, 194, 255, 0.2), 0 0 0 2px rgba(68, 194, 255, 0.18);
+        background:
+          linear-gradient(180deg, rgba(20, 32, 50, 0.98), rgba(12, 18, 31, 0.98)),
+          var(--lap-soft) !important;
       }
 
       .qualifying-run-browser .qualifying-run-grid {
@@ -2833,6 +2915,32 @@
         margin: 4px 0 0;
       }
 
+      .lap-support-hero {
+        display: grid;
+        gap: 16px;
+        padding: 0;
+      }
+
+      .lap-support-hero .stint-graph-layout {
+        gap: 12px;
+      }
+
+      .lap-support-hero .stint-graph-meta {
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .lap-support-hero .stint-graph-actions {
+        margin-bottom: 0;
+      }
+
+      .lap-support-hero .stint-graph-viewport {
+        padding: 0;
+      }
+
       .lap-track-card .track-map-viewport {
         padding: 18px 18px 18px;
       }
@@ -2900,6 +3008,18 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
         line-height: 1;
+      }
+
+      .lap-track-card .track-map-sector-stack .track-map-sector-badge:nth-child(1) .track-map-sector-badge-label {
+        color: #ff4d3d;
+      }
+
+      .lap-track-card .track-map-sector-stack .track-map-sector-badge:nth-child(2) .track-map-sector-badge-label {
+        color: #f3de5c;
+      }
+
+      .lap-track-card .track-map-sector-stack .track-map-sector-badge:nth-child(3) .track-map-sector-badge-label {
+        color: #f8fbff;
       }
 
       .lap-track-card .track-map-sector-badge-time {
@@ -4016,7 +4136,7 @@
       {% endmacro %}
     <div class="page">
       <header>
-        <div class="header-badges" data-header-badges>
+        <div class="header-badges" data-header-badges data-session="{{ form.session }}">
           <div class="session-badge-row">
             <a class="session-badge-title" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}" data-session-selector-trigger>{{ session_title }}</a>
             <div class="session-badge-group">
@@ -4077,6 +4197,34 @@
           <div class="header-divider" role="separator" aria-hidden="true">
             <div class="header-divider-line"></div>
             <div class="header-divider-center">
+              {% if form.session == 'Q' or ns.qualifying_sessions %}
+                <div class="session-badge-expansion-band" data-qualifying-session-menu hidden>
+                  <div class="qualifying-phase-row" aria-label="Qualifying phase selector">
+                    {% for phase in ['ALL', 'Q1', 'Q2', 'Q3'] %}
+                      <a
+                        class="session-chip qualifying-session-chip {% if form.session == 'Q' and form.phase == phase %}active{% endif %}"
+                        href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=Q&phase={{ phase }}"
+                      >
+                        {{ phase }}
+                      </a>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+              {% if ns.practice_sessions %}
+                <div class="session-badge-expansion-band" data-practice-session-menu hidden>
+                  <div class="qualifying-phase-row" aria-label="Practice session selector">
+                    {% for session in ns.practice_sessions %}
+                      <a
+                        class="session-chip practice-session-chip {% if session.value == form.session %}active{% endif %}"
+                        href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
+                      >
+                        {{ session.label }}
+                      </a>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
               {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
                 <div class="session-badge-expansion-band" data-sprint-qualifying-session-menu hidden>
                   {% for phase in ['Q1', 'Q2', 'Q3'] %}
@@ -4097,20 +4245,6 @@
             <a class="view-link strategy-link {% if view == 'strategy' %}active{% endif %}" href="/strategy?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">Strategy</a>
             <a class="view-link data-link {% if view == 'data' %}active{% endif %}" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}{% if form.phase %}&phase={{ form.phase }}{% endif %}">DATA</a>
           </div>
-          {% if form.session == 'Q' %}
-            <div class="qualifying-phase-toolbar" aria-label="Qualifying phase selector">
-              <div class="qualifying-phase-row">
-                {% for phase in ['ALL', 'Q1', 'Q2', 'Q3'] %}
-                  <a
-                    class="session-chip qualifying-session-chip {% if form.phase == phase %}active{% endif %}"
-                    href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=Q&phase={{ phase }}"
-                  >
-                    {{ phase }}
-                  </a>
-                {% endfor %}
-              </div>
-            </div>
-          {% endif %}
         </div>
       </header>
 
@@ -4248,7 +4382,7 @@
                       </span>
                     </div>
                     <div class="qualifying-telemetry-actions">
-                      <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}">Back to driver list</a>
+                      <a class="workflow-back" href="/data?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}#driver-picker">Back to driver list</a>
                       <a class="workflow-back" href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}">Back to {{ qualifying_phase }} timeline</a>
                     </div>
                   </div>
@@ -4260,13 +4394,6 @@
                       <header>
                       <div>
                         <h2>{{ qualifying_phase }} Run {{ display_qualifying_run.run_number }}</h2>
-                        <p class="subtle">
-                          {% if display_other_runs %}
-                            Review every lap in this run, then switch to another run from the same phase.
-                          {% else %}
-                            Review every lap in this run.
-                          {% endif %}
-                        </p>
                       </div>
                     </header>
                       <div class="qualifying-run-browser">
@@ -4281,14 +4408,34 @@
                             </header>
                             <div class="qualifying-run-choices">
                               {% for lap in display_qualifying_run.laps %}
+                                {% set lap_type_text = (lap.lap_type if lap.lap_type else '') | trim %}
+                                {% set lap_type_lower = lap_type_text | lower %}
+                                {% if lap_type_lower.startswith('out') %}
+                                  {% set lap_type_class = 'lap-type-out-lap' %}
+                                  {% set lap_type_label = 'OUT' %}
+                                {% elif lap_type_lower.startswith('cool') %}
+                                  {% set lap_type_class = 'lap-type-cool-lap' %}
+                                  {% set lap_type_label = 'COOL' %}
+                                {% elif lap_type_lower.startswith('flying') %}
+                                  {% set lap_type_class = 'lap-type-flying-lap' %}
+                                  {% set lap_type_label = 'FLYING' %}
+                                {% elif lap_type_lower.startswith('in') %}
+                                  {% set lap_type_class = 'lap-type-in-lap' %}
+                                  {% set lap_type_label = 'IN' %}
+                                {% else %}
+                                  {% set lap_type_class = '' %}
+                                  {% set lap_type_label = lap_type_text|upper if lap_type_text else 'LAP' %}
+                                {% endif %}
                                 <a
-                                  class="qualifying-run-lap-button {% if lap.value == selected_lap %}active{% endif %}"
+                                  class="qualifying-run-lap-button {{ lap_type_class }} {% if lap.value == selected_lap %}active{% endif %}"
                                   href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ display_qualifying_run.representative|urlencode }}&lap={{ lap.value|urlencode }}"
                                 >
-                                  <strong>Lap {{ lap.lap_number }}</strong>
-                                  <span>{{ lap.lap_type }}</span>
-                                  <span>{{ lap.lap_time }}</span>
-                                  <span>{{ lap.compound }}</span>
+                                  <div class="qualifying-run-lap-top">
+                                    <strong>Lap {{ lap.lap_number }}</strong>
+                                    <span class="qualifying-run-lap-kind">{{ lap_type_label }}</span>
+                                  </div>
+                                  <span class="qualifying-run-lap-time">{{ lap.lap_time }}</span>
+                                  <span class="qualifying-run-lap-compound">{{ lap.compound }}</span>
                                 </a>
                               {% endfor %}
                             </div>
@@ -4435,93 +4582,6 @@
           </aside>
         </section>
       {% elif page == 'lap' and (selected_stint_data or selected_lap) %}
-        {% if selected_stint_data %}
-          <section class="stint-graph-panel" id="lap-stint-panel">
-            <div class="stint-graph-layout">
-              <div class="stint-graph-meta">
-                {% if lap_back_to_driver_table_url %}
-                  <div class="stint-graph-actions">
-                    <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers list</a>
-                  </div>
-                {% endif %}
-                {% if selected_driver_data %}
-                  <div class="stint-graph-driver">
-                    <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
-                    <span class="selection-driver-copy">
-                      <strong>{{ selected_driver_data.full_name }}</strong>
-                      <small>{{ selected_driver_data.team_name }}</small>
-                    </span>
-                  </div>
-                {% endif %}
-                {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
-                  {% set stint_driver = selected_driver | default('', true) %}
-                  <div class="stint-bars-panel">
-                    <div class="stint-bars-list">
-                      {% for stint in race_stints.stints %}
-                        {% if stint.pit_stop_seconds is not none %}
-                          <div
-                            class="stint-pit-gap"
-                            aria-label="Pit stop time before stint {{ stint.stint }}"
-                            title="{% if stint.pit_stop_comparison_title is defined and stint.pit_stop_comparison_title %}{{ stint.pit_stop_comparison_title }}{% else %}Pit stop time before stint {{ stint.stint }}{% endif %}"
-                          >
-                            <span class="stint-pit-gap-label">PIT</span>
-                            <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
-                              <span
-                                class="stint-pit-gap-fill"
-                                aria-hidden="true"
-                                style="width: {{ stint.pit_stop_fill_percent if stint.pit_stop_fill_percent is not none else 100 }}%;"
-                              ></span>
-                              <span class="stint-pit-gap-content">
-                                <span class="stint-pit-gap-time">{{ stint.pit_stop_time }}</span>
-                                {% if stint.pit_stop_comparison_text is defined and stint.pit_stop_comparison_text %}
-                                  <span class="stint-pit-gap-comparison">{{ stint.pit_stop_comparison_text }}</span>
-                                {% endif %}
-                              {% if stint.pit_stop_average_time is defined and stint.pit_stop_average_time %}
-                                  <span class="stint-pit-gap-average">AVG {{ stint.pit_stop_average_time }}</span>
-                                {% endif %}
-                              </span>
-                            </div>
-                            {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
-                              <span class="stint-pit-gap-stopped">STOP {{ stint.pit_stop_stopped_time }}</span>
-                            {% endif %}
-                          </div>
-                        {% endif %}
-                        <a
-                          class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
-                          href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
-                          style="--stint-color: {{ stint.tyre_color }};"
-                        >
-                          <div class="stint-bar-top">
-                            <strong>
-                              Stint {{ stint.stint }}{% if stint.stint_note %} <span class="stint-bar-fresh-note">{{ stint.stint_note }}</span>{% endif %}
-                            </strong>
-                            <span>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</span>
-                          </div>
-                          <div class="stint-bar-track">
-                            <span class="stint-bar-fill" aria-hidden="true"></span>
-                            <span class="stint-bar-label">{{ stint.compound }}</span>
-                          </div>
-                        </a>
-                      {% endfor %}
-                    </div>
-                  </div>
-                {% endif %}
-              </div>
-              {% if not session_is_qualifying %}
-                <div
-                  class="stint-graph-viewport"
-                  data-stint-graph
-                  data-year="{{ form.year }}"
-                  data-gp="{{ form.gp }}"
-                  data-session="{{ form.session }}"
-                  data-driver="{{ selected_driver }}"
-                  data-stint="{{ selected_stint }}"
-                  data-selected-lap="{{ selected_lap }}"
-                ></div>
-              {% endif %}
-            </div>
-          </section>
-        {% endif %}
       {% else %}
         {% if view == 'results' and session_is_qualifying %}
           <section class="qualifying-fullpage">
@@ -4711,6 +4771,93 @@
                 </div>
               </div>
             </header>
+            {% if selected_stint_data %}
+              <div class="lap-support-hero" id="lap-stint-panel">
+                <div class="stint-graph-layout">
+                  <div class="stint-graph-meta">
+                    {% if lap_back_to_driver_table_url %}
+                      <div class="stint-graph-actions">
+                        <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers list</a>
+                      </div>
+                    {% endif %}
+                    {% if selected_driver_data %}
+                      <div class="stint-graph-driver">
+                        <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
+                        <span class="selection-driver-copy">
+                          <strong>{{ selected_driver_data.full_name }}</strong>
+                          <small>{{ selected_driver_data.team_name }}</small>
+                        </span>
+                      </div>
+                    {% endif %}
+                    {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
+                      {% set stint_driver = selected_driver | default('', true) %}
+                      <div class="stint-bars-panel">
+                        <div class="stint-bars-list">
+                          {% for stint in race_stints.stints %}
+                            {% if stint.pit_stop_seconds is not none %}
+                              <div
+                                class="stint-pit-gap"
+                                aria-label="Pit stop time before stint {{ stint.stint }}"
+                                title="{% if stint.pit_stop_comparison_title is defined and stint.pit_stop_comparison_title %}{{ stint.pit_stop_comparison_title }}{% else %}Pit stop time before stint {{ stint.stint }}{% endif %}"
+                              >
+                                <span class="stint-pit-gap-label">PIT</span>
+                                <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
+                                  <span
+                                    class="stint-pit-gap-fill"
+                                    aria-hidden="true"
+                                    style="width: {{ stint.pit_stop_fill_percent if stint.pit_stop_fill_percent is not none else 100 }}%;"
+                                  ></span>
+                                  <span class="stint-pit-gap-content">
+                                    <span class="stint-pit-gap-time">{{ stint.pit_stop_time }}</span>
+                                    {% if stint.pit_stop_comparison_text is defined and stint.pit_stop_comparison_text %}
+                                      <span class="stint-pit-gap-comparison">{{ stint.pit_stop_comparison_text }}</span>
+                                    {% endif %}
+                                  {% if stint.pit_stop_average_time is defined and stint.pit_stop_average_time %}
+                                      <span class="stint-pit-gap-average">AVG {{ stint.pit_stop_average_time }}</span>
+                                    {% endif %}
+                                  </span>
+                                </div>
+                                {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
+                                  <span class="stint-pit-gap-stopped">STOP {{ stint.pit_stop_stopped_time }}</span>
+                                {% endif %}
+                              </div>
+                            {% endif %}
+                            <a
+                              class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
+                              href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
+                              style="--stint-color: {{ stint.tyre_color }};"
+                            >
+                              <div class="stint-bar-top">
+                                <strong>
+                                  Stint {{ stint.stint }}{% if stint.stint_note %} <span class="stint-bar-fresh-note">{{ stint.stint_note }}</span>{% endif %}
+                                </strong>
+                                <span>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</span>
+                              </div>
+                              <div class="stint-bar-track">
+                                <span class="stint-bar-fill" aria-hidden="true"></span>
+                                <span class="stint-bar-label">{{ stint.compound }}</span>
+                              </div>
+                            </a>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                  {% if not session_is_qualifying %}
+                    <div
+                      class="stint-graph-viewport"
+                      data-stint-graph
+                      data-year="{{ form.year }}"
+                      data-gp="{{ form.gp }}"
+                      data-session="{{ form.session }}"
+                      data-driver="{{ selected_driver }}"
+                      data-stint="{{ selected_stint }}"
+                      data-selected-lap="{{ selected_lap }}"
+                    ></div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
             {% if session_is_qualifying and qualifying_phase_runs %}
               {% set display_qualifying_run = selected_qualifying_run if selected_qualifying_run else (qualifying_phase_runs[0] if qualifying_phase_runs else none) %}
               {% set display_other_runs = qualifying_phase_other_runs if selected_qualifying_run else (qualifying_phase_runs | rejectattr('run_number', 'equalto', display_qualifying_run.run_number) | list) if display_qualifying_run else [] %}
@@ -4719,13 +4866,6 @@
                   <header>
                     <div>
                       <h2>{{ qualifying_phase }} Run {{ display_qualifying_run.run_number }}</h2>
-                      <p class="subtle">
-                        {% if display_other_runs %}
-                          Review every lap in this run, then switch to another run from the same phase.
-                        {% else %}
-                          Review every lap in this run.
-                        {% endif %}
-                      </p>
                     </div>
                   </header>
                   <div class="qualifying-run-browser">
@@ -4740,14 +4880,34 @@
                         </header>
                         <div class="qualifying-run-choices">
                           {% for lap in display_qualifying_run.laps %}
+                            {% set lap_type_text = (lap.lap_type if lap.lap_type else '') | trim %}
+                            {% set lap_type_lower = lap_type_text | lower %}
+                            {% if lap_type_lower.startswith('out') %}
+                              {% set lap_type_class = 'lap-type-out-lap' %}
+                              {% set lap_type_label = 'OUT' %}
+                            {% elif lap_type_lower.startswith('cool') %}
+                              {% set lap_type_class = 'lap-type-cool-lap' %}
+                              {% set lap_type_label = 'COOL' %}
+                            {% elif lap_type_lower.startswith('flying') %}
+                              {% set lap_type_class = 'lap-type-flying-lap' %}
+                              {% set lap_type_label = 'FLYING' %}
+                            {% elif lap_type_lower.startswith('in') %}
+                              {% set lap_type_class = 'lap-type-in-lap' %}
+                              {% set lap_type_label = 'IN' %}
+                            {% else %}
+                              {% set lap_type_class = '' %}
+                              {% set lap_type_label = lap_type_text|upper if lap_type_text else 'LAP' %}
+                            {% endif %}
                             <a
-                              class="qualifying-run-lap-button {% if lap.value == selected_lap %}active{% endif %}"
+                              class="qualifying-run-lap-button {{ lap_type_class }} {% if lap.value == selected_lap %}active{% endif %}"
                               href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ display_qualifying_run.representative|urlencode }}&lap={{ lap.value|urlencode }}"
                             >
-                              <strong>Lap {{ lap.lap_number }}</strong>
-                              <span>{{ lap.lap_type }}</span>
-                              <span>{{ lap.lap_time }}</span>
-                              <span>{{ lap.compound }}</span>
+                              <div class="qualifying-run-lap-top">
+                                <strong>Lap {{ lap.lap_number }}</strong>
+                                <span class="qualifying-run-lap-kind">{{ lap_type_label }}</span>
+                              </div>
+                              <span class="qualifying-run-lap-time">{{ lap.lap_time }}</span>
+                              <span class="qualifying-run-lap-compound">{{ lap.compound }}</span>
                             </a>
                           {% endfor %}
                         </div>
@@ -4792,7 +4952,8 @@
                       {% if track_map and track_map.sector_markers %}
                         <div class="track-map-sector-stack" aria-label="Sector split times">
                           {% for marker in track_map.sector_markers %}
-                            {% set sector_color = marker.source_driver_color if marker.source_driver_color else '#ff4d3d' %}
+                            {% set sector_palette = ['#ff4d3d', '#f3de5c', '#f8fbff'] %}
+                            {% set sector_color = sector_palette[loop.index0] if loop.index0 < sector_palette|length else (marker.source_driver_color if marker.source_driver_color else '#ff4d3d') %}
                             <div class="track-map-sector-badge" style="--sector-color: {{ sector_color }};">
                               <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
                               <span class="track-map-sector-badge-time">{{ marker.time }}</span>
@@ -4877,6 +5038,10 @@
           const practiceToggle = document.querySelector("[data-practice-session-toggle]");
           const practiceTrigger = practiceToggle ? practiceToggle.querySelector("[data-practice-session-trigger]") : null;
           const headerBadges = document.querySelector("[data-header-badges]");
+          const headerSession = String(headerBadges ? headerBadges.dataset.session || "" : "").trim().toUpperCase();
+          const headerSessionIsQualifying = headerSession === "Q";
+          const headerSessionIsPractice = ["FP1", "FP2", "FP3"].includes(headerSession);
+          const headerSessionIsSprintQualifying = headerSession === "SQ";
           const qualifyingMenu = document.querySelector("[data-qualifying-session-menu]");
           const sprintQualifyingMenu = document.querySelector("[data-sprint-qualifying-session-menu]");
           const practiceMenu = document.querySelector("[data-practice-session-menu]");
@@ -4888,6 +5053,18 @@
           const modalGpSelect = document.getElementById("modal-gp");
           const modalSubmitButton = sessionSelectorModal ? sessionSelectorModal.querySelector('button[type="submit"]') : null;
           const viewLinks = document.querySelectorAll(".view-link");
+
+          const openPersistentHeaderMenus = () => {
+            if (headerSessionIsQualifying && qualifyingMenu) {
+              setExpansionMenu(qualifyingMenu, true);
+            }
+            if (headerSessionIsPractice && practiceMenu) {
+              setExpansionMenu(practiceMenu, true);
+            }
+            if (headerSessionIsSprintQualifying && sprintQualifyingMenu) {
+              setExpansionMenu(sprintQualifyingMenu, true);
+            }
+          };
 
           const closeSessionToggle = (toggle, trigger) => {
             if (!toggle || !trigger) {
@@ -5052,9 +5229,15 @@
               return;
             }
             const open = Boolean(
+              headerSessionIsQualifying ||
+              headerSessionIsPractice ||
+              headerSessionIsSprintQualifying ||
               (qualifyingToggle && qualifyingToggle.classList.contains("open")) ||
               (sprintQualifyingToggle && sprintQualifyingToggle.classList.contains("open")) ||
-              (practiceToggle && practiceToggle.classList.contains("open")),
+              (practiceToggle && practiceToggle.classList.contains("open")) ||
+              (qualifyingMenu && qualifyingMenu.classList.contains("open")) ||
+              (sprintQualifyingMenu && sprintQualifyingMenu.classList.contains("open")) ||
+              (practiceMenu && practiceMenu.classList.contains("open")),
             );
             headerBadges.classList.toggle("open-menus", open);
           };
@@ -5107,6 +5290,9 @@
               ]);
             });
           }
+
+          openPersistentHeaderMenus();
+          syncHeaderSpacing();
 
           viewLinks.forEach((link) => {
             link.addEventListener("click", (event) => {
@@ -7639,7 +7825,7 @@
               const pillLabel = timeLabel ? `${label} · ${timeLabel}` : label;
               const pillWidth = Math.max(58, Math.min(widthValue - 8, Math.ceil((pillLabel.length * 6.2) + 18)));
               const pillX = x1 + Math.max(4, (widthValue - pillWidth) / 2);
-              const pillY = Math.max(0, sectorBandTop - 12);
+              const pillY = Math.max(-32, sectorBandTop - 28);
               const pillCenterX = pillX + (pillWidth / 2);
               const pillCenterY = pillY + 7;
 
@@ -8312,7 +8498,7 @@
                 .filter((seconds) => Number.isFinite(seconds) && seconds > 0 && seconds < duration)
                 .map((seconds) => seconds / duration)
               : [];
-            const separatorGap = Math.max(14, Math.min(24, surfaceWidth * 0.95));
+            const separatorGap = Math.max(20, Math.min(34, surfaceWidth * 1.1));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, separatorGap);
             const defaultSectorColors = ["#ff4d3d", "#f5f6f8", "#f3de5c"];
             const sectorColors = sectorSegments.map((_, index) => {
@@ -8403,20 +8589,20 @@
                   return "";
                 }
 
-                const dividerLength = Math.max(surfaceWidth * 2.1, 34);
+                const dividerLength = Math.max(surfaceWidth * 2.45, 40);
                 const dividerHalf = dividerLength / 2;
-                const separatorWidth = Math.max(3.2, Math.min(5.4, surfaceWidth * 0.18));
-                const separatorShadowWidth = Math.max(9, Math.min(14, surfaceWidth * 0.58));
-                const separatorHighlightWidth = Math.max(1.4, Math.min(2.2, surfaceWidth * 0.08));
+                const separatorWidth = Math.max(4.6, Math.min(7.2, surfaceWidth * 0.24));
+                const separatorShadowWidth = Math.max(12, Math.min(18, surfaceWidth * 0.76));
+                const separatorHighlightWidth = Math.max(1.9, Math.min(3.1, surfaceWidth * 0.12));
                 const x1 = anchor[0] + (tangent.normalX * dividerHalf);
                 const y1 = anchor[1] + (tangent.normalY * dividerHalf);
                 const x2 = anchor[0] - (tangent.normalX * dividerHalf);
                 const y2 = anchor[1] - (tangent.normalY * dividerHalf);
                 return `
                   <g class="track-sector-divider" style="pointer-events:none">
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 0.98)" stroke-width="${separatorShadowWidth.toFixed(2)}" stroke-linecap="round"></line>
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(255, 255, 255, 0.88)" stroke-width="${separatorWidth.toFixed(2)}" stroke-linecap="round"></line>
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 0.9)" stroke-width="${separatorHighlightWidth.toFixed(2)}" stroke-linecap="round"></line>
+                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 1)" stroke-width="${separatorShadowWidth.toFixed(2)}" stroke-linecap="square"></line>
+                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(255, 255, 255, 0.96)" stroke-width="${separatorWidth.toFixed(2)}" stroke-linecap="square"></line>
+                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 0.92)" stroke-width="${separatorHighlightWidth.toFixed(2)}" stroke-linecap="square"></line>
               </g>
             `;
               }).join("")
