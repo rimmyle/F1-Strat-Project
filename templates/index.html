@@ -1089,7 +1089,7 @@
       .qualifying-run-lap-button .qualifying-run-lap-top {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-end;
         gap: 10px;
         width: 100%;
       }
@@ -1902,6 +1902,11 @@
       .stint-graph-lap-marker text {
         font-family: inherit;
         letter-spacing: 0.05em;
+      }
+
+      .stint-graph-status-marker text {
+        font-family: inherit;
+        letter-spacing: 0.08em;
       }
 
       .stint-graph-point:hover circle,
@@ -3655,16 +3660,21 @@
       .lap-summary-badge {
         display: inline-flex;
         flex-direction: column;
-        gap: 4px;
-        padding: 10px 14px;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-height: 58px;
+        padding: 8px 14px;
         border: 1px solid var(--border);
         border-radius: 14px;
         background: rgba(21, 35, 59, 0.95);
+        box-sizing: border-box;
       }
 
       .lap-summary-badge span {
         color: var(--muted);
-        font-size: 0.75rem;
+        font-size: 0.74rem;
+        line-height: 1.05;
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
@@ -3672,7 +3682,7 @@
       .lap-summary-badge strong {
         color: var(--text);
         font-size: 1.05rem;
-        line-height: 1.2;
+        line-height: 1.08;
       }
 
       .lap-summary-badge strong.track-status-green {
@@ -3719,6 +3729,76 @@
         color: var(--warn);
         font-size: 0.74rem;
         font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .track-status-disclosure {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        width: fit-content;
+        justify-self: start;
+        align-self: start;
+      }
+
+      .track-status-summary {
+        cursor: pointer;
+        list-style: none;
+        width: 100%;
+      }
+
+      .track-status-summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .track-status-summary::marker {
+        content: "";
+      }
+
+      .track-status-dropdown {
+        display: grid;
+        gap: 8px;
+        width: min(100%, 420px);
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 14px;
+        background: rgba(7, 14, 27, 0.94);
+        box-shadow: 0 18px 32px rgba(2, 6, 23, 0.34);
+      }
+
+      .track-status-dropdown-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: baseline;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-left: 3px solid var(--status-accent, rgba(148, 163, 184, 0.45));
+        border-radius: 11px;
+        background: rgba(16, 26, 45, 0.9);
+      }
+
+      .track-status-dropdown-item strong {
+        min-width: 0;
+        color: var(--status-accent, var(--text));
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .track-status-dropdown-item span {
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      .track-status-dropdown-empty {
+        padding: 8px 10px;
+        color: var(--muted);
+        font-size: 0.82rem;
         line-height: 1.2;
       }
 
@@ -3775,8 +3855,9 @@
       }
 
       .qualifying-overview-sector-strip-label {
-        display: flex;
-        justify-content: center;
+        display: grid;
+        justify-items: center;
+        gap: 8px;
         margin: 0 0 10px;
       }
 
@@ -3796,6 +3877,39 @@
         text-transform: uppercase;
         white-space: nowrap;
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      }
+
+      .qualifying-overview-optimal-lap-badge {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-height: 34px;
+        padding: 8px 14px 7px;
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        border-radius: 9999px;
+        background: rgba(250, 204, 21, 0.12);
+        color: #ffe27a;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      }
+
+      .qualifying-overview-optimal-lap-badge span {
+        color: rgba(255, 226, 122, 0.92);
+      }
+
+      .qualifying-overview-optimal-lap-badge strong {
+        color: #fff4bf;
+        font-size: 0.96rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        line-height: 1.1;
+        text-transform: none;
       }
 
       .qualifying-overview-sector-stack[aria-label] {
@@ -4154,6 +4268,7 @@
                   {% set ns.other_sessions = ns.other_sessions + [session] %}
                 {% endif %}
               {% endfor %}
+              {% set practice_session_count = ns.practice_sessions | length %}
               {% for session in ns.race_sessions + ns.other_sessions %}
                 <a
                   class="session-chip {% if session.value == 'R' %}race-session-chip{% endif %} {% if session.value == form.session %}active{% endif %}"
@@ -4211,7 +4326,7 @@
                   </div>
                 </div>
               {% endif %}
-              {% if ns.practice_sessions %}
+              {% if practice_session_count > 1 %}
                 <div class="session-badge-expansion-band" data-practice-session-menu hidden>
                   <div class="qualifying-phase-row" aria-label="Practice session selector">
                     {% for session in ns.practice_sessions %}
@@ -4303,11 +4418,6 @@
           <input type="hidden" name="phase" value="{{ form.phase }}" />
           <input type="hidden" name="stint" value="{{ selected_stint or '' }}" data-stint-input />
           <div class="field">
-            {% if session_is_qualifying and selected_lap %}
-              <label for="driver">Qualifying laps</label>
-            {% elif session_is_qualifying %}
-              <label for="driver">{{ qualifying_phase }} Results</label>
-            {% endif %}
             <div class="driver-picker" data-driver-picker id="driver-picker">
               <input type="hidden" name="driver" value="{{ selected_driver or '' }}" data-driver-input />
               <div class="driver-picker-stack">
@@ -4337,10 +4447,10 @@
                       <div class="practice-stint-selector">
                         <div class="practice-stint-selector-head">
                           <div>
-                            <span>Stint selector</span>
+                            <span>Run selector</span>
                             <strong>{{ selected_driver_data.full_name if selected_driver_data else 'Selected driver' }}</strong>
                           </div>
-                          <span class="practice-stint-selector-count">{{ race_stints.stints|length }} stint{{ 's' if race_stints.stints|length != 1 else '' }}</span>
+                          <span class="practice-stint-selector-count">{{ race_stints.stints|length }} run{{ 's' if race_stints.stints|length != 1 else '' }}</span>
                         </div>
                         <div class="practice-stint-selector-grid">
                           {% for stint in race_stints.stints %}
@@ -4350,7 +4460,7 @@
                               data-stint-button
                               data-stint-value="{{ stint.stint }}"
                             >
-                              <span>Stint {{ stint.stint }}</span>
+                              <span>Run {{ stint.stint }}</span>
                               <strong>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</strong>
                               <small>{% if stint.stint_note %}{{ stint.stint_note }}{% else %}{{ stint.compound }}{% endif %}</small>
                             </button>
@@ -4431,7 +4541,6 @@
                                   href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ display_qualifying_run.representative|urlencode }}&lap={{ lap.value|urlencode }}"
                                 >
                                   <div class="qualifying-run-lap-top">
-                                    <strong>Lap {{ lap.lap_number }}</strong>
                                     <span class="qualifying-run-lap-kind">{{ lap_type_label }}</span>
                                   </div>
                                   <span class="qualifying-run-lap-time">{{ lap.lap_time }}</span>
@@ -4591,6 +4700,12 @@
                   <span class="qualifying-overview-fastest-sectors-badge">
                     {{ qualifying_overview_track_map.title if qualifying_overview_track_map.title else 'Fastest sectors' }}
                   </span>
+                  {% if qualifying_overview_track_map.optimal_lap_time %}
+                    <span class="qualifying-overview-optimal-lap-badge">
+                      <span>Optimal lap</span>
+                      <strong>{{ qualifying_overview_track_map.optimal_lap_time }}</strong>
+                    </span>
+                  {% endif %}
                 </div>
                 <div class="qualifying-overview-sector-stack">
                   {% for sector_group in qualifying_overview_track_map.sector_groups %}
@@ -4761,10 +4876,37 @@
                   {% if lap_record %}
                     <div class="stint-graph-summary-records">
                       {% for key, label, value in lap_record %}
-                        <div class="lap-summary-badge lap-summary-badge--compact">
-                          <span>{{ label }}</span>
-                          <strong class="{% if key == 'track_status' %}{% if value == 'Green' %}track-status-green{% elif value == 'Yellow Flag' %}track-status-yellow{% elif value == 'Safety Car' %}track-status-safety-car{% elif value == 'Virtual Safety Car' %}track-status-vsc{% elif value == 'Red Flag' %}track-status-red{% endif %}{% endif %}">{{ value }}</strong>
-                        </div>
+                        {% if key == 'track_status' %}
+                          <details class="track-status-disclosure">
+                            <summary class="lap-summary-badge lap-summary-badge--compact track-status-summary">
+                              <span>{{ label }}</span>
+                              <strong class="{% if value == 'Green' %}track-status-green{% elif value == 'Yellow Flag' %}track-status-yellow{% elif value == 'Safety Car' %}track-status-safety-car{% elif value == 'Virtual Safety Car' %}track-status-vsc{% elif value == 'Red Flag' %}track-status-red{% endif %}">{{ value }}</strong>
+                            </summary>
+                            <div class="track-status-dropdown" role="list" aria-label="Track status changes throughout the session">
+                              {% if track_status_segments %}
+                                {% for segment in track_status_segments %}
+                                  <div class="track-status-dropdown-item" role="listitem" style="--status-accent: {{ segment.color }};">
+                                    <strong>{{ segment.label | upper }}</strong>
+                                    <span>
+                                      {% if segment.start_lap == segment.end_lap %}
+                                        (Lap {{ segment.start_lap }})
+                                      {% else %}
+                                        (Lap {{ segment.start_lap }} - {{ segment.end_lap }})
+                                      {% endif %}
+                                    </span>
+                                  </div>
+                                {% endfor %}
+                              {% else %}
+                                <div class="track-status-dropdown-empty">No additional track status changes</div>
+                              {% endif %}
+                            </div>
+                          </details>
+                        {% else %}
+                          <div class="lap-summary-badge lap-summary-badge--compact">
+                            <span>{{ label }}</span>
+                            <strong>{{ value }}</strong>
+                          </div>
+                        {% endif %}
                       {% endfor %}
                     </div>
                   {% endif %}
@@ -4903,7 +5045,6 @@
                               href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&phase={{ qualifying_phase }}&driver={{ selected_driver }}&run={{ display_qualifying_run.representative|urlencode }}&lap={{ lap.value|urlencode }}"
                             >
                               <div class="qualifying-run-lap-top">
-                                <strong>Lap {{ lap.lap_number }}</strong>
                                 <span class="qualifying-run-lap-kind">{{ lap_type_label }}</span>
                               </div>
                               <span class="qualifying-run-lap-time">{{ lap.lap_time }}</span>
@@ -4987,6 +5128,7 @@
       {% if page == 'data' or page == 'results' or page == 'lap' %}
       {% if selected_stint_data and not session_is_qualifying %}
       <script id="stint-graph-json" type="application/json">{{ selected_stint_data | tojson }}</script>
+      <script id="track-status-json" type="application/json">{{ track_status_segments | tojson }}</script>
       {% endif %}
       <script>
         (async () => {
@@ -5325,11 +5467,13 @@
         (async () => {
           const container = document.querySelector("[data-stint-graph]");
           const dataEl = document.getElementById("stint-graph-json");
+          const trackStatusEl = document.getElementById("track-status-json");
           if (!container || !dataEl) {
             return;
           }
 
           const stint = JSON.parse(dataEl.textContent || "null");
+          const trackStatusSegments = trackStatusEl ? JSON.parse(trackStatusEl.textContent || "[]") : [];
           if (!stint || !stint.laps || !stint.laps.length) {
             container.innerHTML = '<div class="empty">No laps available for this stint.</div>';
             return;
@@ -5455,6 +5599,94 @@
               ];
             }
             return [];
+          }
+
+          function renderStatusMarkers() {
+            if (!Array.isArray(trackStatusSegments) || !trackStatusSegments.length) {
+              return "";
+            }
+
+            const markers = trackStatusSegments.filter((segment) => (
+              segment
+              && (segment.label === "Safety Car" || segment.label === "Virtual Safety Car" || segment.label === "Red Flag")
+            ));
+            if (!markers.length) {
+              return "";
+            }
+
+            const statusTop = height - 15;
+            const statusBottom = height - 4;
+            const statusLabelY = height - 7;
+            const xSpacing = laps.length > 1 ? (innerWidth / (laps.length - 1)) : 0;
+
+            const findStartIndex = (segment) => {
+              for (let index = 0; index < laps.length; index += 1) {
+                const lapNumber = Number(laps[index].lap_number);
+                if (Number.isFinite(lapNumber) && lapNumber >= segment.start_lap && lapNumber <= segment.end_lap) {
+                  return index;
+                }
+              }
+              return -1;
+            };
+
+            const findEndIndex = (segment, fallbackIndex) => {
+              for (let index = laps.length - 1; index >= 0; index -= 1) {
+                const lapNumber = Number(laps[index].lap_number);
+                if (Number.isFinite(lapNumber) && lapNumber >= segment.start_lap && lapNumber <= segment.end_lap) {
+                  return index;
+                }
+              }
+              return fallbackIndex;
+            };
+
+            return markers.map((segment) => {
+              const fill = segment.label === "Safety Car"
+                ? "#facc15"
+                : segment.label === "Virtual Safety Car"
+                  ? "#38bdf8"
+                  : "#ef4444";
+              const label = segment.label === "Safety Car"
+                ? "SC"
+                : segment.label === "Virtual Safety Car"
+                  ? "VSC"
+                  : "RF";
+              const startIndex = findStartIndex(segment);
+              if (startIndex < 0) {
+                return "";
+              }
+              const endIndex = findEndIndex(segment, startIndex);
+              const startX = toX(startIndex);
+              const endX = toX(endIndex);
+              const isSingleLap = Math.abs(endX - startX) < Math.max(16, xSpacing * 0.65);
+              const labelWidth = Math.max(28, Math.min(width - padding.left - padding.right - 8, Math.ceil((label.length * 6.2) + 12)));
+
+              if (isSingleLap) {
+                const badgeLeft = Math.max(padding.left + 2, Math.min(width - padding.right - labelWidth - 2, startX - (labelWidth / 2)));
+                const badgeCenterX = badgeLeft + (labelWidth / 2);
+                return `
+                  <g class="stint-graph-status-marker" pointer-events="none">
+                    <rect x="${badgeLeft.toFixed(2)}" y="${statusTop.toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
+                    <text x="${badgeCenterX.toFixed(2)}" y="${statusLabelY.toFixed(2)}" fill="${fill}" font-size="8.5" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(label)}</text>
+                  </g>
+                `;
+              }
+
+              const centerX = (startX + endX) / 2;
+              const badgeLeft = Math.max(
+                padding.left + 2,
+                Math.min(width - padding.right - labelWidth - 2, centerX - (labelWidth / 2)),
+              );
+              const badgeCenterX = badgeLeft + (labelWidth / 2);
+
+              return `
+                <g class="stint-graph-status-marker" pointer-events="none">
+                  <line x1="${startX.toFixed(2)}" y1="${statusTop.toFixed(2)}" x2="${startX.toFixed(2)}" y2="${statusBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.2" opacity="0.92"></line>
+                  <line x1="${endX.toFixed(2)}" y1="${statusTop.toFixed(2)}" x2="${endX.toFixed(2)}" y2="${statusBottom.toFixed(2)}" stroke="${fill}" stroke-width="2.2" opacity="0.92"></line>
+                  <rect x="${badgeLeft.toFixed(2)}" y="${statusTop.toFixed(2)}" width="${labelWidth}" height="14" rx="7" fill="${fill}" opacity="0.28"></rect>
+                  <text x="${badgeCenterX.toFixed(2)}" y="${statusLabelY.toFixed(2)}" fill="${fill}" font-size="8.5" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(label)}</text>
+                </g>
+              `;
+            }).join("");
           }
 
           function renderLapMarkers(lap, x, y) {
@@ -5694,6 +5926,7 @@
               <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
               ${grid}
               <path d="${path.trim()}" fill="none" stroke="#77f0d1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              ${renderStatusMarkers()}
               ${points}
               ${xLabels}
             </svg>
@@ -5805,20 +6038,20 @@
               eliminated_count: 0,
               drivers: graph.drivers || [],
             }];
-            const sectionHeaderHeight = 26;
-            const sectionContentGap = 8;
+            const sectionHeaderHeight = practiceMode ? 30 : 26;
+            const sectionContentGap = practiceMode ? 10 : 8;
             const sectionContentOffset = sectionHeaderHeight + sectionContentGap;
-            const sectionGap = 10;
+            const sectionGap = practiceMode ? 14 : 10;
             const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
-            const availableHeight = Math.max(420, (window.innerHeight || 900) - 260);
+            const availableHeight = Math.max(practiceMode ? 620 : 420, (window.innerHeight || 900) - (practiceMode ? 200 : 260));
             const rowStep = Math.max(
-              15,
+              practiceMode ? 20 : 15,
               Math.min(
-                20,
+                practiceMode ? 32 : 20,
                 Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionContentOffset) - ((sections.length - 1) * sectionGap)) / totalRows),
               ),
             );
-            const rowHeight = Math.max(7, Math.min(9, Math.floor(rowStep * 0.44)));
+            const rowHeight = Math.max(practiceMode ? 8 : 7, Math.min(practiceMode ? 12 : 9, Math.floor(rowStep * 0.46)));
             const height = pad.top + pad.bottom + sections.reduce(
               (total, section, index) => total
                 + sectionHeaderHeight
@@ -6211,6 +6444,39 @@
             return;
           }
 
+          const showNavigationLoadingOverlay = (message = "Loading lap view") => {
+            if (document.querySelector(".loading-overlay")) {
+              return;
+            }
+
+            document.body.classList.add("is-loading");
+            document.body.setAttribute("aria-busy", "true");
+            document.body.style.setProperty("--loading-progress", "0%");
+
+            const overlay = document.createElement("div");
+            overlay.className = "loading-overlay";
+            overlay.setAttribute("role", "status");
+            overlay.setAttribute("aria-live", "polite");
+            overlay.setAttribute("aria-label", "FastF1 loading session");
+            overlay.innerHTML = `
+              <div class="loading-card">
+                <svg class="loading-wheel" viewBox="0 0 160 160" aria-hidden="true">
+                  <circle cx="80" cy="80" r="61" fill="#11161d" stroke="#050608" stroke-width="6"></circle>
+                  <circle cx="80" cy="80" r="39" fill="#b9c0c8" stroke="#707985" stroke-width="2.5"></circle>
+                  <circle cx="80" cy="80" r="16.5" fill="#8f98a3" stroke="#dfe4ea" stroke-width="1.25"></circle>
+                </svg>
+                <h2 class="loading-title">FastF1 is loading</h2>
+                <p class="loading-copy"></p>
+                <div class="loading-bar" aria-hidden="true"><span style="width: 100%;"></span></div>
+              </div>
+            `;
+            const copy = overlay.querySelector(".loading-copy");
+            if (copy) {
+              copy.textContent = message;
+            }
+            document.body.appendChild(overlay);
+          };
+
           const graphByKey = new Map(availableGraphs.map((entry) => [entry.key, entry]));
           const titleByView = new Map(availableGraphs.map((entry) => [entry.key, entry.title]));
           const buttons = switcher ? Array.from(switcher.querySelectorAll("[data-results-graph-toggle]")) : [];
@@ -6495,7 +6761,12 @@
                 event.preventDefault();
                 event.stopPropagation();
               }
-              window.location.assign(href);
+              showNavigationLoadingOverlay("Loading lap view");
+              window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                  window.location.assign(href);
+                });
+              });
             };
 
             const restoreSeriesOrder = () => {
@@ -7072,7 +7343,7 @@
           const seriesGroups = Array.from(svg.querySelectorAll(".race-position-series"));
           const badgeGroups = Array.from(svg.querySelectorAll(".race-position-badge"));
           const interactiveTargets = Array.from(svg.querySelectorAll(".race-position-line, .race-position-hit"));
-          const openDriver = (group) => {
+          const openDriver = (group, event) => {
             const link = group && group.closest ? (group.closest(".race-position-series") || group) : group;
             const href = link
               ? (link.getAttribute("href") || link.getAttribute("xlink:href") || link.getAttribute("data-href") || "").trim()
@@ -7080,7 +7351,16 @@
             if (!href) {
               return;
             }
-            window.location.assign(href);
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            showNavigationLoadingOverlay("Loading lap view");
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(() => {
+                window.location.assign(href);
+              });
+            });
           };
 
           const restoreSeriesOrder = () => {
@@ -7134,12 +7414,12 @@
               }
               event.preventDefault();
               event.stopPropagation();
-              openDriver(group);
+              openDriver(group, event);
             });
             group.addEventListener("keydown", (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                openDriver(group);
+                openDriver(group, event);
               }
             });
           });
@@ -7155,7 +7435,7 @@
               return;
             }
             event.preventDefault();
-            openDriver(target);
+            openDriver(target, event);
           });
           svg.addEventListener("pointerleave", clearSeries);
           svg.addEventListener("mouseleave", clearSeries);
@@ -8498,7 +8778,7 @@
                 .filter((seconds) => Number.isFinite(seconds) && seconds > 0 && seconds < duration)
                 .map((seconds) => seconds / duration)
               : [];
-            const separatorGap = Math.max(20, Math.min(34, surfaceWidth * 1.1));
+            const separatorGap = Math.max(36, Math.min(64, surfaceWidth * 1.9));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, separatorGap);
             const defaultSectorColors = ["#ff4d3d", "#f5f6f8", "#f3de5c"];
             const sectorColors = sectorSegments.map((_, index) => {
@@ -8589,11 +8869,13 @@
                   return "";
                 }
 
-                const dividerLength = Math.max(surfaceWidth * 2.45, 40);
+                const dividerLength = Math.max(surfaceWidth * 4.1, 62);
                 const dividerHalf = dividerLength / 2;
-                const separatorWidth = Math.max(4.6, Math.min(7.2, surfaceWidth * 0.24));
-                const separatorShadowWidth = Math.max(12, Math.min(18, surfaceWidth * 0.76));
-                const separatorHighlightWidth = Math.max(1.9, Math.min(3.1, surfaceWidth * 0.12));
+                const separatorWidth = Math.max(8.5, Math.min(12.5, surfaceWidth * 0.42));
+                const separatorShadowWidth = Math.max(22, Math.min(34, surfaceWidth * 1.4));
+                const separatorHighlightWidth = Math.max(3.2, Math.min(5.4, surfaceWidth * 0.22));
+                const separatorMarkerSize = Math.max(10, Math.min(16, surfaceWidth * 0.62));
+                const separatorMarkerHalf = separatorMarkerSize / 2;
                 const x1 = anchor[0] + (tangent.normalX * dividerHalf);
                 const y1 = anchor[1] + (tangent.normalY * dividerHalf);
                 const x2 = anchor[0] - (tangent.normalX * dividerHalf);
@@ -8603,6 +8885,17 @@
                     <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 1)" stroke-width="${separatorShadowWidth.toFixed(2)}" stroke-linecap="square"></line>
                     <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(255, 255, 255, 0.96)" stroke-width="${separatorWidth.toFixed(2)}" stroke-linecap="square"></line>
                     <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 0.92)" stroke-width="${separatorHighlightWidth.toFixed(2)}" stroke-linecap="square"></line>
+                    <rect
+                      x="${(anchor[0] - separatorMarkerHalf).toFixed(2)}"
+                      y="${(anchor[1] - separatorMarkerHalf).toFixed(2)}"
+                      width="${separatorMarkerSize.toFixed(2)}"
+                      height="${separatorMarkerSize.toFixed(2)}"
+                      rx="1.5"
+                      transform="rotate(45 ${anchor[0].toFixed(2)} ${anchor[1].toFixed(2)})"
+                      fill="#f8fbff"
+                      stroke="rgba(0, 0, 0, 0.96)"
+                      stroke-width="1.35"
+                    ></rect>
               </g>
             `;
               }).join("")

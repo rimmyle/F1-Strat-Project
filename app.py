@@ -586,6 +586,83 @@ def _format_track_status(value):
     return ", ".join(labels) if labels else status
 
 
+def _session_track_status_segments(session, include_yellow=False):
+    if not session:
+        return []
+
+    def classify_track_status(raw_status):
+        status = _clean_value(raw_status).strip()
+        if not status:
+            return None
+        if "5" in status:
+            return {"label": "Red Flag", "short": "RF", "color": "#ef4444"}
+        if "4" in status:
+            return {"label": "Safety Car", "short": "SC", "color": "#f97316"}
+        if "6" in status or "7" in status:
+            return {"label": "Virtual Safety Car", "short": "VSC", "color": "#38bdf8"}
+        if include_yellow and "2" in status:
+            return {"label": "Yellow Flag", "short": "YF", "color": "#facc15"}
+        return None
+
+    track_status = getattr(session, "track_status", None)
+    session_laps = _safe_session_laps(session)
+    laps_for_status = None
+    if session_laps is not None and "LapNumber" in session_laps.columns and "LapStartTime" in session_laps.columns and "Time" in session_laps.columns:
+        laps_for_status = session_laps[
+            session_laps["LapNumber"].notna() & session_laps["LapStartTime"].notna() & session_laps["Time"].notna()
+        ].copy()
+        if not laps_for_status.empty:
+            laps_for_status = laps_for_status.sort_values(by=["LapNumber", "Time"])
+
+    if track_status is None or track_status.empty or laps_for_status is None or laps_for_status.empty:
+        return []
+
+    status_events = track_status.sort_values(by="Time").copy()
+    status_events["end_time"] = status_events["Time"].shift(-1)
+    final_lap_time = laps_for_status["Time"].max()
+
+    status_segments = []
+    current = None
+    for _, row in status_events.iterrows():
+        marker = classify_track_status(row.get("Status"))
+        if marker is None:
+            continue
+
+        start_time = row.get("Time")
+        end_time = row.get("end_time")
+        if pd.isna(start_time):
+            continue
+        if pd.isna(end_time):
+            end_time = final_lap_time
+        if pd.isna(end_time) or end_time <= start_time:
+            continue
+
+        overlapping_laps = laps_for_status[
+            (laps_for_status["LapStartTime"] < end_time) & (laps_for_status["Time"] > start_time)
+        ]["LapNumber"].dropna()
+        if overlapping_laps.empty:
+            continue
+
+        segment = {
+            "start_lap": int(float(overlapping_laps.min())),
+            "end_lap": int(float(overlapping_laps.max())),
+            **marker,
+        }
+
+        if current is not None and current["label"] == segment["label"] and segment["start_lap"] <= current["end_lap"] + 1:
+            current["end_lap"] = max(current["end_lap"], segment["end_lap"])
+            continue
+
+        if current is not None:
+            status_segments.append(current)
+        current = segment
+
+    if current is not None:
+        status_segments.append(current)
+
+    return status_segments
+
+
 def _format_race_result_time(value, position=None):
     if value in (None, "", "-"):
         return "-"
@@ -993,7 +1070,7 @@ def _pit_strategy_driver_options(pit_strategy_graph):
                 "team_logo_url": _team_logo_url(team_name),
                 "headshot_url": headshot_url,
                 "label": f"{abbreviation} - {full_name}" if abbreviation and full_name else full_name or abbreviation or driver_number,
-                "result_time": _clean_value(driver.get("time_label", "-")).strip() or "-",
+                "result_time": _format_lap_time(driver.get("time_label", "-")),
             }
         )
 
@@ -2543,7 +2620,7 @@ def _lap_record(lap, telemetry):
     return fields
 
 
-def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current_stint, speed_threshold_kmh=1.0):
+def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current_stint, speed_threshold_kmh=0.0):
     if not session or not driver_number:
         return None
 
@@ -2604,47 +2681,74 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
     window_start = previous_laps[-1].get("pit_in_seconds")
     if window_start is None:
         window_start = previous_laps[-1].get("lap_start_seconds")
+    window_end = current_laps[0].get("pit_out_seconds")
+    if window_end is None:
+        window_end = current_laps[0].get("lap_start_seconds")
     if window_start is not None:
-        frame = frame[frame[time_column] >= float(window_start)]
+        frame = frame[frame[time_column] >= float(window_start) - 0.25]
+    if window_end is not None:
+        frame = frame[frame[time_column] <= float(window_end) + 0.25]
 
     if frame.empty:
         return None
 
     frame = frame.sort_values(by=time_column).drop_duplicates(subset=[time_column], keep="first").reset_index(drop=True)
 
-    stop_start_index = None
-    for index, speed_value in enumerate(frame["Speed"]):
+    thresholds = []
+    for candidate in (speed_threshold_kmh, 0.0, 0.5, 1.0, 2.0):
         try:
-            if float(speed_value) <= float(speed_threshold_kmh):
-                stop_start_index = index
+            numeric_threshold = float(candidate)
+        except (TypeError, ValueError):
+            continue
+        if numeric_threshold < 0:
+            continue
+        if numeric_threshold not in thresholds:
+            thresholds.append(numeric_threshold)
+
+    if not thresholds:
+        thresholds = [0.0, 0.5, 1.0, 2.0]
+
+    def measure_stationary_seconds(max_speed_kmh):
+        stop_start_index = None
+        for index, speed_value in enumerate(frame["Speed"]):
+            try:
+                if float(speed_value) <= float(max_speed_kmh):
+                    stop_start_index = index
+                    break
+            except (TypeError, ValueError):
+                continue
+
+        if stop_start_index is None:
+            return None
+
+        stopped_seconds = 0.0
+        for index in range(stop_start_index, len(frame) - 1):
+            try:
+                current_speed = float(frame.iloc[index]["Speed"])
+                next_speed = float(frame.iloc[index + 1]["Speed"])
+                current_time = float(frame.iloc[index][time_column])
+                next_time = float(frame.iloc[index + 1][time_column])
+            except (TypeError, ValueError):
+                continue
+
+            if current_speed > float(max_speed_kmh):
                 break
-        except (TypeError, ValueError):
-            continue
 
-    if stop_start_index is None:
-        return None
+            delta = max(0.0, next_time - current_time)
+            if delta > 0.0:
+                stopped_seconds += delta
 
-    stopped_seconds = 0.0
-    for index in range(stop_start_index, len(frame) - 1):
-        try:
-            current_speed = float(frame.iloc[index]["Speed"])
-            next_speed = float(frame.iloc[index + 1]["Speed"])
-            current_time = float(frame.iloc[index][time_column])
-            next_time = float(frame.iloc[index + 1][time_column])
-        except (TypeError, ValueError):
-            continue
+            if next_speed > float(max_speed_kmh):
+                break
 
-        if current_speed > float(speed_threshold_kmh):
-            break
+        return stopped_seconds if stopped_seconds > 0.0 else None
 
-        delta = max(0.0, next_time - current_time)
-        if delta > 0.0:
-            stopped_seconds += delta
+    for threshold in thresholds:
+        measured = measure_stationary_seconds(threshold)
+        if measured is not None and measured > 0.0:
+            return measured
 
-        if next_speed > float(speed_threshold_kmh):
-            break
-
-    return stopped_seconds if stopped_seconds > 0.0 else None
+    return None
 
 
 def _race_stints(session, driver_number, session_code):
@@ -3708,17 +3812,25 @@ def _race_position_graph(session, year=None, gp=None, session_code="R"):
             continue
 
         representative_lap_number = None
-        try:
-            fastest_lap = laps.pick_fastest()
-        except Exception:
-            fastest_lap = None
-        if fastest_lap is not None and not getattr(fastest_lap, "empty", False):
-            fastest_lap_number = fastest_lap.get("LapNumber") if hasattr(fastest_lap, "get") else None
-            if pd.notna(fastest_lap_number):
+        if not ordered.empty:
+            first_lap_number = ordered.iloc[0].get("LapNumber")
+            if pd.notna(first_lap_number):
                 try:
-                    representative_lap_number = int(float(fastest_lap_number))
+                    representative_lap_number = int(float(first_lap_number))
                 except (TypeError, ValueError):
                     representative_lap_number = None
+        if representative_lap_number is None:
+            try:
+                fastest_lap = laps.pick_fastest()
+            except Exception:
+                fastest_lap = None
+            if fastest_lap is not None and not getattr(fastest_lap, "empty", False):
+                fastest_lap_number = fastest_lap.get("LapNumber") if hasattr(fastest_lap, "get") else None
+                if pd.notna(fastest_lap_number):
+                    try:
+                        representative_lap_number = int(float(fastest_lap_number))
+                    except (TypeError, ValueError):
+                        representative_lap_number = None
         if representative_lap_number is None and not ordered.empty:
             fallback_lap_number = ordered.iloc[-1].get("LapNumber")
             if pd.notna(fallback_lap_number):
@@ -4125,7 +4237,7 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
     }
 
 
-def _qualifying_overview_track_map_payload(session, phase=None, driver_options=None, phase_windows=None):
+def _qualifying_overview_track_map_payload(session, phase=None, driver_options=None, phase_windows=None, session_code=None):
     if not session:
         return None
 
@@ -4371,11 +4483,19 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
         team_name = _clean_value(reference_lap.get("Team", "")).strip()
         driver_color = _team_color(team_name) if team_name else "#44c2ff"
 
-    payload["title"] = f"{phase_code} fastest sectors" if phase_code != "ALL" else "Qualifying fastest sectors"
+    session_code = str(session_code or "").strip().upper()
+    if phase_code == "ALL":
+        payload["title"] = "Sprint qualifying fastest sectors" if session_code == "SQ" else "Qualifying fastest sectors"
+    elif session_code == "SQ":
+        payload["title"] = f"SQ{phase_code[-1]} fastest sectors"
+    else:
+        payload["title"] = f"{phase_code} fastest sectors"
     payload["phase_code"] = phase_code
     payload["driver_abbr"] = driver_abbr
     payload["driver_circle_label"] = driver_circle_label
     payload["driver_color"] = driver_color
+    payload["optimal_lap_seconds"] = float(cumulative_seconds) if sector_markers else None
+    payload["optimal_lap_time"] = _format_minutes_seconds(cumulative_seconds) if sector_markers else ""
     payload["sector_markers"] = sector_markers
     payload["sector_groups"] = sector_groups
     payload["reference_driver_number"] = reference_driver_number
@@ -4935,6 +5055,7 @@ def results():
         qualifying_phase,
         driver_options=driver_options,
         phase_windows=qualifying_timeline_combined_graph.get("phase_windows", {}) if isinstance(qualifying_timeline_combined_graph, dict) else None,
+        session_code=ctx["session_code"],
     ) if session_is_qualifying else None
     qualifying_overview_reference_lap = _qualifying_overview_reference_lap(
         session,
@@ -5334,6 +5455,7 @@ def data():
             len(telemetry_rows),
             track_map is not None,
         )
+    track_status_segments = _session_track_status_segments(session, include_yellow=True) if session else []
     lap_entry_source = request.args.get("source", "").strip().lower()
     lap_back_to_driver_table_url = url_for(
         "data",
@@ -5394,6 +5516,7 @@ def data():
         selected_lap=selected_lap_value,
         session_is_qualifying=session_is_qualifying,
         race_stints=race_stints_display,
+        track_status_segments=track_status_segments,
         data=data_state,
         lap_back_to_driver_table_url=lap_back_to_driver_table_url,
         lap_back_to_overview_url=lap_back_to_overview_url,
