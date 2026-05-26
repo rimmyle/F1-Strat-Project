@@ -33,8 +33,20 @@
 
       body.page-transitioning .page {
         opacity: 0;
-        transform: translateY(-10px) scale(0.992);
-        filter: blur(4px);
+        transform: translateY(-14px) scale(0.986);
+        filter: blur(10px) saturate(0.86);
+      }
+
+      body.page-transitioning::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 8999;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at top, rgba(68, 194, 255, 0.08), transparent 34%),
+          linear-gradient(180deg, rgba(4, 9, 17, 0.22), rgba(4, 9, 17, 0.58));
+        backdrop-filter: blur(4px);
       }
 
       .page {
@@ -59,6 +71,28 @@
           opacity: 1;
           transform: translateY(0) scale(1);
           filter: blur(0);
+        }
+      }
+
+      @keyframes module-rise {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.992);
+          filter: blur(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+
+      @keyframes loading-overlay-enter {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
         }
       }
 
@@ -167,6 +201,12 @@
         place-items: start center;
         padding: 24px 24px 40px;
         overflow-y: auto;
+        opacity: 0;
+        transition: opacity 220ms ease;
+      }
+
+      .session-selector-modal.open {
+        opacity: 1;
       }
 
       .session-selector-backdrop {
@@ -174,6 +214,12 @@
         inset: 0;
         background: rgba(4, 9, 17, 0.86);
         backdrop-filter: blur(10px);
+        opacity: 0;
+        transition: opacity 220ms ease;
+      }
+
+      .session-selector-modal.open .session-selector-backdrop {
+        opacity: 1;
       }
 
       .session-selector-dialog {
@@ -186,6 +232,16 @@
         background: linear-gradient(180deg, rgba(16, 26, 45, 0.98), rgba(9, 16, 29, 0.98));
         box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
         margin-top: 8px;
+        opacity: 0;
+        transform: translateY(14px) scale(0.982);
+        transition:
+          opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+          transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .session-selector-modal.open .session-selector-dialog {
+        opacity: 1;
+        transform: translateY(0) scale(1);
       }
 
       .session-selector-close {
@@ -2326,22 +2382,22 @@
       .stint-graph-summary .lap-summary-badge,
       .stint-graph-summary-records .lap-summary-badge {
         width: 100%;
-        min-height: 0;
+        min-height: 58px;
         box-sizing: border-box;
-        padding: 8px 14px 2px;
+        padding: 8px 14px;
       }
 
       .stint-graph-summary-records .lap-summary-badge {
-        gap: 2px;
+        gap: 3px;
         background: rgba(21, 35, 59, 0.9);
       }
 
       .stint-graph-summary-records .lap-summary-badge span {
-        font-size: 0.68rem;
+        font-size: 0.74rem;
       }
 
       .stint-graph-summary-records .lap-summary-badge strong {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
       }
 
       .stint-bars-panel {
@@ -2658,6 +2714,30 @@
         color: var(--muted);
       }
 
+      .panel,
+      .results-graph-shell,
+      .qualifying-overview-shell-toolbar,
+      .qualifying-overview-stage,
+      .qualifying-results,
+      .qualifying-run-panel,
+      .lap-support-panel,
+      .lap-support-card,
+      .stint-graph-panel,
+      .practice-stint-panel,
+      .chart-card,
+      .loading-card {
+        animation: module-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      .driver-picker-stack > *,
+      .qualifying-results-list > *,
+      .qualifying-run-choices > *,
+      .qualifying-run-grid > *,
+      .telemetry-composite > * {
+        animation: module-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 60ms;
+      }
+
       body.is-loading {
         overflow: hidden;
       }
@@ -2665,6 +2745,13 @@
       body.is-loading .page {
         pointer-events: none;
         user-select: none;
+        opacity: 0.08;
+        transform: translateY(10px) scale(0.992);
+        filter: blur(7px) saturate(0.86);
+        transition:
+          opacity 220ms ease,
+          transform 220ms ease,
+          filter 220ms ease;
       }
 
       .loading-overlay {
@@ -2682,6 +2769,7 @@
           radial-gradient(circle at center, rgba(68, 194, 255, 0.16), transparent 38%),
           rgba(4, 9, 17, 0.92);
         backdrop-filter: blur(10px);
+        animation: loading-overlay-enter 220ms ease both;
       }
 
       .loading-card {
@@ -2694,6 +2782,7 @@
         border-radius: 22px;
         background: linear-gradient(180deg, rgba(16, 26, 45, 0.98), rgba(9, 16, 29, 0.98));
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        animation: module-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
       }
 
       .loading-wheel {
@@ -3148,6 +3237,8 @@
         border-radius: 18px;
         background: rgba(16, 26, 45, 0.92);
         overflow: hidden;
+        animation: module-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 60ms;
       }
 
       .results-graph-header {
@@ -3172,6 +3263,7 @@
         min-height: 620px;
         overflow: hidden;
         transition: height 220ms ease;
+        isolation: isolate;
       }
 
       .results-graph-svg {
@@ -3181,6 +3273,30 @@
         background: rgba(10, 16, 28, 0.98);
         border-top: 1px solid rgba(148, 163, 184, 0.14);
         border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
+        will-change: opacity, transform, filter;
+      }
+
+      .results-graph-stage::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 180ms ease;
+        background:
+          radial-gradient(circle at center, rgba(68, 194, 255, 0.08), transparent 42%),
+          linear-gradient(180deg, rgba(8, 17, 31, 0.05), rgba(8, 17, 31, 0.24));
+      }
+
+      .results-graph-stage.is-transitioning::after {
+        opacity: 1;
+      }
+
+      .results-graph-stage.is-transitioning .results-graph-svg {
+        opacity: 0.34;
+        transform: scale(0.996);
+        filter: blur(1.5px) saturate(0.9);
       }
 
       .results-graph-switcher {
@@ -3505,6 +3621,8 @@
         display: flex;
         justify-content: center;
         padding: 0 20px;
+        animation: module-rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 40ms;
       }
 
       .qualifying-overview-switcher.results-graph-switcher {
@@ -3517,6 +3635,9 @@
         min-height: 0;
         overflow: hidden;
         transition: height 240ms cubic-bezier(0.22, 1, 0.36, 1);
+        isolation: isolate;
+        animation: module-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 80ms;
       }
 
       .qualifying-overview-view {
@@ -3525,18 +3646,41 @@
         width: 100%;
         opacity: 0;
         transform: translateY(10px) scale(0.994);
+        filter: blur(4px);
         pointer-events: none;
         transition:
           opacity 220ms ease,
-          transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-        will-change: opacity, transform;
+          transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+          filter 220ms ease;
+        will-change: opacity, transform, filter;
       }
 
       .qualifying-overview-view[data-active="true"] {
         position: relative;
         opacity: 1;
         transform: none;
+        filter: none;
         pointer-events: auto;
+      }
+
+      .qualifying-overview-stage::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 180ms ease;
+        background:
+          radial-gradient(circle at center, rgba(99, 230, 178, 0.06), transparent 42%),
+          linear-gradient(180deg, rgba(8, 17, 31, 0.04), rgba(8, 17, 31, 0.22));
+      }
+
+      .qualifying-overview-stage.is-switching::after {
+        opacity: 1;
+      }
+
+      .qualifying-overview-stage.is-switching .qualifying-overview-view[data-active="true"] {
+        filter: blur(1px);
       }
 
       .pit-strategy-panel header {
@@ -3836,127 +3980,59 @@
         display: block;
         min-width: 0;
         grid-column: 1 / -1;
+        position: relative;
       }
 
-      .qualifying-overview-sector-stack {
+      .qualifying-overview-track-map-overlay {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        z-index: 2;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 12px;
-        width: 100%;
-        min-width: 0;
-        align-self: stretch;
-        justify-self: stretch;
-        grid-column: 1 / -1;
+        gap: 10px;
+        justify-items: start;
+        pointer-events: none;
       }
 
-      .qualifying-overview-sector-strip {
+      .qualifying-overview-track-map-overlay-group {
         display: block;
-        margin: 20px 0 18px;
+        min-width: 0;
       }
 
-      .qualifying-overview-sector-strip-label {
+      .qualifying-overview-track-map-overlay .track-map-sector-driver-badge {
         display: grid;
-        justify-items: center;
-        gap: 8px;
-        margin: 0 0 10px;
-      }
-
-      .qualifying-overview-fastest-sectors-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 28px;
-        padding: 0 14px;
-        border: 1px solid rgba(68, 194, 255, 0.28);
-        border-radius: 9999px;
-        background: rgba(68, 194, 255, 0.12);
-        color: #8bd3ff;
-        font-size: 0.72rem;
-        font-weight: 900;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-      }
-
-      .qualifying-overview-optimal-lap-badge {
-        display: inline-flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-        min-height: 34px;
-        padding: 8px 14px 7px;
-        border: 1px solid rgba(250, 204, 21, 0.3);
-        border-radius: 9999px;
-        background: rgba(250, 204, 21, 0.12);
-        color: #ffe27a;
-        font-size: 0.72rem;
-        font-weight: 900;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-      }
-
-      .qualifying-overview-optimal-lap-badge span {
-        color: rgba(255, 226, 122, 0.92);
-      }
-
-      .qualifying-overview-optimal-lap-badge strong {
-        color: #fff4bf;
-        font-size: 0.96rem;
-        font-weight: 900;
-        letter-spacing: 0.04em;
-        line-height: 1.1;
-        text-transform: none;
-      }
-
-      .qualifying-overview-sector-stack[aria-label] {
-        margin: 2px 0 4px;
-      }
-
-      .qualifying-overview-sector-entry {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        gap: 14px;
-        width: 100%;
+        gap: 10px;
         min-height: 0;
         min-width: 0;
-        padding: 30px 20px 20px;
+        max-width: min(340px, calc(100vw - 72px));
+        padding: 10px 11px 11px;
         border: 1px solid rgba(148, 163, 184, 0.16);
-        border-radius: 18px;
-        background: linear-gradient(180deg, rgba(15, 23, 38, 0.98), rgba(10, 16, 28, 0.98));
-        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
-        text-align: center;
-        overflow: hidden;
-        isolation: isolate;
-      }
-
-      .qualifying-overview-sector-entry:hover,
-      .qualifying-overview-sector-entry:focus-within {
-        border-color: rgba(68, 194, 255, 0.28);
-        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(68, 194, 255, 0.12);
-      }
-
-      .qualifying-overview-sector-strip .track-map-sector-driver-badge {
-        display: grid;
-        justify-items: center;
-        gap: 8px;
-        min-height: 0;
-        padding: 0;
-        border: 0;
-        border-radius: 0;
-        background: transparent;
-        box-shadow: none;
-      }
-
-      .qualifying-overview-sector-strip .track-map-sector-driver-headshot {
-        width: 76px;
-        height: 76px;
         border-radius: 22px;
+        background: rgba(7, 16, 29, 0.86);
+        box-shadow: 0 14px 24px rgba(2, 6, 23, 0.24);
+        pointer-events: none;
+      }
+
+      .qualifying-overview-track-map-overlay-driver-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .qualifying-overview-track-map-overlay-sector-list {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+        min-width: 0;
+        padding-top: 4px;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+      }
+
+      .qualifying-overview-track-map-overlay .track-map-sector-driver-headshot {
+        width: 34px;
+        height: 34px;
+        border-radius: 9999px;
         object-fit: cover;
         flex: none;
         border: 1px solid rgba(255, 255, 255, 0.14);
@@ -3964,65 +4040,38 @@
         background: #07101d;
       }
 
-      .qualifying-overview-sector-strip .track-map-sector-driver-name {
+      .qualifying-overview-track-map-overlay .track-map-sector-driver-name {
         color: #f8fbff;
-        font-size: 0.93rem;
+        font-size: 0.84rem;
         font-weight: 900;
-        line-height: 1.1;
+        line-height: 1.08;
         letter-spacing: 0.02em;
-        text-align: center;
+        text-align: left;
         min-width: 0;
-        white-space: normal;
-        word-break: break-word;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .qualifying-overview-sector-badge-list {
-        display: grid;
-        gap: 10px;
+      .qualifying-overview-track-map-overlay .qualifying-overview-sector-time-badge {
         width: 100%;
         min-width: 0;
+        min-height: 52px;
+        padding: 8px 12px 9px;
+        border-radius: 14px;
+        background: rgba(21, 35, 59, 0.92);
       }
 
-      .qualifying-overview-sector-strip .track-map-sector-badge {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        width: 100%;
-        min-height: 86px;
-        padding: 12px 14px 13px;
-        border: 1px solid rgba(148, 163, 184, 0.16);
-        border-radius: 16px;
-        background: linear-gradient(180deg, rgba(21, 35, 59, 0.96), rgba(12, 19, 34, 0.98));
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-      }
-
-      .qualifying-overview-sector-strip .track-map-sector-badge-label {
+      .qualifying-overview-track-map-overlay .qualifying-overview-sector-time-badge .track-map-sector-badge-label {
         color: var(--sector-color, #f8fbff);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.07em;
-        text-transform: uppercase;
-        line-height: 1;
       }
 
-      .qualifying-overview-sector-strip .track-map-sector-badge-time {
+      .qualifying-overview-track-map-overlay .qualifying-overview-sector-time-badge .track-map-sector-badge-time {
         color: #f8fbff;
-        font-size: 1.08rem;
-        font-weight: 900;
-        font-variant-numeric: tabular-nums;
-        line-height: 1.02;
-        text-shadow: 0 1px 0 rgba(7, 16, 29, 0.6);
       }
 
-      .qualifying-overview-sector-strip .track-map-sector-badge-phase {
+      .qualifying-overview-track-map-overlay .qualifying-overview-sector-time-badge .track-map-sector-badge-phase {
         color: rgba(229, 236, 247, 0.88);
-        font-size: 0.66rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        line-height: 1;
-        text-transform: uppercase;
       }
 
       .track-svg {
@@ -4106,10 +4155,13 @@
           display: block;
         }
 
-        .qualifying-overview-sector-stack {
-          gap: 10px;
-          grid-template-columns: 1fr;
-          width: 100%;
+        .qualifying-overview-sector-time-list {
+          gap: 8px;
+        }
+
+        .qualifying-overview-sector-time-badge {
+          flex: 1 1 180px;
+          min-height: 58px;
         }
 
         .qualifying-overview-track-map .track-svg,
@@ -4118,28 +4170,26 @@
           grid-column: auto;
         }
 
-        .qualifying-overview-sector-strip .track-map-sector-driver-badge {
+        .qualifying-overview-track-map-overlay {
+          top: 12px;
+          left: 12px;
           gap: 8px;
-          min-height: 0;
-          padding: 0;
         }
 
-        .qualifying-overview-sector-strip .track-map-sector-driver-headshot {
-          width: 56px;
-          height: 56px;
+        .qualifying-overview-track-map-overlay .track-map-sector-driver-badge {
+          max-width: min(260px, calc(100vw - 48px));
+          padding: 8px 9px 9px;
         }
 
-        .qualifying-overview-sector-entry {
-          gap: 12px;
-          width: 100%;
-          min-height: 0;
-          padding: 18px 14px 16px;
+        .qualifying-overview-track-map-overlay .track-map-sector-driver-headshot {
+          width: 30px;
+          height: 30px;
         }
 
-        .qualifying-overview-sector-strip .track-map-sector-badge {
-          width: 100%;
-          min-height: 68px;
-          padding: 10px 11px 10px;
+        .qualifying-overview-track-map-overlay .qualifying-overview-sector-time-badge {
+          min-width: 0;
+          min-height: 52px;
+          padding: 7px 10px;
         }
 
         .stint-bars-list {
@@ -4288,15 +4338,13 @@
               {% endif %}
               {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
                 <div class="sprint-qualifying-session-toggle" data-sprint-qualifying-session-toggle>
-                  <button
+                  <a
                     class="session-chip session-dropdown-trigger sprint-qualifying-session-trigger {% if form.session == 'SQ' %}active{% endif %}"
-                    type="button"
+                    href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=SQ&phase=ALL"
                     data-sprint-qualifying-session-trigger
-                    aria-haspopup="true"
-                    aria-expanded="false"
                   >
                     Sprint Qualifying
-                  </button>
+                  </a>
                 </div>
               {% endif %}
               {% if ns.practice_sessions %}
@@ -4342,12 +4390,12 @@
               {% endif %}
               {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
                 <div class="session-badge-expansion-band" data-sprint-qualifying-session-menu hidden>
-                  {% for phase in ['Q1', 'Q2', 'Q3'] %}
+                  {% for phase in ['ALL', 'Q1', 'Q2', 'Q3'] %}
                     <a
                       class="session-chip sprint-qualifying-session-chip {% if form.session == 'SQ' and form.phase == phase %}active{% endif %}"
                       href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=SQ&phase={{ phase }}"
                     >
-                      Sprint Qualifying {{ phase[-1] }}
+                      {% if phase == 'ALL' %}ALL{% else %}SQ{{ phase[-1] }}{% endif %}
                     </a>
                   {% endfor %}
                 </div>
@@ -4420,27 +4468,8 @@
           <div class="field">
             <div class="driver-picker" data-driver-picker id="driver-picker">
               <input type="hidden" name="driver" value="{{ selected_driver or '' }}" data-driver-input />
-              <div class="driver-picker-stack">
-                {% if session_is_qualifying and not selected_lap %}
-                  {% if qualifying_phase_rows %}
-                    {{ render_driver_podium(qualifying_phase_rows, selected_driver) }}
-                    {% if qualifying_driver_list_rows %}
-                      {{ render_driver_options(qualifying_driver_list_rows, selected_driver) }}
-                    {% endif %}
-                  {% else %}
-                    <div class="empty">No classified drivers found for {{ qualifying_phase }}.</div>
-                  {% endif %}
-                {% endif %}
-                {% if not session_is_qualifying %}
-                  {% if drivers %}
-                    {{ render_driver_podium(drivers, selected_driver, driver_result_times) }}
-                    {% if drivers|length > 3 %}
-                      {{ render_driver_options(drivers[3:], selected_driver, driver_result_times) }}
-                    {% endif %}
-                  {% endif %}
-                {% endif %}
-              </div>
-              {% if not session_is_qualifying and form.session in ['FP1', 'FP2', 'FP3'] and selected_driver and race_stints and race_stints.stints %}
+              {% set practice_stint_driver = selected_driver_data if selected_driver_data else (drivers[0] if drivers else none) %}
+              {% if not session_is_qualifying and form.session in ['FP1', 'FP2', 'FP3'] and race_stints and race_stints.stints %}
                 <section class="stint-graph-panel practice-stint-panel">
                   <div class="stint-graph-layout">
                     <div class="stint-graph-meta practice-stint-meta">
@@ -4448,7 +4477,7 @@
                         <div class="practice-stint-selector-head">
                           <div>
                             <span>Run selector</span>
-                            <strong>{{ selected_driver_data.full_name if selected_driver_data else 'Selected driver' }}</strong>
+                            <strong>{{ practice_stint_driver.full_name if practice_stint_driver else 'Selected driver' }}</strong>
                           </div>
                           <span class="practice-stint-selector-count">{{ race_stints.stints|length }} run{{ 's' if race_stints.stints|length != 1 else '' }}</span>
                         </div>
@@ -4474,13 +4503,33 @@
                       data-year="{{ form.year }}"
                       data-gp="{{ form.gp }}"
                       data-session="{{ form.session }}"
-                      data-driver="{{ selected_driver }}"
+                      data-driver="{{ selected_driver or (practice_stint_driver.value if practice_stint_driver else '') }}"
                       data-stint="{{ selected_stint }}"
                       data-selected-lap="{{ selected_lap }}"
                     ></div>
                   </div>
                 </section>
               {% endif %}
+              <div class="driver-picker-stack">
+                {% if session_is_qualifying and not selected_lap %}
+                  {% if qualifying_phase_rows %}
+                    {{ render_driver_podium(qualifying_phase_rows, selected_driver) }}
+                    {% if qualifying_driver_list_rows %}
+                      {{ render_driver_options(qualifying_driver_list_rows, selected_driver) }}
+                    {% endif %}
+                  {% else %}
+                    <div class="empty">No classified drivers found for {{ qualifying_phase }}.</div>
+                  {% endif %}
+                {% endif %}
+                {% if not session_is_qualifying %}
+                  {% if drivers %}
+                    {{ render_driver_podium(drivers, selected_driver, driver_result_times) }}
+                    {% if drivers|length > 3 %}
+                      {{ render_driver_options(drivers[3:], selected_driver, driver_result_times) }}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+              </div>
               {% if session_is_qualifying and selected_lap and selected_driver %}
                 <div class="qualifying-telemetry-strip">
                   <div class="qualifying-telemetry-top">
@@ -4694,42 +4743,6 @@
       {% else %}
         {% if view == 'results' and session_is_qualifying %}
           <section class="qualifying-fullpage">
-            {% if qualifying_overview_track_map and qualifying_overview_track_map.sector_groups %}
-              <section class="qualifying-overview-sector-strip" aria-label="Sector split times">
-                <div class="qualifying-overview-sector-strip-label">
-                  <span class="qualifying-overview-fastest-sectors-badge">
-                    {{ qualifying_overview_track_map.title if qualifying_overview_track_map.title else 'Fastest sectors' }}
-                  </span>
-                  {% if qualifying_overview_track_map.optimal_lap_time %}
-                    <span class="qualifying-overview-optimal-lap-badge">
-                      <span>Optimal lap</span>
-                      <strong>{{ qualifying_overview_track_map.optimal_lap_time }}</strong>
-                    </span>
-                  {% endif %}
-                </div>
-                <div class="qualifying-overview-sector-stack">
-                  {% for sector_group in qualifying_overview_track_map.sector_groups %}
-                    <article class="qualifying-overview-sector-entry">
-                      <div class="track-map-sector-driver-badge" title="{{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }}">
-                        <img class="track-map-sector-driver-headshot" src="{{ sector_group.source_driver_headshot_url }}" alt="{{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }} headshot" loading="lazy" />
-                        <span class="track-map-sector-driver-name">{{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }}</span>
-                      </div>
-                      <div class="qualifying-overview-sector-badge-list">
-                        {% for marker in sector_group.sectors %}
-                          <div class="track-map-sector-badge" style="--sector-color: {{ marker.source_driver_color if marker.source_driver_color else '#ff4d3d' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
-                            <span class="track-map-sector-badge-label">{{ marker.label if marker.label else 'Sector ' ~ loop.index }}</span>
-                            <span class="track-map-sector-badge-time">{{ marker.time }}</span>
-                            {% if qualifying_overview_track_map.phase_code == 'ALL' and marker.source_phase_label %}
-                              <span class="track-map-sector-badge-phase">({{ marker.source_phase_label }})</span>
-                            {% endif %}
-                          </div>
-                        {% endfor %}
-                      </div>
-                    </article>
-                  {% endfor %}
-                </div>
-              </section>
-            {% endif %}
             <div class="qualifying-overview-shell">
               {% if qualifying_overview_track_map and qualifying_timeline_graph %}
                 <div class="qualifying-overview-shell-toolbar">
@@ -4749,6 +4762,31 @@
                             <div class="telemetry-composite" id="telemetry-primary-charts"></div>
                           </div>
                           <div class="track-map-body">
+                            {% if qualifying_overview_track_map and qualifying_overview_track_map.sector_groups %}
+                              <div class="qualifying-overview-track-map-overlay" aria-label="Fastest sector drivers">
+                                {% for sector_group in qualifying_overview_track_map.sector_groups %}
+                                  <div class="qualifying-overview-track-map-overlay-group">
+                                    <div class="track-map-sector-driver-badge" title="{{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }}">
+                                      <div class="qualifying-overview-track-map-overlay-driver-row">
+                                        <img class="track-map-sector-driver-headshot" src="{{ sector_group.source_driver_headshot_url }}" alt="{{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }} headshot" loading="lazy" />
+                                        <span class="track-map-sector-driver-name">{{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }}</span>
+                                      </div>
+                                      <div class="qualifying-overview-track-map-overlay-sector-list" aria-label="Sectors owned by {{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }}">
+                                        {% for marker in sector_group.sectors %}
+                                          <div class="track-map-sector-badge qualifying-overview-sector-time-badge" style="--sector-color: {{ marker.source_driver_color if marker.source_driver_color else '#ff4d3d' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
+                                            <span class="track-map-sector-badge-label">{{ marker.label if marker.label else 'Sector ' ~ loop.index }}</span>
+                                            <span class="track-map-sector-badge-time">{{ marker.time }}</span>
+                                            {% if qualifying_overview_track_map.phase_code == 'ALL' and marker.source_phase_label %}
+                                              <span class="track-map-sector-badge-phase">({{ marker.source_phase_label }})</span>
+                                            {% endif %}
+                                          </div>
+                                        {% endfor %}
+                                      </div>
+                                    </div>
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% endif %}
                             <svg
                               class="track-svg"
                               id="track-svg"
@@ -5169,7 +5207,7 @@
               url.pathname = "/lap";
               url.searchParams.set("driver", driver);
               url.searchParams.set("phase", url.searchParams.get("phase") || "Q1");
-              window.location.assign(url.toString());
+              startPageTransition(url.toString());
             });
           });
 
@@ -5194,7 +5232,51 @@
           const modalYearSelect = document.getElementById("modal-year");
           const modalGpSelect = document.getElementById("modal-gp");
           const modalSubmitButton = sessionSelectorModal ? sessionSelectorModal.querySelector('button[type="submit"]') : null;
-          const viewLinks = document.querySelectorAll(".view-link");
+          const navigationTransitionMs = 220;
+          const startPageTransition = (href, delay = navigationTransitionMs) => {
+            const targetHref = String(href || "").trim();
+            if (!targetHref) {
+              return;
+            }
+
+            let resolvedHref = targetHref;
+            try {
+              resolvedHref = new URL(targetHref, window.location.href).toString();
+            } catch (error) {
+              resolvedHref = targetHref;
+            }
+
+            if (resolvedHref === window.location.href) {
+              return;
+            }
+
+            document.body.classList.add("page-transitioning");
+            window.setTimeout(() => {
+              window.location.assign(resolvedHref);
+            }, Math.max(0, delay));
+          };
+
+          window.__startPageTransition = startPageTransition;
+
+          const shouldTransitionAnchor = (anchor) => {
+            if (!anchor || anchor.closest("[data-session-selector-trigger]")) {
+              return false;
+            }
+
+            const href = String(anchor.getAttribute("href") || "").trim();
+            if (!href || href.startsWith("#") || href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:")) {
+              return false;
+            }
+            if (anchor.hasAttribute("download") || String(anchor.getAttribute("target") || "").trim() === "_blank") {
+              return false;
+            }
+
+            try {
+              return new URL(href, window.location.href).origin === window.location.origin;
+            } catch (error) {
+              return false;
+            }
+          };
 
           const openPersistentHeaderMenus = () => {
             if (headerSessionIsQualifying && qualifyingMenu) {
@@ -5366,13 +5448,27 @@
             });
           }
 
+          document.addEventListener("click", (event) => {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+              return;
+            }
+
+            const anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+            if (!anchor || !shouldTransitionAnchor(anchor)) {
+              return;
+            }
+
+            event.preventDefault();
+            startPageTransition(anchor.getAttribute("href") || anchor.href || "");
+          }, true);
+
           const syncHeaderSpacing = () => {
             if (!headerBadges) {
               return;
             }
             const open = Boolean(
               headerSessionIsQualifying ||
-              headerSessionIsPractice ||
+              (headerSessionIsPractice && practiceMenu) ||
               headerSessionIsSprintQualifying ||
               (qualifyingToggle && qualifyingToggle.classList.contains("open")) ||
               (sprintQualifyingToggle && sprintQualifyingToggle.classList.contains("open")) ||
@@ -5413,7 +5509,7 @@
             });
           }
 
-          if (sprintQualifyingToggle && sprintQualifyingTrigger) {
+          if (sprintQualifyingToggle && sprintQualifyingTrigger && sprintQualifyingTrigger.tagName === "BUTTON") {
             sprintQualifyingTrigger.addEventListener("click", (event) => {
               event.preventDefault();
               activateMenu(sprintQualifyingToggle, sprintQualifyingTrigger, sprintQualifyingMenu, [
@@ -5435,21 +5531,6 @@
 
           openPersistentHeaderMenus();
           syncHeaderSpacing();
-
-          viewLinks.forEach((link) => {
-            link.addEventListener("click", (event) => {
-              const href = link.getAttribute("href");
-              if (!href || href === window.location.pathname + window.location.search) {
-                return;
-              }
-
-              event.preventDefault();
-              document.body.classList.add("page-transitioning");
-              window.setTimeout(() => {
-                window.location.assign(href);
-              }, 240);
-            });
-          });
 
           document.querySelectorAll(".qualifying-run-badge, .qualifying-lap-badge, .qualifying-run-segment, .qualifying-run-lap-button").forEach((badge) => {
             badge.addEventListener("pointerdown", () => {
@@ -6038,20 +6119,20 @@
               eliminated_count: 0,
               drivers: graph.drivers || [],
             }];
-            const sectionHeaderHeight = practiceMode ? 30 : 26;
-            const sectionContentGap = practiceMode ? 10 : 8;
+            const sectionHeaderHeight = practiceMode ? 36 : 26;
+            const sectionContentGap = practiceMode ? 14 : 8;
             const sectionContentOffset = sectionHeaderHeight + sectionContentGap;
-            const sectionGap = practiceMode ? 14 : 10;
+            const sectionGap = practiceMode ? 18 : 10;
             const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
-            const availableHeight = Math.max(practiceMode ? 620 : 420, (window.innerHeight || 900) - (practiceMode ? 200 : 260));
+            const availableHeight = Math.max(practiceMode ? 840 : 420, (window.innerHeight || 900) - (practiceMode ? 140 : 260));
             const rowStep = Math.max(
-              practiceMode ? 20 : 15,
+              practiceMode ? 28 : 15,
               Math.min(
-                practiceMode ? 32 : 20,
+                practiceMode ? 40 : 20,
                 Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionContentOffset) - ((sections.length - 1) * sectionGap)) / totalRows),
               ),
             );
-            const rowHeight = Math.max(practiceMode ? 8 : 7, Math.min(practiceMode ? 12 : 9, Math.floor(rowStep * 0.46)));
+            const rowHeight = Math.max(practiceMode ? 12 : 7, Math.min(practiceMode ? 16 : 9, Math.floor(rowStep * 0.52)));
             const height = pad.top + pad.bottom + sections.reduce(
               (total, section, index) => total
                 + sectionHeaderHeight
@@ -6346,7 +6427,19 @@
             stage.style.minHeight = `${nextHeight}px`;
           };
 
+          let stageTransitionTimer = null;
+          const pulseStage = () => {
+            stage.classList.add("is-switching");
+            if (stageTransitionTimer) {
+              window.clearTimeout(stageTransitionTimer);
+            }
+            stageTransitionTimer = window.setTimeout(() => {
+              stage.classList.remove("is-switching");
+            }, 240);
+          };
+
           const setActiveView = (target, animate = true) => {
+            const shouldAnimate = animate && currentTarget !== target;
             currentTarget = target;
             switcher.setAttribute("data-active", target);
             buttons.forEach((button) => {
@@ -6361,6 +6454,9 @@
               view.toggleAttribute("inert", !active);
             });
 
+            if (shouldAnimate) {
+              pulseStage();
+            }
             if (!animate) {
               stage.style.transition = "none";
             }
@@ -6444,12 +6540,18 @@
             return;
           }
 
+          const loadingTitleFromMessage = (message) => {
+            const target = String(message || "").trim().replace(/^Loading\s+/i, "").trim();
+            return target ? `${target} is loading` : "Loading";
+          };
+
           const showNavigationLoadingOverlay = (message = "Loading lap view") => {
             if (document.querySelector(".loading-overlay")) {
               return;
             }
 
             document.body.classList.add("is-loading");
+            document.body.classList.add("page-transitioning");
             document.body.setAttribute("aria-busy", "true");
             document.body.style.setProperty("--loading-progress", "0%");
 
@@ -6465,12 +6567,16 @@
                   <circle cx="80" cy="80" r="39" fill="#b9c0c8" stroke="#707985" stroke-width="2.5"></circle>
                   <circle cx="80" cy="80" r="16.5" fill="#8f98a3" stroke="#dfe4ea" stroke-width="1.25"></circle>
                 </svg>
-                <h2 class="loading-title">FastF1 is loading</h2>
+                <h2 class="loading-title"></h2>
                 <p class="loading-copy"></p>
                 <div class="loading-bar" aria-hidden="true"><span style="width: 100%;"></span></div>
               </div>
             `;
+            const title = overlay.querySelector(".loading-title");
             const copy = overlay.querySelector(".loading-copy");
+            if (title) {
+              title.textContent = loadingTitleFromMessage(message);
+            }
             if (copy) {
               copy.textContent = message;
             }
@@ -6562,6 +6668,17 @@
           };
 
           setStageHeight();
+
+          let stageTransitionTimer = null;
+          const pulseStage = () => {
+            stage.classList.add("is-transitioning");
+            if (stageTransitionTimer) {
+              window.clearTimeout(stageTransitionTimer);
+            }
+            stageTransitionTimer = window.setTimeout(() => {
+              stage.classList.remove("is-transitioning");
+            }, 220);
+          };
 
           const updateSwitcher = (target) => {
             if (switcher) {
@@ -6761,7 +6878,7 @@
                 event.preventDefault();
                 event.stopPropagation();
               }
-              showNavigationLoadingOverlay("Loading lap view");
+            showNavigationLoadingOverlay("Lap view");
               window.requestAnimationFrame(() => {
                 window.requestAnimationFrame(() => {
                   window.location.assign(href);
@@ -7063,6 +7180,10 @@
               if (!href) {
                 return;
               }
+              if (window.__startPageTransition) {
+                window.__startPageTransition(href);
+                return;
+              }
               window.location.assign(href);
             };
 
@@ -7112,10 +7233,14 @@
               svg.innerHTML = "";
               return;
             }
+            const shouldAnimate = currentTarget !== entry.key;
             currentTarget = entry.key;
             svg.setAttribute("aria-label", entry.title || "Race overview graph");
             updateSwitcher(entry.key);
             setStageHeight();
+            if (shouldAnimate) {
+              pulseStage();
+            }
             if (entry.key === "pit-strategy") {
               renderPitStrategyGraph(entry.graph);
             } else {
@@ -7355,7 +7480,7 @@
               event.preventDefault();
               event.stopPropagation();
             }
-            showNavigationLoadingOverlay("Loading lap view");
+            showNavigationLoadingOverlay("Lap view");
             window.requestAnimationFrame(() => {
               window.requestAnimationFrame(() => {
                 window.location.assign(href);
@@ -8640,7 +8765,7 @@
             return `hsl(${hue.toFixed(0)} ${saturation.toFixed(0)}% ${lightness.toFixed(0)}%)`;
           }
 
-          function renderAccelerationLine(points, pointsWithAcceleration, strokeWidth = 3.2) {
+          function renderAccelerationLine(points, pointsWithAcceleration, strokeWidth = 3.2, groupId = "track-acceleration-line") {
             if (!points.length || !pointsWithAcceleration.length) {
               return "";
             }
@@ -8663,7 +8788,34 @@
               markup += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"></line>`;
             }
 
-            return `<g id="track-acceleration-line" filter="url(#glow)">${markup}</g>`;
+            const groupAttributes = groupId ? ` id="${groupId}"` : "";
+            return `<g${groupAttributes} filter="url(#glow)">${markup}</g>`;
+          }
+
+          function renderSectorRacingSegments(segments, strokeWidth = 3.2) {
+            if (!Array.isArray(segments) || !segments.length) {
+              return "";
+            }
+
+            return segments.map((segment, index) => {
+              const points = Array.isArray(segment && segment.points) ? segment.points : [];
+              const samples = Array.isArray(segment && segment.samples) ? segment.samples : [];
+              if (points.length < 2 || samples.length < 2) {
+                return "";
+              }
+
+              const driverColor = String(segment && (segment.source_driver_color || segment.color) || "#44c2ff").trim() || "#44c2ff";
+              const segmentLabel = String(segment && (segment.source_driver_display || segment.source_driver_name || segment.source_driver_abbr || segment.label) || `S${index + 1}`).trim() || `S${index + 1}`;
+              const segmentPath = path(points);
+              const baseStrokeWidth = Math.max(strokeWidth + 1.3, strokeWidth * 1.22);
+              const accentStrokeWidth = Math.max(2.4, strokeWidth);
+              return `
+                <g class="track-sector-racing-segment" data-sector="${escapeHtml(segmentLabel)}" style="pointer-events:none">
+                  <path d="${segmentPath}" fill="none" stroke="${driverColor}" stroke-opacity="0.34" stroke-width="${baseStrokeWidth.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"></path>
+                  ${renderAccelerationLine(points, samples, accentStrokeWidth, null)}
+                </g>
+              `;
+            }).join("");
           }
 
           function splitPolylineByFractions(points, fractions, gapDistance = 0) {
@@ -8996,6 +9148,7 @@
           const [endX, endY] = toPoint(racing[racing.length - 1]);
           const duration = Number(map.duration || 0) || 0;
           const sectorMarkers = Array.isArray(map.sector_markers) ? map.sector_markers : [];
+          const sectorRacingSegments = Array.isArray(map.sector_racing_segments) ? map.sector_racing_segments : [];
           const showSectorMarkersOnTrack = String(svg.dataset.sectorBadgeMode || "").trim().toLowerCase() === "stack";
           const maxSpeedMarker = map.max_speed_marker || null;
           const minSpeedMarker = map.min_speed_marker || null;
@@ -9721,7 +9874,7 @@
               ${referenceImageUrl ? renderTrackImage(referenceImageUrl) : ""}
               ${renderTrackSurface(surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing), sectorMarkers)}
             </g>
-            ${renderAccelerationLine(racing, samples, showSectorMarkersOnTrack ? 3.9 : 3.2)}
+            ${sectorRacingSegments.length ? renderSectorRacingSegments(sectorRacingSegments, showSectorMarkersOnTrack ? 3.9 : 3.2) : renderAccelerationLine(racing, samples, showSectorMarkersOnTrack ? 3.9 : 3.2)}
             ${renderSpeedMarker(maxSpeedMarker, "MAX", "#fbbf24", 54)}
             ${renderSpeedMarker(minSpeedMarker, "MIN", "#60a5fa", 72)}
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
@@ -9819,7 +9972,7 @@
               <tspan dy="0.01em"> ZERO</tspan>
             </text>
           </svg>
-          <h2 class="loading-title">FastF1 is loading</h2>
+          <h2 class="loading-title">{{ loading_title|default(session_badge|default("Session")) }} is loading</h2>
           <p class="loading-copy">{{ loading_stage|default("Session data is being fetched") }} · {{ loading_progress|default(0) }}%</p>
           <div class="loading-bar" aria-hidden="true"><span></span></div>
         </div>

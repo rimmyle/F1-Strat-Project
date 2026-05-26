@@ -1575,6 +1575,420 @@ def _qualifying_overview_reference_lap(session, phase=None, phase_windows=None):
     return reference_lap
 
 
+class _TelemetryLapProxy:
+    def __init__(self, telemetry, session=None, metadata=None):
+        self._telemetry = telemetry
+        self.session = session
+        self._metadata = metadata
+
+    def get_telemetry(self, frequency="original"):
+        if self._telemetry is None:
+            return pd.DataFrame()
+        return self._telemetry.copy()
+
+    def get_pos_data(self):
+        return pd.DataFrame()
+
+    def get(self, key, default=None):
+        metadata = self._metadata
+        if metadata is None:
+            return default
+        if hasattr(metadata, "get"):
+            try:
+                return metadata.get(key, default)
+            except Exception:
+                return default
+        return getattr(metadata, key, default)
+
+
+def _lap_telemetry_frame(lap):
+    if lap is None:
+        return None
+
+    try:
+        telemetry = lap.get_telemetry(frequency="original")
+    except Exception:
+        return None
+
+    if telemetry is None or getattr(telemetry, "empty", True) or "Time" not in telemetry.columns:
+        return None
+
+    telemetry = telemetry.reset_index(drop=True).copy()
+    try:
+        telemetry["_time_seconds"] = pd.to_timedelta(telemetry["Time"], errors="coerce").dt.total_seconds()
+    except Exception:
+        return None
+
+    telemetry = telemetry[telemetry["_time_seconds"].notna()].copy()
+    if telemetry.empty:
+        return None
+
+    return telemetry.sort_values(by="_time_seconds", na_position="last").reset_index(drop=True)
+
+
+def _qualifying_lap_sector_bounds(lap):
+    if lap is None:
+        return None
+
+    sector_times = [
+        _lap_time_seconds(lap.get("Sector1Time", None)),
+        _lap_time_seconds(lap.get("Sector2Time", None)),
+        _lap_time_seconds(lap.get("Sector3Time", None)),
+    ]
+    if any(sector_seconds is None for sector_seconds in sector_times):
+        return None
+
+    bounds = []
+    cumulative_seconds = 0.0
+    for sector_seconds in sector_times:
+        start_seconds = float(cumulative_seconds)
+        cumulative_seconds += float(sector_seconds)
+        bounds.append((start_seconds, float(cumulative_seconds)))
+
+    lap_time = _lap_time_seconds(lap.get("LapTime", None))
+    if lap_time is not None and bounds:
+        bounds[-1] = (bounds[-1][0], max(bounds[-1][1], float(lap_time)))
+
+    return bounds
+
+
+def _exact_driver_lap(session, driver_number, lap_number):
+    if not session or not driver_number or lap_number is None:
+        return None
+
+    driver_laps = _safe_driver_laps(session, driver_number)
+    if driver_laps is None or driver_laps.empty or "LapNumber" not in driver_laps.columns:
+        return None
+
+    try:
+        target_lap_number = int(float(lap_number))
+    except (TypeError, ValueError):
+        return None
+
+    lap_numbers = pd.to_numeric(driver_laps["LapNumber"], errors="coerce")
+    matches = driver_laps[lap_numbers == target_lap_number]
+    if matches.empty:
+        return None
+
+    if "LapTime" in matches.columns:
+        valid_matches = matches[matches["LapTime"].notna()]
+        if not valid_matches.empty:
+            matches = valid_matches
+
+    return matches.iloc[0]
+
+
+def _qualifying_overview_composite_telemetry(session, sector_markers):
+    if not session or not sector_markers:
+        return None
+
+    composite_frames = []
+    composite_time_cursor = 0.0
+    composite_distance_cursor = 0.0
+
+    for index, marker in enumerate(sector_markers):
+        driver_number = _normalize_driver_number(marker.get("source_driver_number", ""))
+        lap_number = marker.get("source_lap_number")
+        if not driver_number or lap_number is None:
+            return None
+
+        source_lap = _exact_driver_lap(session, driver_number, lap_number)
+        if source_lap is None:
+            return None
+
+        telemetry = _lap_telemetry_frame(source_lap)
+        if telemetry is None:
+            return None
+
+        sector_bounds = _qualifying_lap_sector_bounds(source_lap)
+        if not sector_bounds or index >= len(sector_bounds):
+            return None
+
+        sector_start_seconds, sector_end_seconds = sector_bounds[index]
+        sector_start_seconds = float(sector_start_seconds)
+        sector_end_seconds = float(sector_end_seconds)
+        if sector_end_seconds <= sector_start_seconds:
+            return None
+
+        segment = telemetry[
+            (telemetry["_time_seconds"] >= sector_start_seconds)
+            & (telemetry["_time_seconds"] <= sector_end_seconds)
+        ].copy()
+        if segment.empty:
+            return None
+
+        segment = segment.sort_values(by="_time_seconds", na_position="last").reset_index(drop=True)
+        first_row = segment.iloc[0].copy()
+        last_row = segment.iloc[-1].copy()
+
+        if float(first_row["_time_seconds"]) > sector_start_seconds:
+            start_row = first_row.copy()
+            start_row["_time_seconds"] = sector_start_seconds
+            segment = pd.concat([pd.DataFrame([start_row]), segment], ignore_index=True)
+
+        if float(last_row["_time_seconds"]) < sector_end_seconds:
+            end_row = last_row.copy()
+            end_row["_time_seconds"] = sector_end_seconds
+            segment = pd.concat([segment, pd.DataFrame([end_row])], ignore_index=True)
+
+        segment = (
+            segment.sort_values(by="_time_seconds", na_position="last")
+            .drop_duplicates(subset=["_time_seconds"], keep="first")
+            .reset_index(drop=True)
+        )
+
+        segment["_composite_seconds"] = composite_time_cursor + (segment["_time_seconds"] - sector_start_seconds)
+        segment["Time"] = pd.to_timedelta(segment["_composite_seconds"], unit="s")
+
+        if "Distance" in segment.columns:
+            distance_values = pd.to_numeric(segment["Distance"], errors="coerce")
+            if distance_values.notna().any():
+                first_distance = float(distance_values.dropna().iloc[0])
+                segment["Distance"] = distance_values - first_distance + composite_distance_cursor
+                composite_distance_cursor = float(segment["Distance"].dropna().iloc[-1])
+
+        composite_time_cursor = float(marker.get("cumulative_seconds", composite_time_cursor + (sector_end_seconds - sector_start_seconds)))
+        composite_frames.append(segment.drop(columns=["_time_seconds", "_composite_seconds"], errors="ignore"))
+
+    if not composite_frames:
+        return None
+
+    composite_telemetry = pd.concat(composite_frames, ignore_index=True)
+    if composite_telemetry.empty or "Time" not in composite_telemetry.columns:
+        return None
+
+    return composite_telemetry.sort_values(by="Time", na_position="last").reset_index(drop=True)
+
+
+def _qualifying_overview_composite_track_map(session, sector_markers):
+    if not session or not sector_markers:
+        return None
+
+    source_payload_cache = {}
+    composite_frames = []
+    sector_racing_segments = []
+    composite_time_cursor = 0.0
+
+    def _segment_record(row):
+        x_value = row.get("x", None)
+        y_value = row.get("y", None)
+        t_value = row.get("t", None)
+        if pd.isna(x_value) or pd.isna(y_value) or pd.isna(t_value):
+            return None
+        return {
+            "x": float(x_value),
+            "y": float(y_value),
+            "t": float(t_value),
+            "speed": float(row["speed"]) if "speed" in row and pd.notna(row["speed"]) else None,
+            "acceleration": float(row["acceleration"]) if "acceleration" in row and pd.notna(row["acceleration"]) else None,
+        }
+
+    for index, marker in enumerate(sector_markers):
+        driver_number = _normalize_driver_number(marker.get("source_driver_number", ""))
+        lap_number = marker.get("source_lap_number")
+        if not driver_number or lap_number is None:
+            return None
+
+        cache_key = (driver_number, str(lap_number))
+        cached_payload = source_payload_cache.get(cache_key)
+        if cached_payload is None:
+            source_lap = _exact_driver_lap(session, driver_number, lap_number)
+            if source_lap is None:
+                return None
+
+            source_duration = _lap_time_seconds(source_lap.get("LapTime", None))
+            if source_duration is None:
+                return None
+
+            try:
+                source_telemetry = source_lap.get_telemetry(frequency="original").reset_index(drop=True)
+            except Exception:
+                source_telemetry = None
+
+            try:
+                source_payload = _track_map_payload(session, source_lap, source_duration, source_telemetry)
+            except Exception:
+                source_payload = None
+
+            if source_payload is None:
+                return None
+
+            cached_payload = {
+                "lap": source_lap,
+                "payload": source_payload,
+            }
+            source_payload_cache[cache_key] = cached_payload
+
+        source_lap = cached_payload["lap"]
+        source_payload = cached_payload["payload"]
+
+        sector_bounds = _qualifying_lap_sector_bounds(source_lap)
+        if not sector_bounds or index >= len(sector_bounds):
+            return None
+
+        try:
+            sector_start_seconds, sector_end_seconds = sector_bounds[index]
+            sector_start_seconds = float(sector_start_seconds)
+            sector_end_seconds = float(sector_end_seconds)
+        except (TypeError, ValueError):
+            return None
+
+        if sector_end_seconds <= sector_start_seconds:
+            return None
+
+        segment_samples = pd.DataFrame(source_payload.get("samples", []) or [])
+        if segment_samples.empty:
+            return None
+
+        columns = [column for column in ("x", "y", "t", "speed", "acceleration") if column in segment_samples.columns]
+        segment_samples = segment_samples.loc[:, columns].copy()
+        if "t" not in segment_samples.columns or "x" not in segment_samples.columns or "y" not in segment_samples.columns:
+            return None
+
+        for column in ("x", "y", "t", "speed", "acceleration"):
+            if column in segment_samples.columns:
+                segment_samples[column] = pd.to_numeric(segment_samples[column], errors="coerce")
+
+        segment_samples = segment_samples[segment_samples["t"].notna()].copy()
+        segment_samples = segment_samples[
+            (segment_samples["t"] >= sector_start_seconds)
+            & (segment_samples["t"] <= sector_end_seconds)
+        ].copy()
+        if segment_samples.empty:
+            return None
+
+        segment_samples = segment_samples.sort_values(by="t", na_position="last").reset_index(drop=True)
+        first_row = segment_samples.iloc[0].copy()
+        last_row = segment_samples.iloc[-1].copy()
+
+        if float(first_row["t"]) > sector_start_seconds:
+            start_row = first_row.copy()
+            start_row["t"] = sector_start_seconds
+            segment_samples = pd.concat([pd.DataFrame([start_row]), segment_samples], ignore_index=True)
+
+        if float(last_row["t"]) < sector_end_seconds:
+            end_row = last_row.copy()
+            end_row["t"] = sector_end_seconds
+            segment_samples = pd.concat([segment_samples, pd.DataFrame([end_row])], ignore_index=True)
+
+        segment_samples = (
+            segment_samples.sort_values(by="t", na_position="last")
+            .drop_duplicates(subset=["t"], keep="first")
+            .reset_index(drop=True)
+        )
+
+        segment_samples["_composite_seconds"] = composite_time_cursor + (segment_samples["t"] - sector_start_seconds)
+        segment_samples["t"] = segment_samples["_composite_seconds"]
+        segment_samples = segment_samples.drop(columns=["_composite_seconds"], errors="ignore")
+
+        segment_records = []
+        for _, row in segment_samples.iterrows():
+            segment_record = _segment_record(row)
+            if segment_record is not None:
+                segment_records.append(segment_record)
+
+        if len(segment_records) < 2:
+            return None
+
+        sector_racing_segments.append(
+            {
+                "label": _clean_value(marker.get("label", f"S{index + 1}")).strip() or f"S{index + 1}",
+                "points": [[record["x"], record["y"]] for record in segment_records],
+                "samples": segment_records,
+                "source_lap_number": _clean_value(marker.get("source_lap_number", "")).strip(),
+                "source_driver_number": _clean_value(marker.get("source_driver_number", "")).strip(),
+                "source_driver_abbr": _clean_value(marker.get("source_driver_abbr", "")).strip(),
+                "source_driver_name": _clean_value(marker.get("source_driver_name", "")).strip(),
+                "source_driver_display": _clean_value(marker.get("source_driver_display", "")).strip(),
+                "source_driver_headshot_url": _clean_value(marker.get("source_driver_headshot_url", "")).strip(),
+                "source_driver_color": _clean_value(marker.get("source_driver_color", "")).strip(),
+                "source_driver_circle_label": _clean_value(marker.get("source_driver_circle_label", "")).strip(),
+                "source_phase_label": _clean_value(marker.get("source_phase_label", "")).strip(),
+            }
+        )
+
+        composite_frames.append(pd.DataFrame(segment_records))
+        composite_time_cursor = float(
+            marker.get(
+                "cumulative_seconds",
+                composite_time_cursor + (sector_end_seconds - sector_start_seconds),
+            )
+        )
+
+    if not composite_frames:
+        return None
+
+    composite_samples = pd.concat(composite_frames, ignore_index=True)
+    if composite_samples.empty or "t" not in composite_samples.columns:
+        return None
+
+    composite_samples = (
+        composite_samples.sort_values(by="t", na_position="last")
+        .drop_duplicates(subset=["t"], keep="first")
+        .reset_index(drop=True)
+    )
+
+    composite_sample_records = []
+    for _, row in composite_samples.iterrows():
+        composite_record = _segment_record(row)
+        if composite_record is not None:
+            composite_sample_records.append(composite_record)
+
+    if len(composite_sample_records) < 2:
+        return None
+
+    speed_values = [float(record["speed"]) for record in composite_sample_records if pd.notna(record.get("speed"))]
+    acceleration_values = [float(record["acceleration"]) for record in composite_sample_records if pd.notna(record.get("acceleration"))]
+    speed_min = min(speed_values) if speed_values else None
+    speed_max = max(speed_values) if speed_values else None
+    acceleration_min = min(acceleration_values) if acceleration_values else None
+    acceleration_max = max(acceleration_values) if acceleration_values else None
+    acceleration_limit = None
+    if acceleration_values:
+        acceleration_magnitudes = pd.Series([abs(value) for value in acceleration_values], dtype="float64")
+        acceleration_limit = float(acceleration_magnitudes.quantile(0.9))
+        if pd.isna(acceleration_limit) or acceleration_limit <= 0:
+            acceleration_limit = max(abs(value) for value in acceleration_values)
+
+    max_speed_marker = None
+    min_speed_marker = None
+    if speed_values:
+        sample_frame = pd.DataFrame(composite_sample_records)
+        speed_series = sample_frame["speed"].dropna()
+        if not speed_series.empty:
+            for marker_name, selector in (("max", speed_series.idxmax), ("min", speed_series.idxmin)):
+                speed_index = selector()
+                if speed_index not in sample_frame.index:
+                    continue
+                speed_row = sample_frame.loc[speed_index]
+                point = {
+                    "speed": float(speed_row.get("speed", 0.0)),
+                    "seconds": float(speed_row.get("t", 0.0)),
+                    "x": float(speed_row.get("x", 0.0)),
+                    "y": float(speed_row.get("y", 0.0)),
+                }
+                if marker_name == "max":
+                    max_speed_marker = point
+                else:
+                    min_speed_marker = point
+
+    composite_duration = float(composite_sample_records[-1]["t"])
+
+    return {
+        "racing": [[record["x"], record["y"]] for record in composite_sample_records],
+        "samples": composite_sample_records,
+        "sector_racing_segments": sector_racing_segments,
+        "speed_min": float(speed_min) if speed_min is not None else None,
+        "speed_max": float(speed_max) if speed_max is not None else None,
+        "acceleration_min": float(acceleration_min) if acceleration_min is not None else None,
+        "acceleration_max": float(acceleration_max) if acceleration_max is not None else None,
+        "acceleration_limit": float(acceleration_limit) if acceleration_limit is not None else None,
+        "max_speed_marker": max_speed_marker,
+        "min_speed_marker": min_speed_marker,
+        "duration": composite_duration,
+    }
+
+
 def _lap_options(session, driver_number):
     if not driver_number:
         return []
@@ -4750,6 +5164,7 @@ def _session_view_base_context(ctx, session_state):
     loading = session_state.get("status") == "loading"
     loading_progress = session_state.get("progress", 0) if loading else 0
     loading_stage = session_state.get("stage", "") if loading else ""
+    loading_title = ctx["session_badge"] if loading else ""
     error = session_state.get("message") if session_state.get("status") == "error" else None
     if ctx["schedule_error"] and not error:
         error = ctx["schedule_error"]
@@ -4764,6 +5179,7 @@ def _session_view_base_context(ctx, session_state):
         "loading": loading,
         "loading_progress": loading_progress,
         "loading_stage": loading_stage,
+        "loading_title": loading_title,
         "session_badge": session_badge,
         "session_title": ctx["session_title"],
         "years": _year_options(),
@@ -5066,22 +5482,41 @@ def results():
     qualifying_overview_primary_telemetry_charts = []
     qualifying_overview_secondary_telemetry_charts = []
     if session_is_qualifying and qualifying_overview_reference_lap is not None:
+        qualifying_overview_sector_markers = list((qualifying_overview_track_map or {}).get("sector_markers", []) or [])
+        qualifying_overview_composite_telemetry = None
+        qualifying_overview_composite_track_map = None
+        if qualifying_overview_sector_markers:
+            try:
+                qualifying_overview_composite_telemetry = _qualifying_overview_composite_telemetry(session, qualifying_overview_sector_markers)
+            except Exception:
+                qualifying_overview_composite_telemetry = None
+            try:
+                qualifying_overview_composite_track_map = _qualifying_overview_composite_track_map(session, qualifying_overview_sector_markers)
+            except Exception:
+                qualifying_overview_composite_track_map = None
         try:
+            telemetry_source = (
+                _TelemetryLapProxy(qualifying_overview_composite_telemetry, getattr(qualifying_overview_reference_lap, "session", session))
+                if qualifying_overview_composite_telemetry is not None
+                else qualifying_overview_reference_lap
+            )
             qualifying_overview_telemetry_charts = _telemetry_charts(
-                qualifying_overview_reference_lap,
+                telemetry_source,
                 qualifying_overview_reference_lap,
             )
         except Exception:
             qualifying_overview_telemetry_charts = []
         sector_colors = [
             _clean_value(marker.get("source_driver_color", "")).strip()
-            for marker in (qualifying_overview_track_map or {}).get("sector_markers", [])
+            for marker in qualifying_overview_sector_markers
             if _clean_value(marker.get("source_driver_color", "")).strip()
         ]
         if sector_colors:
             for index, chart in enumerate(qualifying_overview_telemetry_charts):
                 chart["color"] = sector_colors[index % len(sector_colors)]
-        sector_markers = list((qualifying_overview_track_map or {}).get("sector_markers", []) or [])
+        if qualifying_overview_track_map and qualifying_overview_composite_track_map:
+            qualifying_overview_track_map.update(qualifying_overview_composite_track_map)
+        sector_markers = qualifying_overview_sector_markers
         sector_windows = []
         previous_end_seconds = 0.0
         lap_duration_seconds = None
@@ -5457,19 +5892,18 @@ def data():
         )
     track_status_segments = _session_track_status_segments(session, include_yellow=True) if session else []
     lap_entry_source = request.args.get("source", "").strip().lower()
-    lap_back_to_driver_table_url = url_for(
-        "data",
-        year=ctx["year"],
-        gp=ctx["gp"],
-        session=ctx["session_code"],
-    )
-    lap_back_to_driver_table_url = f"{lap_back_to_driver_table_url}#driver-picker"
+    lap_back_to_driver_table_url = f"/data?{urlencode({
+        'year': ctx['year'],
+        'gp': ctx['gp'],
+        'session': ctx['session_code'],
+        'driver': driver_number or '',
+    })}#driver-picker"
     lap_back_to_overview_url = (
         url_for("results", year=ctx["year"], gp=ctx["gp"], session=ctx["session_code"])
         if lap_entry_source in {"pit-strategy", "race-position"}
         else ""
     )
-    page_name = "lap" if request.path.rstrip("/").endswith("/lap") or selected_lap_data is not None else "data"
+    page_name = "lap" if request.path.rstrip("/").endswith("/lap") else "data"
     form_action = "/lap" if session_code in {"R", "S"} else "/data"
 
     return render_template(
