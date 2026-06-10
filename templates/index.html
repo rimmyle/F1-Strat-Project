@@ -364,12 +364,21 @@
         gap: 10px;
       }
 
+      .session-badge-row--sprint {
+        gap: 6px;
+        margin-top: -2px;
+      }
+
       .session-badge-group {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
         gap: 4px;
         align-items: center;
+      }
+
+      .session-badge-group--sprint {
+        gap: 4px;
       }
 
       .session-badge-expansion-band {
@@ -2964,6 +2973,7 @@
       .track-map-header-summary .lap-summary-badge,
       .track-map-header-summary .stint-graph-summary-records .lap-summary-badge {
         width: auto;
+        height: 58px;
         min-height: 58px;
         box-sizing: border-box;
         padding: 8px 12px;
@@ -3062,6 +3072,7 @@
         grid-template-columns: minmax(172px, 194px) minmax(0, 1fr) minmax(172px, 194px);
         gap: 16px;
         min-width: 0;
+        position: relative;
         align-items: start;
         grid-column: 1 / -1;
       }
@@ -3130,6 +3141,80 @@
         justify-self: stretch;
         min-width: 0;
         grid-column: 2;
+      }
+
+      .track-map-sector-tooltip {
+        position: absolute;
+        z-index: 6;
+        display: grid;
+        gap: 8px;
+        min-width: 180px;
+        max-width: 240px;
+        padding: 10px 12px 11px;
+        border: 1px solid var(--sector-color, rgba(68, 194, 255, 0.38));
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(7, 16, 29, 0.98), rgba(11, 18, 31, 0.98));
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.32);
+        color: #f8fbff;
+        pointer-events: none;
+        backdrop-filter: blur(10px);
+      }
+
+      .track-map-sector-tooltip[hidden] {
+        display: none;
+      }
+
+      .track-map-sector-tooltip-title {
+        display: grid;
+        gap: 3px;
+      }
+
+      .track-map-sector-tooltip-title strong {
+        color: #f8fbff;
+        font-size: 0.8rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+
+      .track-map-sector-tooltip-title span {
+        color: var(--sector-color, #f8fbff);
+        font-size: 1.05rem;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+
+      .track-map-sector-tooltip-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .track-map-sector-tooltip-stat {
+        display: grid;
+        gap: 2px;
+        padding: 7px 8px 8px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .track-map-sector-tooltip-stat span {
+        color: rgba(203, 213, 225, 0.88);
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+
+      .track-map-sector-tooltip-stat strong {
+        color: #f8fbff;
+        font-size: 0.8rem;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.05;
       }
 
       .lap-track-card .track-map-stage > .track-map-telemetry-bottom {
@@ -3532,6 +3617,20 @@
       .qualifying-timeline-driver.is-hovered .qualifying-timeline-run {
         opacity: 1;
         filter: brightness(1.1);
+      }
+
+      .qualifying-timeline-driver-label {
+        transition: fill 120ms ease, font-weight 120ms ease, filter 120ms ease, opacity 120ms ease;
+      }
+
+      .qualifying-timeline-driver.is-hovered .qualifying-timeline-driver-label {
+        fill: #f8fafc;
+        font-weight: 900;
+        filter: drop-shadow(0 0 6px rgba(248, 250, 252, 0.45));
+      }
+
+      .qualifying-timeline-driver-time {
+        transition: fill 120ms ease, opacity 120ms ease;
       }
 
       .qualifying-timeline-driver text {
@@ -4304,12 +4403,14 @@
           <div class="session-badge-row">
             <a class="session-badge-title" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}" data-session-selector-trigger>{{ session_title }}</a>
             <div class="session-badge-group">
-              {% set ns = namespace(practice_sessions=[], qualifying_sessions=[], sprint_qualifying_sessions=[], race_sessions=[], other_sessions=[]) %}
+              {% set ns = namespace(practice_sessions=[], qualifying_sessions=[], sprint_sessions=[], sprint_qualifying_sessions=[], race_sessions=[], other_sessions=[]) %}
               {% for session in session_options %}
                 {% if session.label in ["Practice 1", "Practice 2", "Practice 3"] %}
                   {% set ns.practice_sessions = ns.practice_sessions + [session] %}
                 {% elif session.label == "Qualifying" %}
                   {% set ns.qualifying_sessions = ns.qualifying_sessions + [session] %}
+                {% elif session.label in ["Sprint", "Sprint Shootout"] %}
+                  {% set ns.sprint_sessions = ns.sprint_sessions + [session] %}
                 {% elif session.label == "Sprint Qualifying" %}
                   {% set ns.sprint_qualifying_sessions = ns.sprint_qualifying_sessions + [session] %}
                 {% elif session.label == "Race" %}
@@ -4336,17 +4437,6 @@
                   Qualifying
                 </a>
               {% endif %}
-              {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
-                <div class="sprint-qualifying-session-toggle" data-sprint-qualifying-session-toggle>
-                  <a
-                    class="session-chip session-dropdown-trigger sprint-qualifying-session-trigger {% if form.session == 'SQ' %}active{% endif %}"
-                    href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=SQ&phase=ALL"
-                    data-sprint-qualifying-session-trigger
-                  >
-                    Sprint Qualifying
-                  </a>
-                </div>
-              {% endif %}
               {% if ns.practice_sessions %}
                 <a
                   class="session-chip practice-session-chip practice-session-trigger {% if form.session in ['FP1', 'FP2', 'FP3'] %}active{% endif %}"
@@ -4357,6 +4447,33 @@
               {% endif %}
             </div>
           </div>
+          {% if ns.sprint_sessions or ns.sprint_qualifying_sessions %}
+            <div class="session-badge-row session-badge-row--sprint">
+              <div class="session-badge-group session-badge-group--sprint">
+                {% for session in ns.sprint_sessions %}
+                  <a
+                    class="session-chip {% if session.value == form.session %}active{% endif %}"
+                    href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ session.value }}"
+                  >
+                    {{ session.label }}
+                  </a>
+                {% endfor %}
+                {% if form.session == 'SQ' or ns.sprint_qualifying_sessions %}
+                  <div class="sprint-qualifying-session-toggle" data-sprint-qualifying-session-toggle>
+                    {% for session in ns.sprint_qualifying_sessions %}
+                      <a
+                        class="session-chip session-dropdown-trigger sprint-qualifying-session-trigger {% if form.session == 'SQ' %}active{% endif %}"
+                        href="/results?year={{ form.year }}&gp={{ form.gp|urlencode }}&session=SQ&phase=ALL"
+                        data-sprint-qualifying-session-trigger
+                      >
+                        {{ session.label }}
+                      </a>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
           <div class="header-divider" role="separator" aria-hidden="true">
             <div class="header-divider-line"></div>
             <div class="header-divider-center">
@@ -4799,6 +4916,7 @@
                               data-driver-color="{{ qualifying_overview_track_map.driver_color }}"
                               data-sector-badge-mode="stack"
                             ></svg>
+                            <div class="track-map-sector-tooltip" data-track-sector-tooltip hidden aria-hidden="true"></div>
                           </div>
                           <div class="track-map-telemetry track-map-telemetry-bottom">
                             <div class="telemetry-composite" id="telemetry-secondary-charts"></div>
@@ -4894,7 +5012,11 @@
           <section class="lap-support-panel">
             <header class="lap-support-header">
               <div class="lap-support-header-main">
-                <h2>Track map and telemetry</h2>
+                {% if lap_back_to_driver_table_url %}
+                  <div class="stint-graph-actions">
+                    <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers list</a>
+                  </div>
+                {% endif %}
               </div>
               <div class="track-map-header-summary">
                 <div class="stint-graph-summary">
@@ -4955,11 +5077,6 @@
               <div class="lap-support-hero" id="lap-stint-panel">
                 <div class="stint-graph-layout">
                   <div class="stint-graph-meta">
-                    {% if lap_back_to_driver_table_url %}
-                      <div class="stint-graph-actions">
-                        <a class="workflow-back" href="{{ lap_back_to_driver_table_url }}">Back to drivers list</a>
-                      </div>
-                    {% endif %}
                     {% if selected_driver_data %}
                       <div class="stint-graph-driver">
                         <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
@@ -5151,6 +5268,7 @@
                         data-driver-name="{% if selected_driver_data %}{{ selected_driver_data.full_name }}{% elif telemetry_summary %}{{ telemetry_summary.driver }}{% endif %}"
                         data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
                       ></svg>
+                      <div class="track-map-sector-tooltip" data-track-sector-tooltip hidden aria-hidden="true"></div>
                     </div>
                     <div class="track-map-telemetry track-map-telemetry-bottom">
                       <div class="telemetry-composite" id="telemetry-secondary-charts"></div>
@@ -6119,20 +6237,20 @@
               eliminated_count: 0,
               drivers: graph.drivers || [],
             }];
-            const sectionHeaderHeight = practiceMode ? 36 : 26;
-            const sectionContentGap = practiceMode ? 14 : 8;
+            const sectionHeaderHeight = practiceMode ? 44 : 26;
+            const sectionContentGap = practiceMode ? 18 : 8;
             const sectionContentOffset = sectionHeaderHeight + sectionContentGap;
-            const sectionGap = practiceMode ? 18 : 10;
+            const sectionGap = practiceMode ? 24 : 10;
             const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
-            const availableHeight = Math.max(practiceMode ? 840 : 420, (window.innerHeight || 900) - (practiceMode ? 140 : 260));
+            const availableHeight = Math.max(practiceMode ? 980 : 420, (window.innerHeight || 900) - (practiceMode ? 100 : 260));
             const rowStep = Math.max(
-              practiceMode ? 28 : 15,
+              practiceMode ? 34 : 15,
               Math.min(
-                practiceMode ? 40 : 20,
+                practiceMode ? 48 : 20,
                 Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionContentOffset) - ((sections.length - 1) * sectionGap)) / totalRows),
               ),
             );
-            const rowHeight = Math.max(practiceMode ? 12 : 7, Math.min(practiceMode ? 16 : 9, Math.floor(rowStep * 0.52)));
+            const rowHeight = Math.max(practiceMode ? 16 : 7, Math.min(practiceMode ? 22 : 9, Math.floor(rowStep * 0.58)));
             const height = pad.top + pad.bottom + sections.reduce(
               (total, section, index) => total
                 + sectionHeaderHeight
@@ -6227,6 +6345,9 @@
                 const label = String(run.representative_lap_time || "").trim();
                 const labelWidth = Math.max(36, ((label || "").length * 5.0) + 12);
                 const labelX = barX + Math.max(7, (barW - labelWidth) / 2);
+                const barFill = practiceMode
+                  ? (String(run.tyre_color || "").trim() || (driver.color || "#44c2ff"))
+                  : (driver.color || "#44c2ff");
                 const isFastestRun = Boolean(
                   fastestRun
                   && Number(fastestRun.start_seconds) === Number(run.representative_start_seconds)
@@ -6235,7 +6356,7 @@
                 return `
                   <a class="qualifying-timeline-run" href="${escapeHtml(runHref(driver.value || driver.driver || '', run))}" aria-label="${escapeHtml(labelForRun(run))}">
                     <g>
-                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="14" rx="4.5" ry="4.5" fill="${driver.color || "#44c2ff"}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
+                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="14" rx="4.5" ry="4.5" fill="${barFill}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
                       ${segments.map((segment) => {
                         const segmentStart = toX(clampSeconds(segment.start_seconds));
                         const segmentEnd = toX(clampSeconds(segment.end_seconds));
@@ -6262,9 +6383,9 @@
               return `
                 <g class="qualifying-timeline-driver" data-driver="${escapeHtml(driver.value || driver.driver || '')}" transform="translate(0 ${y})">
                   <line x1="${pad.left}" y1="12" x2="${plotWidth - pad.right}" y2="12" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
-                  <text x="${(pad.left - 4).toFixed(2)}" y="2.5" fill="${driver.color || '#cbd5e1'}" font-size="9.5" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
+                  <text class="qualifying-timeline-driver-label" x="${(pad.left - 4).toFixed(2)}" y="2.5" fill="${driver.color || '#cbd5e1'}" font-size="9.5" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
                   ${runs}
-                  <text x="${timeLabelX.toFixed(2)}" y="2.5" fill="rgba(226,232,240,0.96)" font-size="10" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
+                  <text class="qualifying-timeline-driver-time" x="${timeLabelX.toFixed(2)}" y="2.5" fill="rgba(226,232,240,0.96)" font-size="10" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
                 </g>
               `;
             };
@@ -6366,18 +6487,31 @@
             `;
 
             const runBars = Array.from(svg.querySelectorAll(".qualifying-timeline-run"));
+            const driverGroups = Array.from(svg.querySelectorAll(".qualifying-timeline-driver"));
+            const highlightDriverLabels = Boolean(practiceMode);
             const clearRuns = () => {
               runBars.forEach((item) => {
                 item.classList.remove("is-hovered");
                 item.style.opacity = "";
               });
+              if (highlightDriverLabels) {
+                driverGroups.forEach((group) => {
+                  group.classList.remove("is-hovered");
+                });
+              }
             };
             const activateRun = (bar) => {
+              const activeGroup = bar ? bar.closest(".qualifying-timeline-driver") : null;
               runBars.forEach((item) => {
                 const active = item === bar;
                 item.classList.toggle("is-hovered", active);
                 item.style.opacity = active ? "1" : "0.26";
               });
+              if (highlightDriverLabels) {
+                driverGroups.forEach((group) => {
+                  group.classList.toggle("is-hovered", group === activeGroup);
+                });
+              }
             };
 
             runBars.forEach((bar) => {
@@ -8340,12 +8474,13 @@
                 ${Array.isArray(chart.sector_windows) && chart.sector_windows.length ? `
                   <div class="chart-sector-strip" aria-hidden="true">
                     ${chart.sector_windows.map((sector, sectorIndex) => {
-                      const sectorColor = String(sector && sector.source_driver_color ? sector.source_driver_color : "").trim() || ["#ff4d3d", "#f5f6f8", "#f3de5c"][sectorIndex % 3];
+                      const sectorColor = String(sector && sector.color ? sector.color : "").trim() || ["#ff4d3d", "#f5f6f8", "#f3de5c"][sectorIndex % 3];
                       const sectorLabel = String(sector && sector.label ? sector.label : `S${sectorIndex + 1}`).trim() || `S${sectorIndex + 1}`;
                       const sectorTime = String(sector && sector.time ? sector.time : "").trim();
+                      const sectorDriver = String(sector && (sector.source_driver_abbr || sector.source_driver_name || sector.source_driver_display) ? (sector.source_driver_abbr || sector.source_driver_name || sector.source_driver_display) : "").trim();
                       return `
                         <span class="chart-sector-chip" style="--sector-color:${escapeHtml(sectorColor)};">
-                          <strong>${escapeHtml(sectorLabel)}</strong>
+                          <strong>${escapeHtml(sectorLabel)}${sectorDriver ? ` · ${escapeHtml(sectorDriver)}` : ""}</strong>
                           <small>${escapeHtml(sectorTime)}</small>
                         </span>
                       `;
@@ -8460,6 +8595,12 @@
                     start_seconds: startSeconds,
                     end_seconds: endSeconds,
                     color: String(sector && sector.source_driver_color ? sector.source_driver_color : "").trim() || ["#ff4d3d", "#f5f6f8", "#f3de5c"][sectorIndex % 3],
+                    label: String(sector && sector.label ? sector.label : `S${sectorIndex + 1}`).trim() || `S${sectorIndex + 1}`,
+                    time: String(sector && sector.time ? sector.time : "").trim(),
+                    source_driver_abbr: String(sector && sector.source_driver_abbr ? sector.source_driver_abbr : "").trim(),
+                    source_driver_name: String(sector && sector.source_driver_name ? sector.source_driver_name : "").trim(),
+                    source_driver_display: String(sector && sector.source_driver_display ? sector.source_driver_display : "").trim(),
+                    source_phase_label: String(sector && sector.source_phase_label ? sector.source_phase_label : "").trim(),
                   };
                 })
                 .filter((sector) => Number.isFinite(sector.start_seconds) && Number.isFinite(sector.end_seconds) && sector.end_seconds > sector.start_seconds)
@@ -8714,8 +8855,6 @@
           const yOffset = (height - yRange * scale) / 2;
           const markerEdgeX = 84;
           const markerEdgeY = 56;
-          const speedMarkerEdgeX = 72;
-          const speedMarkerEdgeY = 44;
 
           function toPoint(point) {
             const x = xOffset + (point[0] - bounds.min_x) * scale;
@@ -8932,7 +9071,7 @@
               : [];
             const separatorGap = Math.max(36, Math.min(64, surfaceWidth * 1.9));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, separatorGap);
-            const defaultSectorColors = ["#ff4d3d", "#f5f6f8", "#f3de5c"];
+            const defaultSectorColors = ["#ff4d3d", "#f3de5c", "#f8fbff"];
             const sectorColors = sectorSegments.map((_, index) => {
               const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
               const markerColor = String(marker && (marker.source_driver_color || marker.color) || "").trim();
@@ -9059,13 +9198,45 @@
                 return `<path d="${segmentPath}" fill="none" stroke="${sectorColor}" stroke-opacity="0.82" stroke-width="${surfaceWidth}" stroke-linecap="butt" stroke-linejoin="round"></path>`;
               }).join("")
               : `<path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.26)" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
+            const sectorHoverMarkup = sectorSegments.length
+              ? sectorSegments.map((segment, index) => {
+                const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
+                const segmentPath = path(segment);
+                const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
+                const sectorLabel = String(marker && marker.label ? marker.label : `S${index + 1}`).trim() || `S${index + 1}`;
+                const sectorTime = String(marker && marker.time ? marker.time : "").trim();
+                const sectorSpeedMin = Number(marker && marker.sector_speed_min);
+                const sectorSpeedMax = Number(marker && marker.sector_speed_max);
+                const hoverStrokeWidth = Math.max(surfaceWidth + 18, surfaceWidth * 1.6);
+                return `
+                  <path
+                    class="track-sector-hover"
+                    data-sector-index="${index}"
+                    data-sector-label="${escapeHtml(sectorLabel)}"
+                    data-sector-time="${escapeHtml(sectorTime)}"
+                    data-sector-speed-min="${Number.isFinite(sectorSpeedMin) ? sectorSpeedMin.toFixed(1) : ""}"
+                    data-sector-speed-max="${Number.isFinite(sectorSpeedMax) ? sectorSpeedMax.toFixed(1) : ""}"
+                    data-sector-color="${escapeHtml(sectorColor)}"
+                    d="${segmentPath}"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.001)"
+                    stroke-width="${hoverStrokeWidth}"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    pointer-events="stroke"
+                    style="cursor: help;"
+                  ></path>
+                `;
+              }).join("")
+              : "";
             return `
-              <g id="track-surface" pointer-events="none">
+              <g id="track-surface-visual" pointer-events="none">
                 <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.14)" stroke-width="${outerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
                 ${sectorSurfaceMarkup}
                 <path d="${outerPath}" fill="none" stroke="rgba(11, 17, 30, 0.96)" stroke-width="${innerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
                 ${sectorBoundaryMarkup}
               </g>
+              ${sectorHoverMarkup ? `<g id="track-surface-hover">${sectorHoverMarkup}</g>` : ""}
             `;
           }
 
@@ -9150,8 +9321,6 @@
           const sectorMarkers = Array.isArray(map.sector_markers) ? map.sector_markers : [];
           const sectorRacingSegments = Array.isArray(map.sector_racing_segments) ? map.sector_racing_segments : [];
           const showSectorMarkersOnTrack = String(svg.dataset.sectorBadgeMode || "").trim().toLowerCase() === "stack";
-          const maxSpeedMarker = map.max_speed_marker || null;
-          const minSpeedMarker = map.min_speed_marker || null;
           const driverAbbr = (svg.dataset.driverAbbr || "DRI").trim() || "DRI";
           const driverName = (svg.dataset.driverName || driverAbbr).trim() || driverAbbr;
           const driverCircleLabel = (svg.dataset.driverCircleLabel || driverName).trim() || driverName;
@@ -9222,6 +9391,104 @@
             y: (trackSurfaceBounds.minY + trackSurfaceBounds.maxY) / 2,
           };
           const initialMarkerState = sectorMarkerStateForElapsed(0);
+          const trackMapBody = svg.closest(".track-map-body");
+          const sectorTooltip = trackMapBody ? trackMapBody.querySelector("[data-track-sector-tooltip]") : null;
+          let activeSectorTooltipTarget = null;
+
+          const formatSectorSpeed = (value) => {
+            const raw = String(value ?? "").trim();
+            if (!raw) {
+              return "-";
+            }
+
+            const numeric = Number(raw);
+            return Number.isFinite(numeric) ? `${Math.round(numeric)} km/h` : "-";
+          };
+
+          const positionSectorTooltip = (event) => {
+            if (!sectorTooltip || !trackMapBody) {
+              return;
+            }
+
+            const bodyRect = trackMapBody.getBoundingClientRect();
+            const cursorX = Number.isFinite(Number(event && event.clientX)) ? Number(event.clientX) - bodyRect.left : bodyRect.width / 2;
+            const cursorY = Number.isFinite(Number(event && event.clientY)) ? Number(event.clientY) - bodyRect.top : bodyRect.height / 2;
+            const tooltipWidth = sectorTooltip.offsetWidth || 200;
+            const tooltipHeight = sectorTooltip.offsetHeight || 92;
+            const edgePadding = 12;
+            let left = cursorX + 18;
+            let top = cursorY - tooltipHeight - 18;
+
+            if (left + tooltipWidth > bodyRect.width - edgePadding) {
+              left = cursorX - tooltipWidth - 18;
+            }
+            if (left < edgePadding) {
+              left = edgePadding;
+            }
+            if (left + tooltipWidth > bodyRect.width - edgePadding) {
+              left = Math.max(edgePadding, bodyRect.width - tooltipWidth - edgePadding);
+            }
+
+            if (top < edgePadding) {
+              top = cursorY + 18;
+            }
+            if (top + tooltipHeight > bodyRect.height - edgePadding) {
+              top = Math.max(edgePadding, bodyRect.height - tooltipHeight - edgePadding);
+            }
+
+            sectorTooltip.style.left = `${left.toFixed(2)}px`;
+            sectorTooltip.style.top = `${top.toFixed(2)}px`;
+          };
+
+          const hideSectorTooltip = () => {
+            if (!sectorTooltip) {
+              return;
+            }
+
+            activeSectorTooltipTarget = null;
+            sectorTooltip.hidden = true;
+            sectorTooltip.style.removeProperty("left");
+            sectorTooltip.style.removeProperty("top");
+            sectorTooltip.style.removeProperty("--sector-color");
+            sectorTooltip.innerHTML = "";
+          };
+
+          const showSectorTooltip = (target, event) => {
+            if (!sectorTooltip || !trackMapBody || !target) {
+              return;
+            }
+
+            const sectorLabel = String(target.dataset.sectorLabel || "").trim() || "Sector";
+            const sectorTime = String(target.dataset.sectorTime || "").trim() || "-";
+            const sectorSpeedMin = formatSectorSpeed(target.dataset.sectorSpeedMin);
+            const sectorSpeedMax = formatSectorSpeed(target.dataset.sectorSpeedMax);
+            const sectorColor = String(target.dataset.sectorColor || "").trim() || "#44c2ff";
+            const isNewTarget = activeSectorTooltipTarget !== target || sectorTooltip.hidden;
+            activeSectorTooltipTarget = target;
+
+            sectorTooltip.hidden = false;
+            sectorTooltip.style.setProperty("--sector-color", sectorColor);
+            if (isNewTarget) {
+              sectorTooltip.innerHTML = `
+                <div class="track-map-sector-tooltip-title">
+                  <strong>${escapeHtml(sectorLabel)}</strong>
+                  <span>${escapeHtml(sectorTime)}</span>
+                </div>
+                <div class="track-map-sector-tooltip-stats">
+                  <div class="track-map-sector-tooltip-stat">
+                    <span>Lowest speed</span>
+                    <strong>${escapeHtml(sectorSpeedMin)}</strong>
+                  </div>
+                  <div class="track-map-sector-tooltip-stat">
+                    <span>Highest speed</span>
+                    <strong>${escapeHtml(sectorSpeedMax)}</strong>
+                  </div>
+                </div>
+              `;
+            }
+
+            positionSectorTooltip(event);
+          };
 
           function loadTrackImage(url) {
             return new Promise((resolve) => {
@@ -9627,35 +9894,6 @@
             };
           }
 
-          function markerBadge(point, offset = 58) {
-            if (!point) {
-              return null;
-            }
-            const [cx, cy] = toPoint([point.x, point.y]);
-            const directionX = cx >= trackCenter.x ? 1 : -1;
-            const directionY = cy >= trackCenter.y ? 1 : -1;
-            const badgeX = Math.max(speedMarkerEdgeX, Math.min(width - speedMarkerEdgeX, cx + directionX * offset));
-            const badgeY = Math.max(speedMarkerEdgeY, Math.min(height - speedMarkerEdgeY, cy + directionY * offset));
-            return { cx, cy, badgeX, badgeY };
-          }
-
-          function renderSpeedMarker(point, label, color, offset = 54) {
-            const marker = markerBadge(point, offset);
-            if (!marker) {
-              return "";
-            }
-            const badgeWidth = 70;
-            const badgeHeight = 32;
-            return `
-              <g class="${label.toLowerCase()}-speed-marker" style="pointer-events:none">
-                <circle cx="${marker.cx.toFixed(2)}" cy="${marker.cy.toFixed(2)}" r="7" fill="${color}" stroke="#07101d" stroke-width="2"></circle>
-                <rect x="${(marker.badgeX - (badgeWidth / 2)).toFixed(2)}" y="${(marker.badgeY - (badgeHeight / 2)).toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="12" fill="rgba(7,16,29,0.94)" stroke="${color}" stroke-width="1.5"></rect>
-                <text x="${marker.badgeX.toFixed(2)}" y="${(marker.badgeY - 3).toFixed(2)}" fill="${color}" font-size="10" font-weight="800" text-anchor="middle">${label}</text>
-                <text x="${marker.badgeX.toFixed(2)}" y="${(marker.badgeY + 10).toFixed(2)}" fill="${color}" font-size="9" font-weight="700" text-anchor="middle">${escapeHtml((point.speed || 0).toFixed ? point.speed.toFixed(0) : point.speed)} km/h</text>
-              </g>
-            `;
-          }
-
           const placedSectorBadges = [];
 
           function renderSectorBadge(marker, index, anchor, color, trackCenter) {
@@ -9870,13 +10108,11 @@
               </filter>
             </defs>
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-            <g id="track-underlay" pointer-events="none">
+            <g id="track-underlay">
               ${referenceImageUrl ? renderTrackImage(referenceImageUrl) : ""}
               ${renderTrackSurface(surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing), sectorMarkers)}
             </g>
             ${sectorRacingSegments.length ? renderSectorRacingSegments(sectorRacingSegments, showSectorMarkersOnTrack ? 3.9 : 3.2) : renderAccelerationLine(racing, samples, showSectorMarkersOnTrack ? 3.9 : 3.2)}
-            ${renderSpeedMarker(maxSpeedMarker, "MAX", "#fbbf24", 54)}
-            ${renderSpeedMarker(minSpeedMarker, "MIN", "#60a5fa", 72)}
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
             <circle cx="${endX.toFixed(2)}" cy="${endY.toFixed(2)}" r="7" fill="#ffbf69"></circle>
             <g id="lap-marker" transform="translate(${startX.toFixed(2)} ${startY.toFixed(2)})">
@@ -9888,6 +10124,22 @@
           const marker = svg.querySelector("#lap-marker");
           const markerCircle = marker ? marker.querySelector("circle") : null;
           const markerText = marker ? marker.querySelector("text") : null;
+
+          const sectorHoverTargets = Array.from(svg.querySelectorAll(".track-sector-hover"));
+          if (sectorHoverTargets.length) {
+            svg.addEventListener("pointermove", (event) => {
+              const target = event.target instanceof Element ? event.target.closest(".track-sector-hover") : null;
+              if (!target) {
+                hideSectorTooltip();
+                return;
+              }
+
+              showSectorTooltip(target, event);
+            });
+
+            svg.addEventListener("pointerleave", hideSectorTooltip);
+          }
+
           if (!marker || duration <= 0) {
             return;
           }

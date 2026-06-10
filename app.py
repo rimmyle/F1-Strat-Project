@@ -1335,6 +1335,14 @@ def _qualifying_phase_rows(session, phase):
                 "label": f"{abbreviation} - {full_name}",
             }
         )
+    rows.sort(
+        key=lambda row: (
+            0 if row.get("phase_seconds") is not None else 1,
+            float(row.get("phase_seconds")) if row.get("phase_seconds") is not None else float("inf"),
+            int(float(row.get("position"))) if str(row.get("position", "")).strip().replace(".", "", 1).isdigit() else 999999,
+            _clean_value(row.get("full_name", "")).strip().lower(),
+        )
+    )
     return rows
 
 
@@ -1342,9 +1350,18 @@ def _qualifying_driver_list_rows(phase_rows):
     if not phase_rows:
         return []
 
-    leader_seconds = next((row.get("phase_seconds") for row in phase_rows if row.get("phase_seconds") is not None), None)
+    ordered_rows = sorted(
+        phase_rows,
+        key=lambda row: (
+            0 if row.get("phase_seconds") is not None else 1,
+            float(row.get("phase_seconds")) if row.get("phase_seconds") is not None else float("inf"),
+            int(float(row.get("position"))) if str(row.get("position", "")).strip().replace(".", "", 1).isdigit() else 999999,
+            _clean_value(row.get("full_name", "")).strip().lower(),
+        ),
+    )
+    leader_seconds = next((row.get("phase_seconds") for row in ordered_rows if row.get("phase_seconds") is not None), None)
     list_rows = []
-    for row in phase_rows:
+    for row in ordered_rows:
         display_row = dict(row)
         display_row["display_time"] = display_row.get("phase_time") or "No Time"
         phase_seconds = display_row.get("phase_seconds")
@@ -1630,11 +1647,20 @@ def _qualifying_lap_sector_bounds(lap):
     if lap is None:
         return None
 
-    sector_times = [
-        _lap_time_seconds(lap.get("Sector1Time", None)),
-        _lap_time_seconds(lap.get("Sector2Time", None)),
-        _lap_time_seconds(lap.get("Sector3Time", None)),
-    ]
+    sector1_seconds = _lap_time_seconds(lap.get("Sector1Time", None))
+    sector2_seconds = _lap_time_seconds(lap.get("Sector2Time", None))
+    sector3_seconds = _lap_time_seconds(lap.get("Sector3Time", None))
+    lap_time = _lap_time_seconds(lap.get("LapTime", None))
+
+    if (
+        sector3_seconds is None
+        and lap_time is not None
+        and sector1_seconds is not None
+        and sector2_seconds is not None
+    ):
+        sector3_seconds = max(float(lap_time) - float(sector1_seconds) - float(sector2_seconds), 0.001)
+
+    sector_times = [sector1_seconds, sector2_seconds, sector3_seconds]
     if any(sector_seconds is None for sector_seconds in sector_times):
         return None
 
@@ -1645,7 +1671,6 @@ def _qualifying_lap_sector_bounds(lap):
         cumulative_seconds += float(sector_seconds)
         bounds.append((start_seconds, float(cumulative_seconds)))
 
-    lap_time = _lap_time_seconds(lap.get("LapTime", None))
     if lap_time is not None and bounds:
         bounds[-1] = (bounds[-1][0], max(bounds[-1][1], float(lap_time)))
 
@@ -1767,6 +1792,7 @@ def _qualifying_overview_composite_track_map(session, sector_markers):
     source_payload_cache = {}
     composite_frames = []
     sector_racing_segments = []
+    composite_sector_markers = []
     composite_time_cursor = 0.0
 
     def _segment_record(row):
@@ -1890,6 +1916,12 @@ def _qualifying_overview_composite_track_map(session, sector_markers):
         if len(segment_records) < 2:
             return None
 
+        sector_speed_min, sector_speed_max = _sector_speed_bounds(segment_records)
+        composite_marker = dict(marker)
+        composite_marker["sector_speed_min"] = sector_speed_min
+        composite_marker["sector_speed_max"] = sector_speed_max
+        composite_sector_markers.append(composite_marker)
+
         sector_racing_segments.append(
             {
                 "label": _clean_value(marker.get("label", f"S{index + 1}")).strip() or f"S{index + 1}",
@@ -1904,6 +1936,8 @@ def _qualifying_overview_composite_track_map(session, sector_markers):
                 "source_driver_color": _clean_value(marker.get("source_driver_color", "")).strip(),
                 "source_driver_circle_label": _clean_value(marker.get("source_driver_circle_label", "")).strip(),
                 "source_phase_label": _clean_value(marker.get("source_phase_label", "")).strip(),
+                "sector_speed_min": sector_speed_min,
+                "sector_speed_max": sector_speed_max,
             }
         )
 
@@ -1977,6 +2011,7 @@ def _qualifying_overview_composite_track_map(session, sector_markers):
     return {
         "racing": [[record["x"], record["y"]] for record in composite_sample_records],
         "samples": composite_sample_records,
+        "sector_markers": composite_sector_markers,
         "sector_racing_segments": sector_racing_segments,
         "speed_min": float(speed_min) if speed_min is not None else None,
         "speed_max": float(speed_max) if speed_max is not None else None,
@@ -2516,6 +2551,7 @@ def _qualifying_timeline_graph(session, phase=None, split_sections=True):
                     }
                 ]
 
+            compound = next((lap.get("compound") for lap in laps if lap.get("compound")), "-")
             rendered_runs.append(
                 {
                     "run_number": index,
@@ -2524,14 +2560,15 @@ def _qualifying_timeline_graph(session, phase=None, split_sections=True):
                     "start_seconds": run_start,
                     "end_seconds": run_end,
                     "duration_seconds": max(run_end - run_start, 0.5),
-            "representative": run.get("representative", f"{driver_number}:{index}"),
-            "representative_lap_time": run.get("flying_time", "-"),
-            "representative_lap_time_seconds": run.get("flying_time_seconds"),
-            "representative_lap_number": str(run.get("representative", f"{driver_number}:{index}")).split(":", 1)[-1],
-            "compound": next((lap.get("compound") for lap in laps if lap.get("compound")), "-"),
-            "segments": segments,
-            "representative_start_seconds": run.get("representative_start_seconds"),
-        }
+                    "representative": run.get("representative", f"{driver_number}:{index}"),
+                    "representative_lap_time": run.get("flying_time", "-"),
+                    "representative_lap_time_seconds": run.get("flying_time_seconds"),
+                    "representative_lap_number": str(run.get("representative", f"{driver_number}:{index}")).split(":", 1)[-1],
+                    "compound": compound,
+                    "tyre_color": _tyre_color(compound),
+                    "segments": segments,
+                    "representative_start_seconds": run.get("representative_start_seconds"),
+                }
             )
 
         time_label = _clean_value(row.get("time_label", row.get("result_time", row.get("Time", "-")))).strip() or "-"
@@ -4395,6 +4432,54 @@ def _sample_track_point(samples, target_seconds):
     return samples[-1]
 
 
+def _sector_speed_bounds(samples, start_seconds=None, end_seconds=None, time_key="t"):
+    if not samples:
+        return None, None
+
+    start_value = None
+    end_value = None
+    if start_seconds is not None:
+        try:
+            start_value = float(start_seconds)
+        except (TypeError, ValueError):
+            start_value = None
+    if end_seconds is not None:
+        try:
+            end_value = float(end_seconds)
+        except (TypeError, ValueError):
+            end_value = None
+
+    speeds = []
+    for sample in samples:
+        if sample is None:
+            continue
+
+        speed_value = sample.get("speed", None)
+        if speed_value is None or pd.isna(speed_value):
+            continue
+
+        if start_value is not None and end_value is not None:
+            sample_time = sample.get(time_key, None)
+            if sample_time is None or pd.isna(sample_time):
+                continue
+            try:
+                sample_time = float(sample_time)
+            except (TypeError, ValueError):
+                continue
+            if sample_time < start_value or sample_time > end_value:
+                continue
+
+        try:
+            speeds.append(float(speed_value))
+        except (TypeError, ValueError):
+            continue
+
+    if not speeds:
+        return None, None
+
+    return float(min(speeds)), float(max(speeds))
+
+
 def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
     try:
         circuit_info = session.get_circuit_info()
@@ -4435,6 +4520,7 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
         surface_outline = _rotate_xy(surface_outline, rotation)
         racing = _rotate_xy(racing, rotation)
 
+    time_base = 0.0
     if "Time" in racing_frame.columns:
         time_values = racing_frame["Time"].dt.total_seconds().tolist()
         time_base = next((value for value in time_values if pd.notna(value)), 0.0)
@@ -4454,13 +4540,19 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
     time_series = [float(value * scale) for value in raw_time_series]
 
     speed_profile = []
+    speed_time_base = time_base
     if telemetry is not None and not telemetry.empty and "Time" in telemetry.columns and "Speed" in telemetry.columns:
         speed_frame = telemetry.loc[:, ["Time", "Speed"]].dropna(subset=["Time", "Speed"]).copy()
         if not speed_frame.empty:
             speed_frame = speed_frame.sort_values(by="Time")
+            if speed_time_base is None:
+                speed_time_base = 0.0
             for _, speed_row in speed_frame.iterrows():
                 speed_seconds = _lap_time_seconds(speed_row.get("Time", None))
                 if speed_seconds is None:
+                    continue
+                speed_seconds = float(speed_seconds) - float(speed_time_base)
+                if speed_seconds < 0:
                     continue
                 try:
                     speed_value = float(speed_row.get("Speed", None))
@@ -4573,6 +4665,9 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
                 target_seconds = _lap_time_seconds(speed_time)
                 if target_seconds is None:
                     continue
+                target_seconds = float(target_seconds) - float(speed_time_base)
+                if target_seconds < 0:
+                    continue
                 point = _sample_track_point(racing_samples, target_seconds)
                 if point is None:
                     continue
@@ -4593,21 +4688,32 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
         ("S2", lap.get("Sector2Time", None)),
         ("S3", lap.get("Sector3Time", None)),
     ]
+    lap_time_seconds = lap_duration_seconds
+    if lap_time_seconds is None:
+        lap_time_seconds = _lap_time_seconds(lap.get("LapTime", None))
+
     cumulative_seconds = 0.0
-    for label, sector_value in sector_specs:
+    for index, (label, sector_value) in enumerate(sector_specs):
         sector_seconds = _lap_time_seconds(sector_value)
+        if sector_seconds is None and index == len(sector_specs) - 1 and lap_time_seconds is not None and cumulative_seconds > 0:
+            sector_seconds = max(float(lap_time_seconds) - cumulative_seconds, 0.001)
+            sector_value = sector_seconds
         if sector_seconds is None:
             continue
+        sector_start_seconds = cumulative_seconds
         cumulative_seconds += sector_seconds
         point = _sample_track_point(racing_samples, cumulative_seconds)
         if point is None:
             continue
+        sector_speed_min, sector_speed_max = _sector_speed_bounds(racing_samples, sector_start_seconds, cumulative_seconds)
         sector_markers.append(
             {
                 "label": label,
-                "time": _format_sector_time(sector_value),
+                "time": _format_sector_time(sector_value if sector_value is not None else sector_seconds),
                 "seconds": float(sector_seconds),
                 "cumulative_seconds": float(cumulative_seconds),
+                "sector_speed_min": sector_speed_min,
+                "sector_speed_max": sector_speed_max,
                 "x": float(point["x"]),
                 "y": float(point["y"]),
             }
@@ -5506,14 +5612,6 @@ def results():
             )
         except Exception:
             qualifying_overview_telemetry_charts = []
-        sector_colors = [
-            _clean_value(marker.get("source_driver_color", "")).strip()
-            for marker in qualifying_overview_sector_markers
-            if _clean_value(marker.get("source_driver_color", "")).strip()
-        ]
-        if sector_colors:
-            for index, chart in enumerate(qualifying_overview_telemetry_charts):
-                chart["color"] = sector_colors[index % len(sector_colors)]
         if qualifying_overview_track_map and qualifying_overview_composite_track_map:
             qualifying_overview_track_map.update(qualifying_overview_composite_track_map)
         sector_markers = qualifying_overview_sector_markers
@@ -5540,6 +5638,7 @@ def results():
                     "end_seconds": float(sector_end_seconds),
                     "source_driver_abbr": _clean_value(marker.get("source_driver_abbr", "")).strip(),
                     "source_driver_name": _clean_value(marker.get("source_driver_name", "")).strip(),
+                    "source_driver_display": _clean_value(marker.get("source_driver_display", "")).strip(),
                     "source_driver_color": _clean_value(marker.get("source_driver_color", "")).strip(),
                 }
             )
