@@ -6208,7 +6208,6 @@
               return;
             }
 
-            const labelColumnWidth = 96;
             const timeOffset = Number(graph.time_offset || 0);
             const isAllGraph = String(graph.phase_code || "").toUpperCase() === "ALL";
             const selectedPhaseCode = String(graph.phase_code || "").toUpperCase();
@@ -6217,6 +6216,7 @@
               ? phaseWindows[selectedPhaseCode] || null
               : null;
             const practiceMode = Boolean(graph.practice_mode);
+            const labelColumnWidth = practiceMode ? 150 : 96;
             const availableWidth = Math.floor(
               svg.closest(".qualifying-timeline-panel")?.clientWidth
               || svg.closest(".qualifying-fullpage")?.clientWidth
@@ -6225,11 +6225,14 @@
               || document.documentElement.clientWidth
               || 0,
             );
-            const desiredPlotWidth = Math.max(760, Math.ceil((Number(graph.max_time || 0) * 0.62) + 48));
+            const desiredPlotWidth = Math.max(
+              760,
+              Math.ceil((Number(graph.max_time || 0) * (practiceMode ? 0.68 : 0.62)) + (practiceMode ? 72 : 48)),
+            );
             const availablePlotWidth = Math.max(760, availableWidth - labelColumnWidth - 24);
             const plotWidth = Math.max(desiredPlotWidth, availablePlotWidth);
             const width = plotWidth + labelColumnWidth;
-            const pad = { top: 34, right: 8, bottom: 56, left: 52 };
+            const pad = practiceMode ? { top: 50, right: 16, bottom: 72, left: 60 } : { top: 34, right: 8, bottom: 56, left: 52 };
             const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
               phase_code: graph.phase_code || "ALL",
               title: graph.title || "Qualifying run timeline",
@@ -6237,20 +6240,20 @@
               eliminated_count: 0,
               drivers: graph.drivers || [],
             }];
-            const sectionHeaderHeight = practiceMode ? 44 : 26;
-            const sectionContentGap = practiceMode ? 18 : 8;
+            const sectionHeaderHeight = practiceMode ? 68 : 26;
+            const sectionContentGap = practiceMode ? 28 : 8;
             const sectionContentOffset = sectionHeaderHeight + sectionContentGap;
-            const sectionGap = practiceMode ? 24 : 10;
+            const sectionGap = practiceMode ? 36 : 10;
             const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
-            const availableHeight = Math.max(practiceMode ? 980 : 420, (window.innerHeight || 900) - (practiceMode ? 100 : 260));
+            const availableHeight = Math.max(practiceMode ? 1520 : 420, (window.innerHeight || 900) - (practiceMode ? 72 : 260));
             const rowStep = Math.max(
-              practiceMode ? 34 : 15,
+              practiceMode ? 50 : 15,
               Math.min(
-                practiceMode ? 48 : 20,
+                practiceMode ? 72 : 20,
                 Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionContentOffset) - ((sections.length - 1) * sectionGap)) / totalRows),
               ),
             );
-            const rowHeight = Math.max(practiceMode ? 16 : 7, Math.min(practiceMode ? 22 : 9, Math.floor(rowStep * 0.58)));
+            const rowHeight = Math.max(practiceMode ? 24 : 7, Math.min(practiceMode ? 34 : 9, Math.floor(rowStep * 0.72)));
             const height = pad.top + pad.bottom + sections.reduce(
               (total, section, index) => total
                 + sectionHeaderHeight
@@ -6262,6 +6265,14 @@
             const innerWidth = plotWidth - pad.left - pad.right;
             const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
             const timeLabelX = plotWidth + (labelColumnWidth / 2);
+            const driverLabelFontSize = practiceMode ? 13.5 : 9.5;
+            const driverTimeFontSize = practiceMode ? 14 : 10;
+            const sectionTitleFontSize = practiceMode ? 13.5 : 10.5;
+            const sectionCountFontSize = practiceMode ? 11.5 : 8.5;
+            const segmentLabelFontSize = practiceMode ? 10.5 : 7.5;
+            const labelPillHeight = practiceMode ? 14 : 10;
+            const labelPillFontSize = practiceMode ? 10.5 : 7.5;
+            const axisFontSize = practiceMode ? 11.5 : 8.5;
 
             const escapeHtml = (value) => String(value)
               .replaceAll("&", "&amp;")
@@ -6331,6 +6342,9 @@
               : null;
             const buildDriverMarkup = (driver, y) => {
               const rowTop = - (rowHeight / 2);
+              const rowCenterY = rowTop + (rowHeight / 2);
+              const labelPillY = rowTop + 1;
+              const labelPillTextY = labelPillY + (labelPillHeight / 2);
               const runsData = driver.runs || [];
               const runs = runsData.length ? runsData.map((run) => {
                 const segments = (run.segments || []).length ? run.segments : [{
@@ -6341,9 +6355,9 @@
                 const runStart = clampSeconds(Math.min(...segments.map((segment) => Number(segment.start_seconds) || 0)));
                 const runEnd = clampSeconds(Math.max(...segments.map((segment) => Number(segment.end_seconds) || 0)));
                 const barX = toX(runStart);
-                const barW = Math.max(6, toX(runEnd) - barX - 2);
+                const barW = Math.max(practiceMode ? 10 : 6, toX(runEnd) - barX - 2);
                 const label = String(run.representative_lap_time || "").trim();
-                const labelWidth = Math.max(36, ((label || "").length * 5.0) + 12);
+                const labelWidth = Math.max(practiceMode ? 60 : 36, ((label || "").length * (practiceMode ? 7.0 : 5.0)) + (practiceMode ? 20 : 12));
                 const labelX = barX + Math.max(7, (barW - labelWidth) / 2);
                 const barFill = practiceMode
                   ? (String(run.tyre_color || "").trim() || (driver.color || "#44c2ff"))
@@ -6356,36 +6370,36 @@
                 return `
                   <a class="qualifying-timeline-run" href="${escapeHtml(runHref(driver.value || driver.driver || '', run))}" aria-label="${escapeHtml(labelForRun(run))}">
                     <g>
-                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="14" rx="4.5" ry="4.5" fill="${barFill}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
+                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '6' : '4.5'}" ry="${practiceMode ? '6' : '4.5'}" fill="${barFill}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
                       ${segments.map((segment) => {
                         const segmentStart = toX(clampSeconds(segment.start_seconds));
                         const segmentEnd = toX(clampSeconds(segment.end_seconds));
                         const actualWidth = Math.max(6, segmentEnd - segmentStart);
-                        const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(18, Math.min(actualWidth, 64));
+                        const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(practiceMode ? 30 : 18, Math.min(actualWidth, practiceMode ? 96 : 64));
                         const patternId = segmentPattern(segment.lap_type);
                         const segmentText = segmentLabel(segment.lap_type);
                         return `
-                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="14" rx="3.5" ry="3.5" fill="url(#${patternId})" opacity="0.95"></rect>
-                          ${segmentText ? `<text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="2.5" fill="#07101d" font-size="7.5" font-weight="900" text-anchor="middle">${escapeHtml(segmentText)}</text>` : ""}
+                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '5' : '3.5'}" ry="${practiceMode ? '5' : '3.5'}" fill="url(#${patternId})" opacity="0.95"></rect>
+                          ${segmentText ? `<text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="${rowCenterY.toFixed(2)}" fill="#07101d" font-size="${segmentLabelFontSize}" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(segmentText)}</text>` : ""}
                         `;
                       }).join("")}
                       <g class="pit-stint-length" aria-hidden="true">
-                        <rect x="${labelX.toFixed(2)}" y="${(rowTop + 1).toFixed(2)}" width="${labelWidth.toFixed(2)}" height="10" rx="5" fill="rgba(7,16,29,0.78)"></rect>
-                        <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="8.4" text-anchor="middle" fill="#f8fafc" font-size="7.5" font-weight="900">${escapeHtml(label || "0.000")}</text>
+                        <rect x="${labelX.toFixed(2)}" y="${labelPillY.toFixed(2)}" width="${labelWidth.toFixed(2)}" height="${labelPillHeight}" rx="${practiceMode ? '6' : '5'}" fill="rgba(7,16,29,0.78)"></rect>
+                        <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="${labelPillTextY.toFixed(2)}" text-anchor="middle" fill="#f8fafc" font-size="${labelPillFontSize}" font-weight="900" dominant-baseline="middle">${escapeHtml(label || "0.000")}</text>
                       </g>
                     </g>
                   </a>
                 `;
               }).join("") : `
-                <text x="${pad.left + 8}" y="4" fill="rgba(151,167,194,0.7)" font-size="9.5">No timed run</text>
+                <text x="${pad.left + 8}" y="4" fill="rgba(151,167,194,0.7)" font-size="${practiceMode ? 11.5 : 9.5}">No timed run</text>
               `;
 
               return `
                 <g class="qualifying-timeline-driver" data-driver="${escapeHtml(driver.value || driver.driver || '')}" transform="translate(0 ${y})">
                   <line x1="${pad.left}" y1="12" x2="${plotWidth - pad.right}" y2="12" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
-                  <text class="qualifying-timeline-driver-label" x="${(pad.left - 4).toFixed(2)}" y="2.5" fill="${driver.color || '#cbd5e1'}" font-size="9.5" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
+                  <text class="qualifying-timeline-driver-label" x="${(pad.left - 4).toFixed(2)}" y="4" fill="${driver.color || '#cbd5e1'}" font-size="${driverLabelFontSize}" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
                   ${runs}
-                  <text class="qualifying-timeline-driver-time" x="${timeLabelX.toFixed(2)}" y="2.5" fill="rgba(226,232,240,0.96)" font-size="10" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
+                  <text class="qualifying-timeline-driver-time" x="${timeLabelX.toFixed(2)}" y="4" fill="rgba(226,232,240,0.96)" font-size="${driverTimeFontSize}" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
                 </g>
               `;
             };
@@ -6396,8 +6410,8 @@
               const header = `
                 <g class="qualifying-timeline-section" transform="translate(0 ${cursorY})">
                   <line x1="${pad.left}" y1="0" x2="${plotWidth - pad.right}" y2="0" stroke="rgba(148,163,184,0.18)" stroke-width="1.2"></line>
-                  <text x="${pad.left}" y="16" fill="rgba(226,232,240,0.98)" font-size="10.5" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
-                  <text x="${plotWidth - pad.right}" y="16" fill="rgba(151,167,194,0.92)" font-size="8.5" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
+                  <text x="${pad.left}" y="${practiceMode ? 20 : 16}" fill="rgba(226,232,240,0.98)" font-size="${sectionTitleFontSize}" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
+                  <text x="${plotWidth - pad.right}" y="${practiceMode ? 20 : 16}" fill="rgba(151,167,194,0.92)" font-size="${sectionCountFontSize}" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
                 </g>
               `;
               const driversMarkup = drivers.map((driver, driverIndex) => buildDriverMarkup(driver, cursorY + sectionContentOffset + (driverIndex * rowStep) + rowHeight)).join("");
@@ -6435,7 +6449,7 @@
               const elapsedSeconds = (Number(graph.max_time || 0) / tickCount) * i;
               const x = pad.left + (elapsedSeconds * scale);
               grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-              grid += `<text x="${x.toFixed(2)}" y="${height - 15}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="8.5" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
+              grid += `<text x="${x.toFixed(2)}" y="${height - (practiceMode ? 22 : 15)}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="${axisFontSize}" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
             }
             grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
             const phaseEndMarkup = (() => {
