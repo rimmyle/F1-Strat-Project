@@ -1885,8 +1885,10 @@
 
       .results-layout {
         display: block;
-        margin-top: 18px;
-        width: 100%;
+        width: 100vw;
+        margin: 18px calc(50% - 50vw) 0;
+        padding-right: 32px;
+        box-sizing: border-box;
       }
 
       .results-main {
@@ -2417,6 +2419,49 @@
         padding-top: 2px;
         width: 100%;
         justify-items: stretch;
+      }
+
+      .stint-compound-summary {
+        display: flex;
+        align-items: center;
+        gap: 10px 12px;
+        flex-wrap: wrap;
+        min-width: 0;
+        padding: 0 2px;
+      }
+
+      .stint-compound-summary-label {
+        flex: 0 0 auto;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .stint-compound-summary-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .stint-compound-summary-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 28px;
+        padding: 0 12px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 9999px;
+        background: rgba(7, 16, 29, 0.84);
+        color: #f8fafc;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
       }
 
       .stint-bars-list {
@@ -2999,6 +3044,16 @@
         overflow: hidden;
       }
 
+      .lap-support-card.lap-track-card {
+        gap: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        overflow: visible;
+      }
+
       .lap-track-card {
         display: grid;
         gap: 18px;
@@ -3042,6 +3097,10 @@
       }
 
       .lap-support-hero .stint-graph-viewport {
+        padding: 0;
+      }
+
+      .lap-support-card.lap-track-card .track-map-viewport {
         padding: 0;
       }
 
@@ -3333,7 +3392,7 @@
         justify-content: space-between;
         align-items: center;
         gap: 12px 16px;
-        padding: 0 2px 12px;
+        padding: 0 20px 12px;
       }
 
       .results-graph-title {
@@ -3583,6 +3642,27 @@
         background: rgba(16, 26, 45, 0.92);
         overflow: visible;
         width: 100%;
+      }
+
+      .qualifying-timeline-panel.practice-overview-timeline-panel {
+        margin-top: 12px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        overflow: visible;
+      }
+
+      .qualifying-timeline-panel.practice-overview-timeline-panel header {
+        padding: 0 2px 12px;
+      }
+
+      .qualifying-timeline-panel.practice-overview-timeline-panel .qualifying-timeline-viewport {
+        padding: 0;
+      }
+
+      .qualifying-timeline-panel.practice-overview-timeline-panel .qualifying-timeline-svg {
+        background: transparent;
+        border: 0;
       }
 
       .qualifying-timeline-panel header {
@@ -4944,7 +5024,7 @@
                 </section>
               {% endif %}
               {% if practice_overview_timeline_graph %}
-                  <section class="qualifying-timeline-panel">
+                  <section class="qualifying-timeline-panel practice-overview-timeline-panel">
                     <header>
                       <div>
                         <h2>{{ practice_overview_timeline_graph.title }}</h2>
@@ -5047,6 +5127,25 @@
                     {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
                       {% set stint_driver = selected_driver | default('', true) %}
                       <div class="stint-bars-panel">
+                        {% set compound_names = namespace(values=[]) %}
+                        {% set compound_items = namespace(values=[]) %}
+                        {% for stint in race_stints.stints %}
+                          {% set compound_name = stint.compound | default('', true) | trim %}
+                          {% if compound_name and compound_name not in compound_names.values %}
+                            {% set compound_names.values = compound_names.values + [compound_name] %}
+                            {% set compound_items.values = compound_items.values + [{'name': compound_name, 'color': stint.tyre_color | default('#94a3b8', true)}] %}
+                          {% endif %}
+                        {% endfor %}
+                        {% if compound_items.values %}
+                          <div class="stint-compound-summary" aria-label="Tyre compounds used across these stints">
+                            <span class="stint-compound-summary-label">Tyre compound{% if compound_items.values|length != 1 %}s{% endif %}</span>
+                            <div class="stint-compound-summary-list">
+                              {% for item in compound_items.values %}
+                                <span class="stint-compound-summary-pill" style="border-color: {{ item.color }};">{{ item.name }}</span>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        {% endif %}
                         <div class="stint-bars-list">
                           {% for stint in race_stints.stints %}
                             {% if stint.pit_stop_seconds is not none %}
@@ -5081,18 +5180,17 @@
                               class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
                               href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
                               style="--stint-color: {{ stint.tyre_color }};"
-                            >
-                              <div class="stint-bar-top">
-                                <strong>
-                                  Stint {{ stint.stint }}{% if stint.stint_note %} <span class="stint-bar-fresh-note">{{ stint.stint_note }}</span>{% endif %}
-                                </strong>
-                                <span>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</span>
-                              </div>
-                              <div class="stint-bar-track">
-                                <span class="stint-bar-fill" aria-hidden="true"></span>
-                                <span class="stint-bar-label">{{ stint.compound }}</span>
-                              </div>
-                            </a>
+                              >
+                                <div class="stint-bar-top">
+                                  <strong>
+                                    Stint {{ stint.stint }}{% if stint.stint_note %} <span class="stint-bar-fresh-note">{{ stint.stint_note }}</span>{% endif %}
+                                  </strong>
+                                  <span>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</span>
+                                </div>
+                                <div class="stint-bar-track">
+                                  <span class="stint-bar-fill" aria-hidden="true"></span>
+                                </div>
+                              </a>
                           {% endfor %}
                         </div>
                       </div>
@@ -6174,7 +6272,7 @@
               ? phaseWindows[selectedPhaseCode] || null
               : null;
             const practiceMode = Boolean(graph.practice_mode);
-            const labelColumnWidth = practiceMode ? 150 : 96;
+            const labelColumnWidth = practiceMode ? 150 : 112;
             const availableWidth = Math.floor(
               svg.closest(".qualifying-timeline-panel")?.clientWidth
               || svg.closest(".qualifying-fullpage")?.clientWidth
@@ -6190,7 +6288,7 @@
             const availablePlotWidth = Math.max(760, availableWidth - labelColumnWidth - 24);
             const plotWidth = Math.max(desiredPlotWidth, availablePlotWidth);
             const width = plotWidth + labelColumnWidth;
-            const pad = practiceMode ? { top: 50, right: 16, bottom: 72, left: 60 } : { top: 34, right: 8, bottom: 56, left: 52 };
+            const pad = practiceMode ? { top: 50, right: 16, bottom: 72, left: 60 } : { top: 40, right: 10, bottom: 64, left: 58 };
             const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
               phase_code: graph.phase_code || "ALL",
               title: graph.title || "Qualifying run timeline",
@@ -6198,20 +6296,20 @@
               eliminated_count: 0,
               drivers: graph.drivers || [],
             }];
-            const sectionHeaderHeight = practiceMode ? 68 : 26;
-            const sectionContentGap = practiceMode ? 28 : 8;
+            const sectionHeaderHeight = practiceMode ? 68 : 34;
+            const sectionContentGap = practiceMode ? 28 : 12;
             const sectionContentOffset = sectionHeaderHeight + sectionContentGap;
-            const sectionGap = practiceMode ? 36 : 10;
+            const sectionGap = practiceMode ? 36 : 16;
             const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
-            const availableHeight = Math.max(practiceMode ? 1520 : 420, (window.innerHeight || 900) - (practiceMode ? 72 : 260));
+            const availableHeight = Math.max(practiceMode ? 1520 : 520, (window.innerHeight || 900) - (practiceMode ? 72 : 240));
             const rowStep = Math.max(
-              practiceMode ? 50 : 15,
+              practiceMode ? 50 : 22,
               Math.min(
-                practiceMode ? 72 : 20,
+                practiceMode ? 72 : 30,
                 Math.floor((availableHeight - pad.top - pad.bottom - (sections.length * sectionContentOffset) - ((sections.length - 1) * sectionGap)) / totalRows),
               ),
             );
-            const rowHeight = Math.max(practiceMode ? 24 : 7, Math.min(practiceMode ? 34 : 9, Math.floor(rowStep * 0.72)));
+            const rowHeight = Math.max(practiceMode ? 24 : 10, Math.min(practiceMode ? 34 : 14, Math.floor(rowStep * 0.76)));
             const height = pad.top + pad.bottom + sections.reduce(
               (total, section, index) => total
                 + sectionHeaderHeight
@@ -6223,14 +6321,14 @@
             const innerWidth = plotWidth - pad.left - pad.right;
             const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
             const timeLabelX = plotWidth + (labelColumnWidth / 2);
-            const driverLabelFontSize = practiceMode ? 13.5 : 9.5;
-            const driverTimeFontSize = practiceMode ? 14 : 10;
-            const sectionTitleFontSize = practiceMode ? 13.5 : 10.5;
-            const sectionCountFontSize = practiceMode ? 11.5 : 8.5;
-            const segmentLabelFontSize = practiceMode ? 10.5 : 7.5;
-            const labelPillHeight = practiceMode ? 14 : 10;
-            const labelPillFontSize = practiceMode ? 10.5 : 7.5;
-            const axisFontSize = practiceMode ? 11.5 : 8.5;
+            const driverLabelFontSize = practiceMode ? 18 : 12.5;
+            const driverTimeFontSize = practiceMode ? 16 : 12.5;
+            const sectionTitleFontSize = practiceMode ? 15 : 13;
+            const sectionCountFontSize = practiceMode ? 12.5 : 10.5;
+            const segmentLabelFontSize = practiceMode ? 10.5 : 9.25;
+            const labelPillHeight = practiceMode ? 14 : 12;
+            const labelPillFontSize = practiceMode ? 10.5 : 9.5;
+            const axisFontSize = practiceMode ? 11.5 : 10.5;
 
             const escapeHtml = (value) => String(value)
               .replaceAll("&", "&amp;")
@@ -6315,7 +6413,7 @@
                 const barX = toX(runStart);
                 const barW = Math.max(practiceMode ? 10 : 6, toX(runEnd) - barX - 2);
                 const label = String(run.representative_lap_time || "").trim();
-                const labelWidth = Math.max(practiceMode ? 60 : 36, ((label || "").length * (practiceMode ? 7.0 : 5.0)) + (practiceMode ? 20 : 12));
+                const labelWidth = Math.max(practiceMode ? 60 : 44, ((label || "").length * (practiceMode ? 7.0 : 5.4)) + (practiceMode ? 20 : 14));
                 const labelX = barX + Math.max(7, (barW - labelWidth) / 2);
                 const barFill = practiceMode
                   ? (String(run.tyre_color || "").trim() || (driver.color || "#44c2ff"))
@@ -6328,7 +6426,7 @@
                 return `
                   <a class="qualifying-timeline-run" href="${escapeHtml(runHref(driver.value || driver.driver || '', run))}" aria-label="${escapeHtml(labelForRun(run))}">
                     <g>
-                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '6' : '4.5'}" ry="${practiceMode ? '6' : '4.5'}" fill="${barFill}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
+                      <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '6' : '5.5'}" ry="${practiceMode ? '6' : '5.5'}" fill="${barFill}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
                       ${segments.map((segment) => {
                         const segmentStart = toX(clampSeconds(segment.start_seconds));
                         const segmentEnd = toX(clampSeconds(segment.end_seconds));
@@ -6337,27 +6435,27 @@
                         const patternId = segmentPattern(segment.lap_type);
                         const segmentText = segmentLabel(segment.lap_type);
                         return `
-                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '5' : '3.5'}" ry="${practiceMode ? '5' : '3.5'}" fill="url(#${patternId})" opacity="0.95"></rect>
+                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '5' : '4.5'}" ry="${practiceMode ? '5' : '4.5'}" fill="url(#${patternId})" opacity="0.95"></rect>
                           ${segmentText ? `<text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="${rowCenterY.toFixed(2)}" fill="#07101d" font-size="${segmentLabelFontSize}" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(segmentText)}</text>` : ""}
                         `;
                       }).join("")}
                       <g class="pit-stint-length" aria-hidden="true">
-                        <rect x="${labelX.toFixed(2)}" y="${labelPillY.toFixed(2)}" width="${labelWidth.toFixed(2)}" height="${labelPillHeight}" rx="${practiceMode ? '6' : '5'}" fill="rgba(7,16,29,0.78)"></rect>
+                        <rect x="${labelX.toFixed(2)}" y="${labelPillY.toFixed(2)}" width="${labelWidth.toFixed(2)}" height="${labelPillHeight}" rx="${practiceMode ? '6' : '6'}" fill="rgba(7,16,29,0.78)"></rect>
                         <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="${labelPillTextY.toFixed(2)}" text-anchor="middle" fill="#f8fafc" font-size="${labelPillFontSize}" font-weight="900" dominant-baseline="middle">${escapeHtml(label || "0.000")}</text>
                       </g>
                     </g>
                   </a>
                 `;
               }).join("") : `
-                <text x="${pad.left + 8}" y="4" fill="rgba(151,167,194,0.7)" font-size="${practiceMode ? 11.5 : 9.5}">No timed run</text>
+                <text x="${pad.left + 8}" y="4" fill="rgba(151,167,194,0.7)" font-size="${practiceMode ? 11.5 : 10.5}">No timed run</text>
               `;
 
               return `
                 <g class="qualifying-timeline-driver" data-driver="${escapeHtml(driver.value || driver.driver || '')}" transform="translate(0 ${y})">
-                  <line x1="${pad.left}" y1="12" x2="${plotWidth - pad.right}" y2="12" stroke="rgba(148,163,184,0.08)" stroke-width="1"></line>
-                  <text class="qualifying-timeline-driver-label" x="${(pad.left - 4).toFixed(2)}" y="4" fill="${driver.color || '#cbd5e1'}" font-size="${driverLabelFontSize}" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
+                  <line x1="${pad.left}" y1="16" x2="${plotWidth - pad.right}" y2="16" stroke="rgba(148,163,184,0.08)" stroke-width="1.1"></line>
+                  <text class="qualifying-timeline-driver-label" x="${(pad.left - 6).toFixed(2)}" y="7" fill="${driver.color || '#cbd5e1'}" font-size="${driverLabelFontSize}" font-weight="700" text-anchor="end">${escapeHtml(driver.abbreviation || driver.value || driver.driver || '')}</text>
                   ${runs}
-                  <text class="qualifying-timeline-driver-time" x="${timeLabelX.toFixed(2)}" y="4" fill="rgba(226,232,240,0.96)" font-size="${driverTimeFontSize}" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
+                  <text class="qualifying-timeline-driver-time" x="${timeLabelX.toFixed(2)}" y="7" fill="rgba(226,232,240,0.96)" font-size="${driverTimeFontSize}" font-weight="800" text-anchor="middle">${escapeHtml(driver.time_label || "-")}</text>
                 </g>
               `;
             };
@@ -6368,8 +6466,8 @@
               const header = `
                 <g class="qualifying-timeline-section" transform="translate(0 ${cursorY})">
                   <line x1="${pad.left}" y1="0" x2="${plotWidth - pad.right}" y2="0" stroke="rgba(148,163,184,0.18)" stroke-width="1.2"></line>
-                  <text x="${pad.left}" y="${practiceMode ? 20 : 16}" fill="rgba(226,232,240,0.98)" font-size="${sectionTitleFontSize}" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
-                  <text x="${plotWidth - pad.right}" y="${practiceMode ? 20 : 16}" fill="rgba(151,167,194,0.92)" font-size="${sectionCountFontSize}" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
+                  <text x="${pad.left}" y="${practiceMode ? 20 : 22}" fill="rgba(226,232,240,0.98)" font-size="${sectionTitleFontSize}" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
+                  <text x="${plotWidth - pad.right}" y="${practiceMode ? 20 : 22}" fill="rgba(151,167,194,0.92)" font-size="${sectionCountFontSize}" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
                 </g>
               `;
               const driversMarkup = drivers.map((driver, driverIndex) => buildDriverMarkup(driver, cursorY + sectionContentOffset + (driverIndex * rowStep) + rowHeight)).join("");
@@ -6407,7 +6505,7 @@
               const elapsedSeconds = (Number(graph.max_time || 0) / tickCount) * i;
               const x = pad.left + (elapsedSeconds * scale);
               grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-              grid += `<text x="${x.toFixed(2)}" y="${height - (practiceMode ? 22 : 15)}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="${axisFontSize}" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
+              grid += `<text x="${x.toFixed(2)}" y="${height - (practiceMode ? 22 : 18)}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="${axisFontSize}" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
             }
             grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
             const phaseEndMarkup = (() => {
@@ -6421,17 +6519,17 @@
               const phaseEndX = toX(phaseEndSeconds);
               const phaseEndLabel = `END ${selectedPhaseCode}`;
               const labelWidth = Math.max(56, Math.ceil((phaseEndLabel.length * 7.2) + 16));
-              const labelHeight = 14;
+              const labelHeight = 16;
               const labelX = Math.max(4, Math.min(width - labelWidth - 4, phaseEndX - (labelWidth / 2)));
               const labelY = 3;
               const upperArrowStartY = labelY + labelHeight + 2;
-              const upperArrowEndY = upperArrowStartY + 7;
+              const upperArrowEndY = upperArrowStartY + 8;
               const lowerArrowStartY = upperArrowEndY + 2;
-              const lowerArrowEndY = Math.min(pad.top - 2, lowerArrowStartY + 7);
+              const lowerArrowEndY = Math.min(pad.top - 2, lowerArrowStartY + 8);
               return `
                 <g class="qualifying-timeline-phase-end" opacity="0.98">
                   <rect x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" width="${labelWidth.toFixed(2)}" height="${labelHeight}" rx="8"></rect>
-                  <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="${(labelY + 10.2).toFixed(2)}" text-anchor="middle">${phaseEndLabel}</text>
+                  <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="${(labelY + 11.4).toFixed(2)}" text-anchor="middle">${phaseEndLabel}</text>
                   <line x1="${phaseEndX.toFixed(2)}" y1="${upperArrowStartY.toFixed(2)}" x2="${phaseEndX.toFixed(2)}" y2="${upperArrowEndY.toFixed(2)}" marker-end="url(#qualifying-phase-end-arrow)"></line>
                   <line x1="${phaseEndX.toFixed(2)}" y1="${lowerArrowStartY.toFixed(2)}" x2="${phaseEndX.toFixed(2)}" y2="${lowerArrowEndY.toFixed(2)}" marker-end="url(#qualifying-phase-end-arrow)" opacity="0.82"></line>
                 </g>
