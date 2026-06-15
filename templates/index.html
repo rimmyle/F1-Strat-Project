@@ -3401,6 +3401,13 @@
         font-weight: 900;
       }
 
+      .track-map-sector-divider {
+        stroke: rgba(0, 0, 0, 0.96);
+        stroke-width: 3;
+        stroke-linecap: round;
+        vector-effect: non-scaling-stroke;
+      }
+
       .telemetry-card {
         display: grid;
         gap: 8px;
@@ -8655,7 +8662,7 @@
               const pillCenterY = pillY + 7;
 
               if (index > 0) {
-                markup += `<line x1="${x1.toFixed(2)}" y1="${sectorBandTop.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${(sectorBandTop + sectorBandHeight).toFixed(2)}" stroke="#000000" stroke-width="3"></line>`;
+                markup += `<line class="track-map-sector-divider" x1="${x1.toFixed(2)}" y1="${sectorBandTop.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${(sectorBandTop + sectorBandHeight).toFixed(2)}"></line>`;
               }
 
               markup += `
