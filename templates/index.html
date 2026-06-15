@@ -825,6 +825,30 @@
         color: #c0cede;
       }
 
+      .qualifying-result-points-stack {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+        margin-top: 2px;
+        color: #c0cede;
+        font-size: 0.72rem;
+        line-height: 1.08;
+      }
+
+      .qualifying-result-copy--podium .qualifying-result-points-stack {
+        justify-items: center;
+        text-align: center;
+      }
+
+      .qualifying-result-points-earned {
+        color: #eef9ff;
+        font-weight: 800;
+      }
+
+      .qualifying-result-points-total {
+        color: #d0d8e4;
+      }
+
       .qualifying-result-copy--podium strong {
         font-size: 1.2rem;
         line-height: 1.02;
@@ -1100,6 +1124,9 @@
         --lap-accent: rgba(68, 194, 255, 0.8);
         --lap-soft: rgba(68, 194, 255, 0.12);
         --lap-glow: rgba(68, 194, 255, 0.18);
+        --lap-kind-bg: rgba(68, 194, 255, 0.18);
+        --lap-kind-border: rgba(68, 194, 255, 0.5);
+        --lap-kind-text: #eef9ff;
         display: grid;
         gap: 7px;
         min-width: 168px;
@@ -1166,9 +1193,9 @@
         min-height: 20px;
         padding: 0 8px;
         border-radius: 999px;
-        background: var(--lap-soft);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: var(--lap-accent);
+        background: linear-gradient(180deg, var(--lap-kind-bg), rgba(8, 14, 26, 0.74));
+        border: 1px solid var(--lap-kind-border);
+        color: var(--lap-kind-text);
         font-size: 0.64rem;
         font-weight: 900;
         letter-spacing: 0.14em;
@@ -1183,36 +1210,40 @@
         line-height: 1.15;
       }
 
-      .qualifying-run-lap-button .qualifying-run-lap-compound {
-        color: var(--muted);
-        font-size: 0.74rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
       .qualifying-run-lap-button.lap-type-out-lap {
-        --lap-accent: #ff9a4d;
-        --lap-soft: rgba(255, 154, 77, 0.12);
-        --lap-glow: rgba(255, 154, 77, 0.22);
+        --lap-accent: #ff8a4c;
+        --lap-soft: rgba(255, 138, 76, 0.14);
+        --lap-glow: rgba(255, 138, 76, 0.26);
+        --lap-kind-bg: rgba(255, 138, 76, 0.2);
+        --lap-kind-border: rgba(255, 138, 76, 0.58);
+        --lap-kind-text: #fff1e8;
       }
 
       .qualifying-run-lap-button.lap-type-cool-lap {
-        --lap-accent: #7ad7ff;
-        --lap-soft: rgba(122, 215, 255, 0.12);
-        --lap-glow: rgba(122, 215, 255, 0.22);
+        --lap-accent: #61d3ff;
+        --lap-soft: rgba(97, 211, 255, 0.14);
+        --lap-glow: rgba(97, 211, 255, 0.26);
+        --lap-kind-bg: rgba(97, 211, 255, 0.2);
+        --lap-kind-border: rgba(97, 211, 255, 0.58);
+        --lap-kind-text: #ecfbff;
       }
 
       .qualifying-run-lap-button.lap-type-flying-lap {
-        --lap-accent: #ffcf72;
-        --lap-soft: rgba(255, 207, 114, 0.12);
-        --lap-glow: rgba(255, 207, 114, 0.22);
+        --lap-accent: #ffd96b;
+        --lap-soft: rgba(255, 217, 107, 0.14);
+        --lap-glow: rgba(255, 217, 107, 0.26);
+        --lap-kind-bg: rgba(255, 217, 107, 0.2);
+        --lap-kind-border: rgba(255, 217, 107, 0.6);
+        --lap-kind-text: #fff8dc;
       }
 
       .qualifying-run-lap-button.lap-type-in-lap {
-        --lap-accent: #c49bff;
-        --lap-soft: rgba(196, 155, 255, 0.12);
-        --lap-glow: rgba(196, 155, 255, 0.22);
+        --lap-accent: #b98cff;
+        --lap-soft: rgba(185, 140, 255, 0.14);
+        --lap-glow: rgba(185, 140, 255, 0.26);
+        --lap-kind-bg: rgba(185, 140, 255, 0.2);
+        --lap-kind-border: rgba(185, 140, 255, 0.58);
+        --lap-kind-text: #f4edff;
       }
 
       .qualifying-run-browser {
@@ -1337,8 +1368,8 @@
 
       .qualifying-telemetry-strip {
         display: grid;
-        gap: 18px;
-        padding: 28px;
+        gap: 22px;
+        padding: 34px 34px 30px;
         border: 1px solid var(--border);
         border-radius: 20px;
         background: linear-gradient(180deg, rgba(14, 23, 39, 0.98), rgba(9, 16, 29, 0.98));
@@ -1361,19 +1392,121 @@
 
       .qualifying-telemetry-driver {
         grid-column: 2;
-        display: flex;
-        flex-direction: column;
+        --driver-accent: #44c2ff;
+        position: relative;
+        display: grid;
+        justify-items: center;
+        gap: 16px;
+        width: min(100%, 460px);
+        padding: 22px 24px 20px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 34px;
+        background:
+          linear-gradient(180deg, rgba(18, 27, 44, 0.98), rgba(9, 16, 29, 0.98));
+        box-shadow:
+          inset 0 5px 0 var(--driver-accent),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          0 20px 40px rgba(0, 0, 0, 0.28);
+        text-align: center;
+        justify-self: center;
+      }
+
+      .qualifying-telemetry-driver::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 42%);
+        opacity: 0.9;
+      }
+
+      .qualifying-telemetry-driver > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .qualifying-telemetry-driver-portrait {
+        position: relative;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        border-radius: 30px;
+        background:
+          linear-gradient(180deg, rgba(33, 45, 68, 0.9), rgba(10, 16, 27, 0.98));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.05),
+          0 10px 18px rgba(0, 0, 0, 0.16);
+      }
+
+      .driver-headshot--hero {
+        width: 188px;
+        height: 188px;
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .qualifying-telemetry-team-chip {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        text-align: center;
-        width: fit-content;
-        justify-self: center;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(8, 14, 26, 0.96);
+        border: 1px solid var(--driver-accent);
+        box-shadow:
+          0 12px 22px rgba(0, 0, 0, 0.28),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        z-index: 2;
+      }
+
+      .qualifying-telemetry-team-chip-logo {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+        flex: 0 0 auto;
+      }
+
+      .qualifying-telemetry-team-chip-text {
+        color: #f8fafc;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        white-space: nowrap;
       }
 
       .qualifying-telemetry-driver .selection-driver-copy {
         display: grid;
-        gap: 2px;
+        gap: 5px;
+        justify-items: center;
+      }
+
+      .qualifying-telemetry-driver .selection-driver-copy strong {
+        font-size: 1.62rem;
+        line-height: 1;
+        letter-spacing: -0.03em;
+      }
+
+      .qualifying-telemetry-driver .selection-driver-copy small {
+        color: rgba(192, 206, 222, 0.92);
+        font-size: 1rem;
+        margin-top: 0;
+      }
+
+      .qualifying-telemetry-driver .selection-driver-teamline {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 0;
       }
 
       .qualifying-telemetry-divider {
@@ -1887,7 +2020,7 @@
         display: block;
         width: 100vw;
         margin: 18px calc(50% - 50vw) 0;
-        padding-right: 32px;
+        padding-inline: 24px;
         box-sizing: border-box;
       }
 
@@ -2421,49 +2554,6 @@
         justify-items: stretch;
       }
 
-      .stint-compound-summary {
-        display: flex;
-        align-items: center;
-        gap: 10px 12px;
-        flex-wrap: wrap;
-        min-width: 0;
-        padding: 0 2px;
-      }
-
-      .stint-compound-summary-label {
-        flex: 0 0 auto;
-        color: var(--muted);
-        font-size: 0.72rem;
-        font-weight: 800;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-
-      .stint-compound-summary-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        min-width: 0;
-      }
-
-      .stint-compound-summary-pill {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 28px;
-        padding: 0 12px;
-        border: 1px solid rgba(148, 163, 184, 0.24);
-        border-radius: 9999px;
-        background: rgba(7, 16, 29, 0.84);
-        color: #f8fafc;
-        font-size: 0.72rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-
       .stint-bars-list {
         display: flex;
         flex-wrap: nowrap;
@@ -2480,7 +2570,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         min-width: 0;
         flex: 0 1 140px;
         max-width: 160px;
@@ -2526,7 +2616,7 @@
         position: relative;
         z-index: 1;
         display: grid;
-        gap: 1px;
+        gap: 2px;
         justify-items: center;
         line-height: 1.05;
         text-align: center;
@@ -2644,12 +2734,6 @@
       .stint-bar-top strong {
         color: var(--text);
         font-size: 0.82rem;
-      }
-
-      .stint-bar-fresh-note {
-        color: var(--muted);
-        font-size: 0.76em;
-        font-weight: 700;
       }
 
       .stint-bar-top strong,
@@ -3645,7 +3729,7 @@
       }
 
       .qualifying-timeline-panel.practice-overview-timeline-panel {
-        margin-top: 12px;
+        margin-top: 8px;
         border: 0;
         border-radius: 0;
         background: transparent;
@@ -3653,7 +3737,7 @@
       }
 
       .qualifying-timeline-panel.practice-overview-timeline-panel header {
-        padding: 0 2px 12px;
+        padding: 0 2px 4px;
       }
 
       .qualifying-timeline-panel.practice-overview-timeline-panel .qualifying-timeline-viewport {
@@ -3750,7 +3834,7 @@
       .qualifying-fullpage {
         width: 100vw;
         margin: 18px calc(50% - 50vw) 0;
-        padding-right: 32px;
+        padding-inline: 24px;
         min-height: calc(100vh - 170px);
         box-sizing: border-box;
       }
@@ -4416,6 +4500,8 @@
   <body class="{% if loading %}is-loading{% endif %}" aria-busy="{% if loading %}true{% else %}false{% endif %}" style="--loading-progress: {{ loading_progress|default(0) }}%;"{% if loading %} data-loading-status-url="{{ url_for('session_status', year=form.year, gp=form.gp|urlencode, session=form.session, phase=form.phase) }}"{% endif %}>
       {% macro render_driver_result_item(option, selected_driver, driver_result_times=None, podium_rank=None, podium_slot="") %}
         {% set resolved_time = "-" %}
+        {% set race_points_display = option.race_points_display if option.race_points_display is defined else none %}
+        {% set championship_points_display = option.championship_points_display if option.championship_points_display is defined else none %}
         {% if option.display_time is defined and option.display_time %}
           {% set resolved_time = option.display_time %}
         {% elif option.phase_time is defined and option.phase_time %}
@@ -4443,6 +4529,16 @@
             <span class="qualifying-result-copy {% if podium_rank is not none %}qualifying-result-copy--podium{% endif %}">
               <strong>{{ option.full_name }}</strong>
               <small>{{ option.team_name }}</small>
+              {% if race_points_display is not none or championship_points_display is not none %}
+                <span class="qualifying-result-points-stack">
+                  {% if race_points_display is not none %}
+                    <span class="qualifying-result-points-earned">{{ race_points_display }} pts earned</span>
+                  {% endif %}
+                  {% if championship_points_display is not none %}
+                    <span class="qualifying-result-points-total">{{ championship_points_display }} championship total</span>
+                  {% endif %}
+                </span>
+              {% endif %}
               {% if podium_rank is not none %}
                 <span class="qualifying-result-time qualifying-result-time--podium">{{ resolved_time }}</span>
               {% else %}
@@ -4688,11 +4784,23 @@
               {% if session_is_qualifying and selected_lap and selected_driver %}
                 <div class="qualifying-telemetry-strip">
                   <div class="qualifying-telemetry-top">
-                    <div class="qualifying-telemetry-driver">
-                      <img class="driver-headshot" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
+                    <div class="qualifying-telemetry-driver" style="--driver-accent: {{ selected_driver_data.team_badge_color if selected_driver_data and selected_driver_data.team_badge_color else '#44c2ff' }};">
+                      {% if selected_driver_data and selected_driver_data.team_badge_text %}
+                        <span class="qualifying-telemetry-team-chip" aria-label="{{ selected_driver_data.team_name }} team badge">
+                          {% if selected_driver_data.team_logo_url %}
+                            <img class="team-logo qualifying-telemetry-team-chip-logo" src="{{ selected_driver_data.team_logo_url }}" alt="" loading="lazy" />
+                          {% endif %}
+                          <span class="qualifying-telemetry-team-chip-text">{{ selected_driver_data.team_badge_text }}</span>
+                        </span>
+                      {% endif %}
+                      <div class="qualifying-telemetry-driver-portrait">
+                        <img class="driver-headshot driver-headshot--hero" src="{{ selected_driver_data.headshot_url }}" alt="{{ selected_driver_data.full_name }} headshot" loading="lazy" />
+                      </div>
                       <span class="selection-driver-copy">
                         <strong>{{ selected_driver_data.full_name }}</strong>
-                        <small>{{ selected_driver_data.team_name }}</small>
+                        <span class="selection-driver-teamline">
+                          <small>{{ selected_driver_data.team_name }}</small>
+                        </span>
                       </span>
                     </div>
                     <div class="qualifying-telemetry-actions">
@@ -4718,6 +4826,9 @@
                               <div class="qualifying-run-meta">
                                 <span>Run {{ display_qualifying_run.run_number }}</span>
                                 <span>{{ display_qualifying_run.flying_time }}</span>
+                                {% if display_qualifying_run.compound and display_qualifying_run.compound != '-' %}
+                                  <span>Tyre {{ display_qualifying_run.compound }}</span>
+                                {% endif %}
                               </div>
                             </header>
                             <div class="qualifying-run-choices">
@@ -4748,7 +4859,6 @@
                                     <span class="qualifying-run-lap-kind">{{ lap_type_label }}</span>
                                   </div>
                                   <span class="qualifying-run-lap-time">{{ lap.lap_time }}</span>
-                                  <span class="qualifying-run-lap-compound">{{ lap.compound }}</span>
                                 </a>
                               {% endfor %}
                             </div>
@@ -5127,25 +5237,6 @@
                     {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
                       {% set stint_driver = selected_driver | default('', true) %}
                       <div class="stint-bars-panel">
-                        {% set compound_names = namespace(values=[]) %}
-                        {% set compound_items = namespace(values=[]) %}
-                        {% for stint in race_stints.stints %}
-                          {% set compound_name = stint.compound | default('', true) | trim %}
-                          {% if compound_name and compound_name not in compound_names.values %}
-                            {% set compound_names.values = compound_names.values + [compound_name] %}
-                            {% set compound_items.values = compound_items.values + [{'name': compound_name, 'color': stint.tyre_color | default('#94a3b8', true)}] %}
-                          {% endif %}
-                        {% endfor %}
-                        {% if compound_items.values %}
-                          <div class="stint-compound-summary" aria-label="Tyre compounds used across these stints">
-                            <span class="stint-compound-summary-label">Tyre compound{% if compound_items.values|length != 1 %}s{% endif %}</span>
-                            <div class="stint-compound-summary-list">
-                              {% for item in compound_items.values %}
-                                <span class="stint-compound-summary-pill" style="border-color: {{ item.color }};">{{ item.name }}</span>
-                              {% endfor %}
-                            </div>
-                          </div>
-                        {% endif %}
                         <div class="stint-bars-list">
                           {% for stint in race_stints.stints %}
                             {% if stint.pit_stop_seconds is not none %}
@@ -5166,13 +5257,13 @@
                                     {% if stint.pit_stop_comparison_text is defined and stint.pit_stop_comparison_text %}
                                       <span class="stint-pit-gap-comparison">{{ stint.pit_stop_comparison_text }}</span>
                                     {% endif %}
-                                  {% if stint.pit_stop_average_time is defined and stint.pit_stop_average_time %}
+                                    {% if stint.pit_stop_average_time is defined and stint.pit_stop_average_time %}
                                       <span class="stint-pit-gap-average">AVG {{ stint.pit_stop_average_time }}</span>
                                     {% endif %}
                                   </span>
                                 </div>
                                 {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
-                                  <span class="stint-pit-gap-stopped">STOP {{ stint.pit_stop_stopped_time }}</span>
+                                  <span class="stint-pit-gap-stopped">STOPPED {{ stint.pit_stop_stopped_time }}</span>
                                 {% endif %}
                               </div>
                             {% endif %}
@@ -5183,7 +5274,7 @@
                               >
                                 <div class="stint-bar-top">
                                   <strong>
-                                    Stint {{ stint.stint }}{% if stint.stint_note %} <span class="stint-bar-fresh-note">{{ stint.stint_note }}</span>{% endif %}
+                                    {{ stint.compound | default('-', true) | trim | lower }}
                                   </strong>
                                   <span>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</span>
                                 </div>
@@ -5196,6 +5287,90 @@
                       </div>
                     {% endif %}
                   </div>
+                  {% if session_is_practice and practice_phase_runs %}
+                    {% set display_practice_run = selected_practice_run if selected_practice_run else (practice_phase_runs[0] if practice_phase_runs else none) %}
+                    {% set display_practice_other_runs = practice_phase_other_runs if selected_practice_run else (practice_phase_runs | rejectattr('run_number', 'equalto', display_practice_run.run_number) | list) if display_practice_run else [] %}
+                    {% if display_practice_run %}
+                      <section class="qualifying-run-panel qualifying-run-panel--embedded">
+                        <header>
+                          <div>
+                            <h2>Practice Run {{ display_practice_run.run_number }}</h2>
+                          </div>
+                        </header>
+                        <div class="qualifying-run-browser">
+                          <div class="qualifying-run-browser-body {% if not display_practice_other_runs %}single-column{% endif %}">
+                            <div class="qualifying-run-group">
+                              <header>
+                                <h3>Selected run laps</h3>
+                                <div class="qualifying-run-meta">
+                                  <span>Run {{ display_practice_run.run_number }}</span>
+                                  <span>{{ display_practice_run.flying_time }}</span>
+                                  {% if display_practice_run.compound and display_practice_run.compound != '-' %}
+                                    <span>Tyre {{ display_practice_run.compound }}</span>
+                                  {% endif %}
+                                </div>
+                              </header>
+                              <div class="qualifying-run-choices">
+                                {% for lap in display_practice_run.laps %}
+                                  {% set lap_type_text = (lap.lap_type if lap.lap_type else '') | trim %}
+                                  {% set lap_type_lower = lap_type_text | lower %}
+                                  {% if lap_type_lower.startswith('out') %}
+                                    {% set lap_type_class = 'lap-type-out-lap' %}
+                                    {% set lap_type_label = 'OUT' %}
+                                  {% elif lap_type_lower.startswith('cool') %}
+                                    {% set lap_type_class = 'lap-type-cool-lap' %}
+                                    {% set lap_type_label = 'COOL' %}
+                                  {% elif lap_type_lower.startswith('flying') %}
+                                    {% set lap_type_class = 'lap-type-flying-lap' %}
+                                    {% set lap_type_label = 'FLYING' %}
+                                  {% elif lap_type_lower.startswith('in') %}
+                                    {% set lap_type_class = 'lap-type-in-lap' %}
+                                    {% set lap_type_label = 'IN' %}
+                                  {% else %}
+                                    {% set lap_type_class = '' %}
+                                    {% set lap_type_label = lap_type_text|upper if lap_type_text else 'LAP' %}
+                                  {% endif %}
+                                  <a
+                                    class="qualifying-run-lap-button {{ lap_type_class }} {% if lap.value == selected_lap %}active{% endif %}"
+                                    href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&run={{ display_practice_run.representative|urlencode }}&lap={{ lap.value|urlencode }}"
+                                  >
+                                    <div class="qualifying-run-lap-top">
+                                      <span class="qualifying-run-lap-kind">{{ lap_type_label }}</span>
+                                    </div>
+                                    <span class="qualifying-run-lap-time">{{ lap.lap_time }}</span>
+                                  </a>
+                                {% endfor %}
+                              </div>
+                            </div>
+                            {% if display_practice_other_runs %}
+                              <div class="qualifying-run-group">
+                                <header>
+                                  <h3>Other runs in Practice</h3>
+                                  <div class="qualifying-run-meta">
+                                    <span>{{ display_practice_other_runs|length }} run{{ 's' if display_practice_other_runs|length != 1 else '' }}</span>
+                                  </div>
+                                </header>
+                                <div class="qualifying-run-grid">
+                                  {% for run in display_practice_other_runs %}
+                                    <a
+                                      class="qualifying-run-badge"
+                                      href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ selected_driver }}&run={{ run.representative|urlencode }}&lap={{ run.representative|urlencode }}"
+                                    >
+                                      <span class="qualifying-run-badge-copy">
+                                        <strong>Run {{ run.run_number }}</strong>
+                                        <span>{{ run.lap_count }} lap{{ 's' if run.lap_count != 1 else '' }} · {{ run.compound }}</span>
+                                      </span>
+                                      <span class="run-time">{{ run.flying_time }}</span>
+                                    </a>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </section>
+                    {% endif %}
+                  {% endif %}
                   {% if not session_is_qualifying %}
                     <div
                       class="stint-graph-viewport"
@@ -5229,6 +5404,9 @@
                           <div class="qualifying-run-meta">
                             <span>Run {{ display_qualifying_run.run_number }}</span>
                             <span>{{ display_qualifying_run.flying_time }}</span>
+                            {% if display_qualifying_run.compound and display_qualifying_run.compound != '-' %}
+                              <span>Tyre {{ display_qualifying_run.compound }}</span>
+                            {% endif %}
                           </div>
                         </header>
                         <div class="qualifying-run-choices">
@@ -5259,7 +5437,6 @@
                                 <span class="qualifying-run-lap-kind">{{ lap_type_label }}</span>
                               </div>
                               <span class="qualifying-run-lap-time">{{ lap.lap_time }}</span>
-                              <span class="qualifying-run-lap-compound">{{ lap.compound }}</span>
                             </a>
                           {% endfor %}
                         </div>
@@ -6288,7 +6465,13 @@
             const availablePlotWidth = Math.max(760, availableWidth - labelColumnWidth - 24);
             const plotWidth = Math.max(desiredPlotWidth, availablePlotWidth);
             const width = plotWidth + labelColumnWidth;
-            const pad = practiceMode ? { top: 50, right: 16, bottom: 72, left: 60 } : { top: 40, right: 10, bottom: 64, left: 58 };
+            const pad = practiceMode ? { top: 24, right: 16, bottom: 58, left: 60 } : { top: 40, right: 10, bottom: 64, left: 58 };
+            const axisBaseMaxTime = practiceMode
+              ? Math.max(Number(graph.max_time || 0), 70 * 60)
+              : Number(graph.max_time || 0);
+            const axisMaxTime = practiceMode
+              ? Math.ceil(axisBaseMaxTime / 300) * 300
+              : Math.max(axisBaseMaxTime, 1);
             const sections = Array.isArray(graph.sections) && graph.sections.length ? graph.sections : [{
               phase_code: graph.phase_code || "ALL",
               title: graph.title || "Qualifying run timeline",
@@ -6296,10 +6479,10 @@
               eliminated_count: 0,
               drivers: graph.drivers || [],
             }];
-            const sectionHeaderHeight = practiceMode ? 68 : 34;
-            const sectionContentGap = practiceMode ? 28 : 12;
+            const sectionHeaderHeight = practiceMode ? 24 : 34;
+            const sectionContentGap = practiceMode ? 4 : 12;
             const sectionContentOffset = sectionHeaderHeight + sectionContentGap;
-            const sectionGap = practiceMode ? 36 : 16;
+            const sectionGap = practiceMode ? 20 : 16;
             const totalRows = sections.reduce((sum, section) => sum + ((section.drivers || []).length), 0) || 1;
             const availableHeight = Math.max(practiceMode ? 1520 : 520, (window.innerHeight || 900) - (practiceMode ? 72 : 240));
             const rowStep = Math.max(
@@ -6319,7 +6502,7 @@
               0,
             );
             const innerWidth = plotWidth - pad.left - pad.right;
-            const scale = graph.max_time <= 1 ? 1 : innerWidth / Math.max(Number(graph.max_time || 1), 1);
+            const scale = axisMaxTime <= 1 ? 1 : innerWidth / axisMaxTime;
             const timeLabelX = plotWidth + (labelColumnWidth / 2);
             const driverLabelFontSize = practiceMode ? 18 : 12.5;
             const driverTimeFontSize = practiceMode ? 16 : 12.5;
@@ -6342,7 +6525,7 @@
               if (!Number.isFinite(value)) {
                 return timeOffset;
               }
-              return Math.min(Math.max(value, timeOffset), timeOffset + Number(graph.max_time || 0));
+              return Math.min(Math.max(value, timeOffset), timeOffset + axisMaxTime);
             };
             const formatAxisTime = (seconds) => {
               const total = Math.max(0, Number(seconds) || 0);
@@ -6418,6 +6601,20 @@
                 const barFill = practiceMode
                   ? (String(run.tyre_color || "").trim() || (driver.color || "#44c2ff"))
                   : (driver.color || "#44c2ff");
+                const segmentMarkup = practiceMode
+                  ? ""
+                  : segments.map((segment) => {
+                    const segmentStart = toX(clampSeconds(segment.start_seconds));
+                    const segmentEnd = toX(clampSeconds(segment.end_seconds));
+                    const actualWidth = Math.max(6, segmentEnd - segmentStart);
+                    const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(18, Math.min(actualWidth, 64));
+                    const patternId = segmentPattern(segment.lap_type);
+                    const segmentText = segmentLabel(segment.lap_type);
+                    return `
+                      <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="${rowHeight}" rx="4.5" ry="4.5" fill="url(#${patternId})" opacity="0.95"></rect>
+                      ${segmentText ? `<text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="${rowCenterY.toFixed(2)}" fill="#07101d" font-size="${segmentLabelFontSize}" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(segmentText)}</text>` : ""}
+                    `;
+                  }).join("");
                 const isFastestRun = Boolean(
                   fastestRun
                   && Number(fastestRun.start_seconds) === Number(run.representative_start_seconds)
@@ -6427,18 +6624,7 @@
                   <a class="qualifying-timeline-run" href="${escapeHtml(runHref(driver.value || driver.driver || '', run))}" aria-label="${escapeHtml(labelForRun(run))}">
                     <g>
                       <rect x="${(barX + 1).toFixed(2)}" y="${rowTop.toFixed(2)}" width="${barW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '6' : '5.5'}" ry="${practiceMode ? '6' : '5.5'}" fill="${barFill}" opacity="0.92" stroke="${isFastestRun ? '#facc15' : 'rgba(7,16,29,0.72)'}" stroke-width="${isFastestRun ? '2.2' : '1'}"></rect>
-                      ${segments.map((segment) => {
-                        const segmentStart = toX(clampSeconds(segment.start_seconds));
-                        const segmentEnd = toX(clampSeconds(segment.end_seconds));
-                        const actualWidth = Math.max(6, segmentEnd - segmentStart);
-                        const segmentW = isFlyingSegment(segment.lap_type) ? actualWidth : Math.max(practiceMode ? 30 : 18, Math.min(actualWidth, practiceMode ? 96 : 64));
-                        const patternId = segmentPattern(segment.lap_type);
-                        const segmentText = segmentLabel(segment.lap_type);
-                        return `
-                          <rect x="${segmentStart.toFixed(2)}" y="${rowTop.toFixed(2)}" width="${segmentW.toFixed(2)}" height="${rowHeight}" rx="${practiceMode ? '5' : '4.5'}" ry="${practiceMode ? '5' : '4.5'}" fill="url(#${patternId})" opacity="0.95"></rect>
-                          ${segmentText ? `<text x="${(segmentStart + (segmentW / 2)).toFixed(2)}" y="${rowCenterY.toFixed(2)}" fill="#07101d" font-size="${segmentLabelFontSize}" font-weight="900" text-anchor="middle" dominant-baseline="middle">${escapeHtml(segmentText)}</text>` : ""}
-                        `;
-                      }).join("")}
+                      ${segmentMarkup}
                       <g class="pit-stint-length" aria-hidden="true">
                         <rect x="${labelX.toFixed(2)}" y="${labelPillY.toFixed(2)}" width="${labelWidth.toFixed(2)}" height="${labelPillHeight}" rx="${practiceMode ? '6' : '6'}" fill="rgba(7,16,29,0.78)"></rect>
                         <text x="${(labelX + (labelWidth / 2)).toFixed(2)}" y="${labelPillTextY.toFixed(2)}" text-anchor="middle" fill="#f8fafc" font-size="${labelPillFontSize}" font-weight="900" dominant-baseline="middle">${escapeHtml(label || "0.000")}</text>
@@ -6461,12 +6647,15 @@
             };
             const renderSection = (section, index, cursorY) => {
               const drivers = section.drivers || [];
-              const headerLabel = `${section.title || section.phase_code || "Q"} Results`;
+              const headerLabel = practiceMode ? "" : `${section.title || section.phase_code || "Q"} Results`;
               const eliminatedLabel = Number(section.eliminated_count || 0) > 0 ? ` · ${section.eliminated_count} eliminated` : "";
+              const headerLabelMarkup = headerLabel
+                ? `<text x="${pad.left}" y="${practiceMode ? 20 : 22}" fill="rgba(226,232,240,0.98)" font-size="${sectionTitleFontSize}" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>`
+                : "";
               const header = `
                 <g class="qualifying-timeline-section" transform="translate(0 ${cursorY})">
                   <line x1="${pad.left}" y1="0" x2="${plotWidth - pad.right}" y2="0" stroke="rgba(148,163,184,0.18)" stroke-width="1.2"></line>
-                  <text x="${pad.left}" y="${practiceMode ? 20 : 22}" fill="rgba(226,232,240,0.98)" font-size="${sectionTitleFontSize}" font-weight="900">${escapeHtml(headerLabel)}${escapeHtml(eliminatedLabel)}</text>
+                  ${headerLabelMarkup}
                   <text x="${plotWidth - pad.right}" y="${practiceMode ? 20 : 22}" fill="rgba(151,167,194,0.92)" font-size="${sectionCountFontSize}" font-weight="800" text-anchor="end">${escapeHtml(section.participant_count || drivers.length)} drivers</text>
                 </g>
               `;
@@ -6500,12 +6689,23 @@
             `;
 
             let grid = "";
-            const tickCount = 5;
-            for (let i = 0; i <= tickCount; i += 1) {
-              const elapsedSeconds = (Number(graph.max_time || 0) / tickCount) * i;
-              const x = pad.left + (elapsedSeconds * scale);
-              grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
-              grid += `<text x="${x.toFixed(2)}" y="${height - (practiceMode ? 22 : 18)}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="${axisFontSize}" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
+            if (practiceMode) {
+              const tickStep = 300;
+              const tickCount = Math.max(1, Math.round(axisMaxTime / tickStep));
+              for (let i = 0; i <= tickCount; i += 1) {
+                const elapsedSeconds = Math.min(axisMaxTime, tickStep * i);
+                const x = pad.left + (elapsedSeconds * scale);
+                grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+                grid += `<text x="${x.toFixed(2)}" y="${height - 22}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="${axisFontSize}" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
+              }
+            } else {
+              const tickCount = 5;
+              for (let i = 0; i <= tickCount; i += 1) {
+                const elapsedSeconds = (axisMaxTime / tickCount) * i;
+                const x = pad.left + (elapsedSeconds * scale);
+                grid += `<line x1="${x.toFixed(2)}" y1="${pad.top}" x2="${x.toFixed(2)}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
+                grid += `<text x="${x.toFixed(2)}" y="${height - (practiceMode ? 22 : 18)}" text-anchor="middle" fill="rgba(151,167,194,0.98)" font-size="${axisFontSize}" font-weight="800">${formatAxisTime(elapsedSeconds)}</text>`;
+              }
             }
             grid += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="rgba(148,163,184,0.12)" stroke-width="1"></line>`;
             const phaseEndMarkup = (() => {
@@ -6790,21 +6990,32 @@
           const graphByKey = new Map(availableGraphs.map((entry) => [entry.key, entry]));
           const titleByView = new Map(availableGraphs.map((entry) => [entry.key, entry.title]));
           const buttons = switcher ? Array.from(switcher.querySelectorAll("[data-results-graph-toggle]")) : [];
-          const sharedGraphWidth = 1118;
-          const graphLayouts = new Map(
-            availableGraphs.map((entry) => {
-              if (entry.key === "pit-strategy") {
-                const rowStep = 28;
-                const padTop = 34;
-                const padBottom = 42;
-                const height = Math.max(560, padTop + padBottom + (entry.graph.drivers || []).length * rowStep);
-                return [entry.key, { width: sharedGraphWidth, height }];
-              }
-              return [entry.key, { width: sharedGraphWidth, height: 620 }];
-            }),
-          );
-          const graphCanvasWidth = Math.max(...Array.from(graphLayouts.values(), (layout) => layout.width));
-          const graphCanvasHeight = Math.max(...Array.from(graphLayouts.values(), (layout) => layout.height));
+          let graphCanvasWidth = 0;
+          let graphCanvasHeight = 0;
+          const measureGraphCanvas = () => {
+            graphCanvasWidth = Math.max(
+              1000,
+              Math.floor(
+                stage.getBoundingClientRect().width
+                || shell.getBoundingClientRect().width
+                || window.innerWidth
+                || document.documentElement.clientWidth
+                || 0,
+              ),
+            );
+            graphCanvasHeight = Math.max(
+              ...availableGraphs.map((entry) => {
+                if (entry.key === "pit-strategy") {
+                  const rowStep = 28;
+                  const padTop = 34;
+                  const padBottom = 42;
+                  return Math.max(560, padTop + padBottom + (entry.graph.drivers || []).length * rowStep);
+                }
+                return 620;
+              }),
+            );
+          };
+          measureGraphCanvas();
           const resultsGraphNamespace = "http://www.w3.org/2000/svg";
           let resultsGraphBaseSignature = "";
           let currentTarget = buttons.find((button) => button.classList.contains("active"))
@@ -7437,6 +7648,7 @@
               svg.innerHTML = "";
               return;
             }
+            measureGraphCanvas();
             const shouldAnimate = currentTarget !== entry.key;
             currentTarget = entry.key;
             svg.setAttribute("aria-label", entry.title || "Race overview graph");
@@ -8173,6 +8385,10 @@
             const ticks = [];
             for (let value = Math.ceil(min / stepSeconds) * stepSeconds; value <= max; value += stepSeconds) {
               ticks.push(value);
+            }
+
+            if (!ticks.length || Math.abs(ticks[ticks.length - 1] - max) > 1e-6) {
+              ticks.push(max);
             }
 
             return ticks;
@@ -9139,7 +9355,7 @@
                 .filter((seconds) => Number.isFinite(seconds) && seconds > 0 && seconds < duration)
                 .map((seconds) => seconds / duration)
               : [];
-            const separatorGap = Math.max(36, Math.min(64, surfaceWidth * 1.9));
+            const separatorGap = Math.max(24, Math.min(44, surfaceWidth * 1.4));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, separatorGap);
             const defaultSectorColors = ["#ff4d3d", "#f3de5c", "#f8fbff"];
             const sectorColors = sectorSegments.map((_, index) => {
@@ -9147,125 +9363,11 @@
               const markerColor = String(marker && (marker.source_driver_color || marker.color) || "").trim();
               return markerColor || defaultSectorColors[index] || defaultSectorColors[defaultSectorColors.length - 1];
             });
-            const boundaryMetrics = points.reduce((acc, point, index) => {
-              if (index === 0) {
-                return acc;
-              }
-
-              const [x1, y1] = points[index - 1];
-              const [x2, y2] = point;
-              acc.totalLength += Math.hypot(x2 - x1, y2 - y1);
-              acc.cumulativeLengths[index] = acc.totalLength;
-              return acc;
-            }, {
-              cumulativeLengths: [0],
-              totalLength: 0,
-            });
-            const boundaryPointAtLength = (targetLength) => {
-              if (targetLength <= 0) {
-                return points[0];
-              }
-              if (targetLength >= boundaryMetrics.totalLength) {
-                return points[points.length - 1];
-              }
-
-              for (let index = 1; index < points.length; index += 1) {
-                const prevLength = boundaryMetrics.cumulativeLengths[index - 1];
-                const nextLength = boundaryMetrics.cumulativeLengths[index];
-                if (targetLength > nextLength) {
-                  continue;
-                }
-
-                const span = nextLength - prevLength || 1;
-                const ratio = Math.max(0, Math.min(1, (targetLength - prevLength) / span));
-                const prev = points[index - 1];
-                const next = points[index];
-                return [
-                  prev[0] + ((next[0] - prev[0]) * ratio),
-                  prev[1] + ((next[1] - prev[1]) * ratio),
-                ];
-              }
-
-              return points[points.length - 1];
-            };
-            const boundaryTangentAtLength = (targetLength) => {
-              if (points.length < 2) {
-                return null;
-              }
-
-              let index = 1;
-              while (index < points.length && targetLength > boundaryMetrics.cumulativeLengths[index]) {
-                index += 1;
-              }
-
-              const prev = points[Math.max(0, index - 1)];
-              const next = points[Math.min(points.length - 1, index)];
-              let dx = next[0] - prev[0];
-              let dy = next[1] - prev[1];
-              if (dx === 0 && dy === 0) {
-                for (let backIndex = Math.max(0, index - 2); backIndex >= 0; backIndex -= 1) {
-                  const backPoint = points[backIndex];
-                  dx = next[0] - backPoint[0];
-                  dy = next[1] - backPoint[1];
-                  if (dx !== 0 || dy !== 0) {
-                    break;
-                  }
-                }
-              }
-
-              const length = Math.hypot(dx, dy) || 1;
-              return {
-                x: prev[0] + ((next[0] - prev[0]) * 0.5),
-                y: prev[1] + ((next[1] - prev[1]) * 0.5),
-                normalX: -dy / length,
-                normalY: dx / length,
-              };
-            };
-            const sectorBoundaryMarkup = sectorFractions.length && boundaryMetrics.totalLength > 0
-              ? sectorFractions.map((fraction) => {
-                const boundaryLength = fraction * boundaryMetrics.totalLength;
-                const anchor = boundaryPointAtLength(boundaryLength);
-                const tangent = boundaryTangentAtLength(boundaryLength);
-                if (!anchor || !tangent) {
-                  return "";
-                }
-
-                const dividerLength = Math.max(surfaceWidth * 4.1, 62);
-                const dividerHalf = dividerLength / 2;
-                const separatorWidth = Math.max(8.5, Math.min(12.5, surfaceWidth * 0.42));
-                const separatorShadowWidth = Math.max(22, Math.min(34, surfaceWidth * 1.4));
-                const separatorHighlightWidth = Math.max(3.2, Math.min(5.4, surfaceWidth * 0.22));
-                const separatorMarkerSize = Math.max(10, Math.min(16, surfaceWidth * 0.62));
-                const separatorMarkerHalf = separatorMarkerSize / 2;
-                const x1 = anchor[0] + (tangent.normalX * dividerHalf);
-                const y1 = anchor[1] + (tangent.normalY * dividerHalf);
-                const x2 = anchor[0] - (tangent.normalX * dividerHalf);
-                const y2 = anchor[1] - (tangent.normalY * dividerHalf);
-                return `
-                  <g class="track-sector-divider" style="pointer-events:none">
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 1)" stroke-width="${separatorShadowWidth.toFixed(2)}" stroke-linecap="square"></line>
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(255, 255, 255, 0.96)" stroke-width="${separatorWidth.toFixed(2)}" stroke-linecap="square"></line>
-                    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(0, 0, 0, 0.92)" stroke-width="${separatorHighlightWidth.toFixed(2)}" stroke-linecap="square"></line>
-                    <rect
-                      x="${(anchor[0] - separatorMarkerHalf).toFixed(2)}"
-                      y="${(anchor[1] - separatorMarkerHalf).toFixed(2)}"
-                      width="${separatorMarkerSize.toFixed(2)}"
-                      height="${separatorMarkerSize.toFixed(2)}"
-                      rx="1.5"
-                      transform="rotate(45 ${anchor[0].toFixed(2)} ${anchor[1].toFixed(2)})"
-                      fill="#f8fbff"
-                      stroke="rgba(0, 0, 0, 0.96)"
-                      stroke-width="1.35"
-                    ></rect>
-              </g>
-            `;
-              }).join("")
-              : "";
             const sectorSurfaceMarkup = sectorSegments.length > 1
               ? sectorSegments.map((segment, index) => {
                 const segmentPath = path(segment);
                 const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
-                return `<path d="${segmentPath}" fill="none" stroke="${sectorColor}" stroke-opacity="0.82" stroke-width="${surfaceWidth}" stroke-linecap="butt" stroke-linejoin="round"></path>`;
+                return `<path d="${segmentPath}" fill="none" stroke="${sectorColor}" stroke-opacity="0.86" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
               }).join("")
               : `<path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.26)" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
             const sectorHoverMarkup = sectorSegments.length
@@ -9304,7 +9406,6 @@
                 <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.14)" stroke-width="${outerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
                 ${sectorSurfaceMarkup}
                 <path d="${outerPath}" fill="none" stroke="rgba(11, 17, 30, 0.96)" stroke-width="${innerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
-                ${sectorBoundaryMarkup}
               </g>
               ${sectorHoverMarkup ? `<g id="track-surface-hover">${sectorHoverMarkup}</g>` : ""}
             `;

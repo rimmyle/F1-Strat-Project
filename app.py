@@ -10,6 +10,7 @@ from threading import Event, Lock, Thread
 import fastf1
 import pandas as pd
 import numpy as np
+from fastf1.ergast import Ergast
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 
@@ -114,6 +115,8 @@ _SESSION_LOAD_STAGES = [
     (88, "Finalizing session data"),
 ]
 _SESSION_LOAD_TIMEOUT_SECONDS = 120
+_DRIVER_STANDINGS_CACHE = {}
+_DRIVER_STANDINGS_LOCK = Lock()
 
 
 def _clean_value(value):
@@ -875,6 +878,61 @@ def _tyre_color(compound):
     return TYRE_COMPOUND_COLORS.get(normalized, "#94a3b8")
 
 
+def _format_points_value(value):
+    if value in (None, "", "-") or pd.isna(value):
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        text = _clean_value(value).strip()
+        return text or None
+    text = f"{numeric:.3f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _driver_championship_points_lookup(year, round_number):
+    try:
+        season = int(float(str(year).strip()))
+        round_value = int(float(str(round_number).strip()))
+    except (TypeError, ValueError):
+        return {}
+
+    cache_key = (season, round_value)
+    with _DRIVER_STANDINGS_LOCK:
+        cached = _DRIVER_STANDINGS_CACHE.get(cache_key)
+    if cached is not None:
+        return dict(cached)
+
+    points_lookup = {}
+    try:
+        standings = Ergast().get_driver_standings(season=season, round=round_value)
+        frames = getattr(standings, "content", []) or []
+        frame = frames[0] if frames else None
+        if frame is not None and not frame.empty:
+            for _, row in frame.iterrows():
+                points_display = _format_points_value(row.get("points"))
+                if points_display is None:
+                    continue
+                keys = [
+                    _normalize_driver_number(row.get("driverNumber", "")),
+                    _clean_value(row.get("driverCode", "")).strip(),
+                    _clean_value(row.get("driverId", "")).strip(),
+                ]
+                full_name = " ".join(part for part in [_clean_value(row.get("givenName", "")).strip(), _clean_value(row.get("familyName", "")).strip()] if part).strip()
+                if full_name:
+                    keys.append(full_name)
+                for key in keys:
+                    normalized_key = _clean_value(key).strip()
+                    if normalized_key and normalized_key != "-":
+                        points_lookup[normalized_key] = points_display
+    except Exception:
+        points_lookup = {}
+
+    with _DRIVER_STANDINGS_LOCK:
+        _DRIVER_STANDINGS_CACHE[cache_key] = dict(points_lookup)
+    return points_lookup
+
+
 def _lap_time_seconds(value):
     if pd.isna(value):
         return None
@@ -905,7 +963,7 @@ def _driver_options(session, results=None):
 
     columns = [
         col
-        for col in ["DriverNumber", "DriverId", "HeadshotUrl", "Abbreviation", "FullName", "TeamName", "Position"]
+        for col in ["DriverNumber", "DriverId", "HeadshotUrl", "Abbreviation", "FullName", "TeamName", "Position", "Points"]
         if col in results.columns
     ]
     if not columns:
@@ -923,6 +981,7 @@ def _driver_options(session, results=None):
         full_name = _clean_value(row.get("FullName", abbreviation))
         team_name = _clean_value(row.get("TeamName", "-"))
         result_time = _format_race_result_time(row.get("Time", "-"), row.get("Position", "-"))
+        race_points = _format_points_value(row.get("Points"))
         headshot_url = _driver_headshot_url(driver_id, row.get("HeadshotUrl", ""))
         team_badge_text, team_badge_color = _team_badge(team_name)
         options.append(
@@ -938,6 +997,7 @@ def _driver_options(session, results=None):
                 "headshot_url": headshot_url,
                 "label": f"{abbreviation} - {full_name}",
                 "result_time": result_time,
+                "race_points_display": race_points,
             }
         )
     seen = set()
@@ -2737,6 +2797,8 @@ def _practice_timeline_graph(session):
         return None
 
     practice_graph = dict(graph)
+    practice_axis_max = max(float(practice_graph.get("max_time") or 0.0), 70 * 60.0)
+    practice_graph["max_time"] = practice_axis_max
     practice_graph["title"] = "Practice run timeline"
     practice_graph["phase_code"] = "ALL"
     practice_graph["practice_mode"] = True
@@ -2744,6 +2806,8 @@ def _practice_timeline_graph(session):
     if sections:
         practice_sections = [dict(section) for section in sections]
         practice_sections[0]["title"] = "Practice"
+        for section in practice_sections:
+            section["max_time"] = practice_axis_max
         practice_graph["sections"] = practice_sections
     return practice_graph
 
@@ -3146,7 +3210,7 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
     frame = frame.sort_values(by=time_column).drop_duplicates(subset=[time_column], keep="first").reset_index(drop=True)
 
     thresholds = []
-    for candidate in (speed_threshold_kmh, 0.0, 0.5, 1.0, 2.0):
+    for candidate in (speed_threshold_kmh, 0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 7.5, 10.0):
         try:
             numeric_threshold = float(candidate)
         except (TypeError, ValueError):
@@ -3157,7 +3221,7 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
             thresholds.append(numeric_threshold)
 
     if not thresholds:
-        thresholds = [0.0, 0.5, 1.0, 2.0]
+        thresholds = [0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 7.5, 10.0]
 
     def measure_stationary_seconds(max_speed_kmh):
         stop_start_index = None
@@ -5765,6 +5829,26 @@ def data():
         driver_options = _driver_options(session, results=qualifying_results) if session else []
     driver_groups = _driver_groups(session, results=qualifying_results) if session else []
 
+    if session_is_race and session and driver_options:
+        round_number = getattr(session.event, "RoundNumber", None)
+        championship_points_lookup = _driver_championship_points_lookup(ctx["year"], round_number)
+        if championship_points_lookup:
+            for option in driver_options:
+                lookup_keys = [
+                    _clean_value(option.get("value", "")).strip(),
+                    _clean_value(option.get("abbreviation", "")).strip(),
+                    _clean_value(option.get("driver_id", "")).strip(),
+                    _clean_value(option.get("full_name", "")).strip(),
+                ]
+                championship_points = None
+                for key in lookup_keys:
+                    normalized_key = _clean_value(key).strip()
+                    if normalized_key and normalized_key != "-" and normalized_key in championship_points_lookup:
+                        championship_points = championship_points_lookup[normalized_key]
+                        break
+                if championship_points is not None:
+                    option["championship_points_display"] = championship_points
+
     driver_result_times = {}
     if pit_strategy_graph and pit_strategy_graph.get("drivers"):
         for driver in pit_strategy_graph["drivers"]:
@@ -5802,6 +5886,10 @@ def data():
     qualifying_phase_runs = list(qualifying_run_laps)
     qualifying_phase_other_runs = []
     selected_qualifying_run = None
+    practice_phase_runs = _qualifying_run_laps(session, driver_number) if session and driver_number and session_code.startswith("FP") else []
+    practice_run_value = request.args.get("run", "").strip()
+    practice_phase_other_runs = []
+    selected_practice_run = None
 
     def qualifying_run_reference(run):
         return _clean_value(run.get("representative", "")).strip()
@@ -5842,11 +5930,36 @@ def data():
             laps = run.get("laps") or []
             run["lap_count"] = len(laps)
             run["compound"] = next((lap.get("compound") for lap in laps if lap.get("compound")), "-")
+    if practice_phase_runs:
+        if practice_run_value:
+            selected_practice_run = next((run for run in practice_phase_runs if qualifying_run_reference(run) == practice_run_value), None)
+            if selected_practice_run is None and practice_run_value.isdigit():
+                selected_practice_run = next((run for run in practice_phase_runs if str(run.get("run_number")) == practice_run_value), None)
+        if selected_practice_run is None and selected_lap_value:
+            selected_practice_run = next((run for run in practice_phase_runs if any(lap.get("value") == selected_lap_value for lap in run.get("laps", []))), None)
+        if selected_practice_run is None:
+            fastest_runs = [run for run in practice_phase_runs if run.get("flying_time_seconds") is not None]
+            selected_practice_run = min(
+                fastest_runs,
+                key=lambda run: float(run.get("flying_time_seconds")),
+            ) if fastest_runs else practice_phase_runs[0]
+        selected_practice_run_reference = qualifying_run_reference(selected_practice_run)
+        practice_phase_other_runs = [run for run in practice_phase_runs if qualifying_run_reference(run) != selected_practice_run_reference]
+        for run in practice_phase_runs:
+            laps = run.get("laps") or []
+            run["lap_count"] = len(laps)
+            run["compound"] = next((lap.get("compound") for lap in laps if lap.get("compound")), "-")
     driver_lap_options = _lap_options(session, driver_number) if session and driver_number else []
     if lap_page_requested and session_is_qualifying and driver_number and not selected_lap_value and selected_qualifying_run is not None:
         selected_lap_value = _clean_value(selected_qualifying_run.get("representative", "")).strip()
         if not selected_lap_value:
             selected_lap_value = next((lap.get("value") for lap in selected_qualifying_run.get("laps", []) if lap.get("value")), "")
+        if selected_lap_value:
+            selected_lap_data = _resolve_lap(session, driver_number, selected_lap_value)
+    if lap_page_requested and session_code.startswith("FP") and driver_number and not selected_lap_value and selected_practice_run is not None:
+        selected_lap_value = _clean_value(selected_practice_run.get("representative", "")).strip()
+        if not selected_lap_value:
+            selected_lap_value = next((lap.get("value") for lap in selected_practice_run.get("laps", []) if lap.get("value")), "")
         if selected_lap_value:
             selected_lap_data = _resolve_lap(session, driver_number, selected_lap_value)
     if session and driver_number:
@@ -6033,6 +6146,10 @@ def data():
         qualifying_phase_runs=qualifying_phase_runs,
         qualifying_phase_other_runs=qualifying_phase_other_runs,
         selected_qualifying_run=selected_qualifying_run,
+        practice_phase_runs=practice_phase_runs,
+        practice_phase_other_runs=practice_phase_other_runs,
+        selected_practice_run=selected_practice_run,
+        session_is_practice=session_code.startswith("FP"),
         form_action=form_action,
         form={
             "year": ctx["year"],
