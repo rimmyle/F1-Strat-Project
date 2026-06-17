@@ -127,7 +127,7 @@ def _clean_value(value):
         hours, remainder = divmod(int(total_seconds), 3600)
         minutes, seconds = divmod(remainder, 60)
         millis = int(round((total_seconds - int(total_seconds)) * 1000))
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{millis:03d}"
+        return f"{hours}:{minutes:02d}:{seconds:02d}.{millis:03d}"
     if isinstance(value, (int, float)) and float(value).is_integer():
         return str(int(value))
     if hasattr(value, "isoformat") and not isinstance(value, str):
@@ -441,7 +441,7 @@ def _format_lap_time(value):
     minutes, remainder = divmod(remainder, 60000)
     seconds, millis = divmod(remainder, 1000)
     if hours > 0:
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{millis:03d}"
+        return f"{hours}:{minutes:02d}:{seconds:02d}.{millis:03d}"
     if minutes > 0:
         return f"{minutes}:{seconds:02d}.{millis:03d}"
     return f"{seconds}.{millis:03d}"
@@ -888,6 +888,21 @@ def _format_points_value(value):
         return text or None
     text = f"{numeric:.3f}".rstrip("0").rstrip(".")
     return text or "0"
+
+
+def _points_numeric_value(value):
+    if value in (None, "", "-") or pd.isna(value):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        text = _clean_value(value).strip()
+        if not text or text == "-":
+            return None
+        try:
+            return float(text)
+        except (TypeError, ValueError):
+            return None
 
 
 def _driver_championship_points_lookup(year, round_number):
@@ -2201,6 +2216,7 @@ def _qualifying_run_options(session, driver_number):
             "lap_number": representative["lap_number"],
             "lap_time": representative["lap_time"],
             "compound": representative["compound"],
+            "tyre_color": _tyre_color(representative["compound"]),
             "lap_type": representative["lap_type"],
             "label": f"Run {run['run_number']} - {representative['lap_time']}",
         }
@@ -2305,6 +2321,7 @@ def _qualifying_run_laps(session, driver_number):
             "start_seconds": start_seconds,
             "end_seconds": end_seconds,
             "duration_seconds": max((end_seconds or 0) - (start_seconds or 0), 1.0) if start_seconds is not None and end_seconds is not None else None,
+            "tyre_color": _tyre_color(representative["compound"]),
         }
 
     for _, row in valid.iterrows():
@@ -3127,7 +3144,6 @@ def _lap_record(lap, telemetry):
             gap_ahead = _format_gap_seconds(gap_points[-1][1])
 
     fields = [
-        ("tyre_life", "Tyre Age", _clean_value(lap.get("TyreLife", "-"))),
         ("track_status", "Track Status", _format_track_status(lap.get("TrackStatus", "-"))),
         ("position", "Position", _clean_value(lap.get("Position", "-"))),
     ]
@@ -3224,20 +3240,11 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
         thresholds = [0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 7.5, 10.0]
 
     def measure_stationary_seconds(max_speed_kmh):
-        stop_start_index = None
-        for index, speed_value in enumerate(frame["Speed"]):
-            try:
-                if float(speed_value) <= float(max_speed_kmh):
-                    stop_start_index = index
-                    break
-            except (TypeError, ValueError):
-                continue
-
-        if stop_start_index is None:
-            return None
-
+        low_speed_limit = float(max_speed_kmh)
         stopped_seconds = 0.0
-        for index in range(stop_start_index, len(frame) - 1):
+        found_low_speed_sample = False
+
+        for index in range(len(frame) - 1):
             try:
                 current_speed = float(frame.iloc[index]["Speed"])
                 next_speed = float(frame.iloc[index + 1]["Speed"])
@@ -3246,15 +3253,23 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
             except (TypeError, ValueError):
                 continue
 
-            if current_speed > float(max_speed_kmh):
-                break
-
             delta = max(0.0, next_time - current_time)
-            if delta > 0.0:
-                stopped_seconds += delta
+            if delta <= 0.0:
+                continue
 
-            if next_speed > float(max_speed_kmh):
-                break
+            current_low = current_speed <= low_speed_limit
+            next_low = next_speed <= low_speed_limit
+            if not current_low and not next_low:
+                continue
+
+            found_low_speed_sample = True
+            if current_low and next_low:
+                stopped_seconds += delta
+            else:
+                stopped_seconds += delta * 0.5
+
+        if not found_low_speed_sample:
+            return None
 
         return stopped_seconds if stopped_seconds > 0.0 else None
 
@@ -3532,7 +3547,7 @@ def _race_stints(session, driver_number, session_code):
                 stint,
             ) if index > 0 else None
             stint["pit_stop_stopped_seconds"] = pit_stop_stopped_seconds
-            stint["pit_stop_stopped_time"] = _format_minutes_seconds(pit_stop_stopped_seconds) if pit_stop_stopped_seconds is not None else None
+            stint["pit_stop_stopped_time"] = _format_minutes_seconds(pit_stop_stopped_seconds) if pit_stop_stopped_seconds is not None else "-"
             if pit_stop_seconds is not None:
                 pit_stop_max_seconds = max(pit_stop_max_seconds or 0.0, float(pit_stop_seconds))
 
@@ -5654,16 +5669,11 @@ def results():
     if session_is_qualifying and qualifying_overview_reference_lap is not None:
         qualifying_overview_sector_markers = list((qualifying_overview_track_map or {}).get("sector_markers", []) or [])
         qualifying_overview_composite_telemetry = None
-        qualifying_overview_composite_track_map = None
         if qualifying_overview_sector_markers:
             try:
                 qualifying_overview_composite_telemetry = _qualifying_overview_composite_telemetry(session, qualifying_overview_sector_markers)
             except Exception:
                 qualifying_overview_composite_telemetry = None
-            try:
-                qualifying_overview_composite_track_map = _qualifying_overview_composite_track_map(session, qualifying_overview_sector_markers)
-            except Exception:
-                qualifying_overview_composite_track_map = None
         try:
             telemetry_source = (
                 _TelemetryLapProxy(qualifying_overview_composite_telemetry, getattr(qualifying_overview_reference_lap, "session", session))
@@ -5676,8 +5686,6 @@ def results():
             )
         except Exception:
             qualifying_overview_telemetry_charts = []
-        if qualifying_overview_track_map and qualifying_overview_composite_track_map:
-            qualifying_overview_track_map.update(qualifying_overview_composite_track_map)
         sector_markers = qualifying_overview_sector_markers
         sector_windows = []
         previous_end_seconds = 0.0
@@ -5834,6 +5842,7 @@ def data():
         championship_points_lookup = _driver_championship_points_lookup(ctx["year"], round_number)
         if championship_points_lookup:
             for option in driver_options:
+                race_points_numeric = _points_numeric_value(option.get("race_points_display"))
                 lookup_keys = [
                     _clean_value(option.get("value", "")).strip(),
                     _clean_value(option.get("abbreviation", "")).strip(),
@@ -5846,6 +5855,14 @@ def data():
                     if normalized_key and normalized_key != "-" and normalized_key in championship_points_lookup:
                         championship_points = championship_points_lookup[normalized_key]
                         break
+                championship_points_numeric = _points_numeric_value(championship_points)
+                if (
+                    championship_points is not None
+                    and race_points_numeric is not None
+                    and championship_points_numeric is not None
+                    and championship_points_numeric < race_points_numeric
+                ):
+                    championship_points = option.get("race_points_display")
                 if championship_points is not None:
                     option["championship_points_display"] = championship_points
 
