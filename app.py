@@ -2286,6 +2286,17 @@ def _qualifying_run_laps(session, driver_number):
         if not run or not run["laps"]:
             return None
         _qualifying_finalize_run_laps(run["laps"])
+        representative_lap = next(
+            (
+                lap
+                for lap in run["laps"]
+                if lap.get("lap_type") == "Flying Lap" and lap.get("lap_time_seconds") is not None
+            ),
+            next(
+                (lap for lap in run["laps"] if lap.get("lap_time_seconds") is not None),
+                run["laps"][0],
+            ),
+        )
         start_seconds = next(
             (
                 lap.get("pit_out_seconds")
@@ -2321,7 +2332,7 @@ def _qualifying_run_laps(session, driver_number):
             "start_seconds": start_seconds,
             "end_seconds": end_seconds,
             "duration_seconds": max((end_seconds or 0) - (start_seconds or 0), 1.0) if start_seconds is not None and end_seconds is not None else None,
-            "tyre_color": _tyre_color(representative["compound"]),
+            "tyre_color": _tyre_color(representative_lap["compound"]),
         }
 
     for _, row in valid.iterrows():
@@ -3190,11 +3201,16 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
     if telemetry.empty:
         return None
 
-    time_column = "Time" if "Time" in telemetry.columns else ("SessionTime" if "SessionTime" in telemetry.columns else None)
+    time_column = "SessionTime" if "SessionTime" in telemetry.columns else ("Time" if "Time" in telemetry.columns else None)
     if time_column is None or "Speed" not in telemetry.columns:
         return None
 
-    frame = telemetry.loc[:, [time_column, "Speed"]].dropna(subset=[time_column, "Speed"]).copy()
+    candidate_columns = [time_column, "Speed"]
+    for auxiliary_column in ("nGear", "Throttle"):
+        if auxiliary_column in telemetry.columns:
+            candidate_columns.append(auxiliary_column)
+
+    frame = telemetry.loc[:, candidate_columns].dropna(subset=[time_column, "Speed"]).copy()
     if frame.empty:
         return None
 
@@ -3205,6 +3221,10 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
 
     frame[time_column] = frame[time_column].dt.total_seconds()
     frame["Speed"] = pd.to_numeric(frame["Speed"], errors="coerce")
+    if "nGear" in frame.columns:
+        frame["nGear"] = pd.to_numeric(frame["nGear"], errors="coerce")
+    if "Throttle" in frame.columns:
+        frame["Throttle"] = pd.to_numeric(frame["Throttle"], errors="coerce")
     frame = frame.dropna(subset=[time_column, "Speed"])
     if frame.empty:
         return None
@@ -3226,7 +3246,7 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
     frame = frame.sort_values(by=time_column).drop_duplicates(subset=[time_column], keep="first").reset_index(drop=True)
 
     thresholds = []
-    for candidate in (speed_threshold_kmh, 0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 7.5, 10.0):
+    for candidate in (speed_threshold_kmh, 0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 7.5, 10.0, 12.5, 15.0, 20.0):
         try:
             numeric_threshold = float(candidate)
         except (TypeError, ValueError):
@@ -3241,6 +3261,7 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
 
     def measure_stationary_seconds(max_speed_kmh):
         low_speed_limit = float(max_speed_kmh)
+        slow_speed_limit = max(low_speed_limit, 5.0)
         stopped_seconds = 0.0
         found_low_speed_sample = False
 
@@ -3250,6 +3271,10 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
                 next_speed = float(frame.iloc[index + 1]["Speed"])
                 current_time = float(frame.iloc[index][time_column])
                 next_time = float(frame.iloc[index + 1][time_column])
+                current_gear = float(frame.iloc[index]["nGear"]) if "nGear" in frame.columns and pd.notna(frame.iloc[index]["nGear"]) else None
+                next_gear = float(frame.iloc[index + 1]["nGear"]) if "nGear" in frame.columns and pd.notna(frame.iloc[index + 1]["nGear"]) else None
+                current_throttle = float(frame.iloc[index]["Throttle"]) if "Throttle" in frame.columns and pd.notna(frame.iloc[index]["Throttle"]) else None
+                next_throttle = float(frame.iloc[index + 1]["Throttle"]) if "Throttle" in frame.columns and pd.notna(frame.iloc[index + 1]["Throttle"]) else None
             except (TypeError, ValueError):
                 continue
 
@@ -3257,8 +3282,17 @@ def _pit_stop_stationary_seconds(session, driver_number, previous_stint, current
             if delta <= 0.0:
                 continue
 
-            current_low = current_speed <= low_speed_limit
-            next_low = next_speed <= low_speed_limit
+            def _is_stationary(speed_value, gear_value=None, throttle_value=None):
+                if speed_value <= low_speed_limit:
+                    return True
+                if gear_value is not None and gear_value <= 1 and speed_value <= slow_speed_limit:
+                    return True
+                if throttle_value is not None and throttle_value <= 5.0 and speed_value <= slow_speed_limit:
+                    return True
+                return False
+
+            current_low = _is_stationary(current_speed, current_gear, current_throttle)
+            next_low = _is_stationary(next_speed, next_gear, next_throttle)
             if not current_low and not next_low:
                 continue
 

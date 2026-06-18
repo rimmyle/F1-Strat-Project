@@ -32,6 +32,8 @@
       }
 
       body.page-transitioning .page {
+        pointer-events: none;
+        user-select: none;
         opacity: 0;
         transform: translateY(-14px) scale(0.986);
         filter: blur(10px) saturate(0.86);
@@ -42,7 +44,7 @@
         position: fixed;
         inset: 0;
         z-index: 8999;
-        pointer-events: none;
+        pointer-events: auto;
         background:
           radial-gradient(circle at top, rgba(68, 194, 255, 0.08), transparent 34%),
           linear-gradient(180deg, rgba(4, 9, 17, 0.22), rgba(4, 9, 17, 0.58));
@@ -2683,6 +2685,8 @@
       }
 
       .stint-pit-gap-stopped {
+        position: relative;
+        z-index: 1;
         flex: 0 0 auto;
         width: fit-content;
         display: inline-flex;
@@ -2720,7 +2724,7 @@
         max-width: 260px;
         display: grid;
         gap: 8px;
-        padding: 10px 10px 12px;
+        padding: 12px 12px 13px;
         border: 1px solid rgba(148, 163, 184, 0.14);
         border-radius: 14px;
         background: rgba(21, 35, 59, 0.88);
@@ -2742,23 +2746,30 @@
 
       .stint-bar-top {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
+        align-items: center;
         gap: 8px;
-        flex-wrap: nowrap;
         color: var(--muted);
         font-size: 0.72rem;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
       }
 
       .stint-bar-top strong {
-        color: var(--text);
-        font-size: 0.82rem;
+        color: #f8fbff;
+        font-size: 0.8rem;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
 
       .stint-bar-top strong,
       .stint-bar-top span,
-      .stint-bar-label {
+      .stint-bar-label,
+      .stint-bar-compound,
+      .stint-bar-length {
         white-space: nowrap;
       }
 
@@ -2774,12 +2785,61 @@
         background: rgba(9, 16, 29, 0.92);
       }
 
+      .stint-bar-track--stint {
+        min-height: 66px;
+        padding: 11px 15px;
+        border-radius: 16px;
+      }
+
       .stint-bar-fill {
         position: absolute;
         inset: 0;
-        background: var(--stint-color, #94a3b8);
-        opacity: 0.96;
-        filter: saturate(1.1) brightness(1.08);
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 42%),
+          linear-gradient(180deg, rgba(7, 16, 29, 0.12), rgba(7, 16, 29, 0.28)),
+          var(--stint-color, #94a3b8);
+        opacity: 0.98;
+        filter: saturate(1.08) brightness(1.02);
+        border-radius: inherit;
+      }
+
+      .stint-bar-content {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        min-width: 154px;
+        max-width: 100%;
+        padding: 8px 15px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(7, 16, 29, 0.72), rgba(7, 16, 29, 0.46));
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 24px rgba(0, 0, 0, 0.22);
+        text-shadow: 0 1px 0 rgba(7, 16, 29, 0.9), 0 0 10px rgba(7, 16, 29, 0.24);
+        backdrop-filter: blur(3px);
+      }
+
+      .stint-bar-compound {
+        color: #f8fbff;
+        font-size: 0.96rem;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .stint-bar-length {
+        color: rgba(248, 251, 255, 0.92);
+        font-size: 0.68rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        padding-left: 10px;
+        border-left: 1px solid rgba(255, 255, 255, 0.3);
       }
 
       .stint-bar-label {
@@ -5275,8 +5335,8 @@
                             {% if stint.pit_stop_seconds is not none %}
                               <div
                                 class="stint-pit-gap"
-                                aria-label="Pit stop time before stint {{ stint.stint }}"
-                                title="{% if stint.pit_stop_comparison_title is defined and stint.pit_stop_comparison_title %}{{ stint.pit_stop_comparison_title }}{% else %}Pit stop time before stint {{ stint.stint }}{% endif %}"
+                                aria-label="Stationary pit time before stint {{ stint.stint }}"
+                                title="Time the car was completely stationary during the pit stop"
                               >
                                 <span class="stint-pit-gap-label">PIT</span>
                                 <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
@@ -5285,18 +5345,9 @@
                                     aria-hidden="true"
                                     style="width: {{ stint.pit_stop_fill_percent if stint.pit_stop_fill_percent is not none else 100 }}%;"
                                   ></span>
-                                  <span class="stint-pit-gap-content">
-                                    <span class="stint-pit-gap-time">{{ stint.pit_stop_time }}</span>
-                                    {% if stint.pit_stop_comparison_text is defined and stint.pit_stop_comparison_text %}
-                                      <span class="stint-pit-gap-comparison">{{ stint.pit_stop_comparison_text }}</span>
-                                    {% endif %}
-                                    {% if stint.pit_stop_average_time is defined and stint.pit_stop_average_time %}
-                                      <span class="stint-pit-gap-average">AVG {{ stint.pit_stop_average_time }}</span>
-                                    {% endif %}
-                                    {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
-                                      <span class="stint-pit-gap-stopped" title="Time the car was completely stationary during the pit stop">STOPPED {{ stint.pit_stop_stopped_time }}</span>
-                                    {% endif %}
-                                  </span>
+                                  {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
+                                    <span class="stint-pit-gap-stopped">{{ stint.pit_stop_stopped_time }}</span>
+                                  {% endif %}
                                 </div>
                               </div>
                             {% endif %}
@@ -5304,17 +5355,18 @@
                               class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
                               href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
                               style="--stint-color: {{ stint.tyre_color }};"
-                              >
-                                <div class="stint-bar-top">
-                                  <strong>
-                                    {{ stint.compound | default('-', true) | trim | lower }}
-                                  </strong>
-                                  <span>{{ stint.lap_count }} lap{{ 's' if stint.lap_count != 1 else '' }}</span>
-                                </div>
-                                <div class="stint-bar-track">
-                                  <span class="stint-bar-fill" aria-hidden="true"></span>
-                                </div>
-                              </a>
+                            >
+                              <div class="stint-bar-top">
+                                <strong>Stint {{ stint.stint }}</strong>
+                              </div>
+                              <div class="stint-bar-track stint-bar-track--stint">
+                                <span class="stint-bar-fill" aria-hidden="true"></span>
+                                <span class="stint-bar-content stint-bar-content--stint">
+                                  <span class="stint-bar-compound">{{ stint.compound | default('-', true) | trim | upper }}</span>
+                                  <span class="stint-bar-length">{{ stint.lap_count }} LAP{{ 'S' if stint.lap_count != 1 else '' }}</span>
+                                </span>
+                              </div>
+                            </a>
                           {% endfor %}
                         </div>
                       </div>
@@ -9387,9 +9439,6 @@
               return "";
             }
 
-            const surfaceWidth = Math.max(16, Math.min(30, Math.round(Math.min(width, height) * 0.028)));
-            const innerWidth = Math.max(8, surfaceWidth - 10);
-            const outerWidth = surfaceWidth + 4;
             const sectorFractions = Array.isArray(sectorMarkers) && duration > 0
               ? sectorMarkers
                 .slice(0, -1)
@@ -9397,34 +9446,60 @@
                 .filter((seconds) => Number.isFinite(seconds) && seconds > 0 && seconds < duration)
                 .map((seconds) => seconds / duration)
               : [];
-            const separatorGap = Math.max(48, Math.min(88, Math.round(surfaceWidth * 2.6)));
+            const separatorGap = Math.max(48, Math.min(88, Math.round(Math.min(width, height) * 0.028 * 2.6)));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, separatorGap);
-            const defaultSectorColors = ["#ff4d3d", "#f3de5c", "#f8fbff"];
-            const sectorColors = sectorSegments.map((_, index) => defaultSectorColors[index] || defaultSectorColors[defaultSectorColors.length - 1]);
-            const sectorSurfaceOpacity = sectorSegments.length > 1 ? 0.22 : 0.14;
-            const renderSegmentLayer = (segment, stroke, strokeWidth, strokeOpacity = 1) => {
-              const segmentPath = path(segment);
-              return `<path d="${segmentPath}" fill="none" stroke="${stroke}" stroke-opacity="${strokeOpacity}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
-            };
-            const renderSegmentStack = (stroke, strokeWidth, strokeOpacity = 1) => sectorSegments.map((segment) => renderSegmentLayer(segment, stroke, strokeWidth, strokeOpacity)).join("");
-            const sectorSurfaceMarkup = renderSegmentStack(`rgba(111, 130, 158, ${sectorSurfaceOpacity})`, outerWidth);
-            const sectorAccentMarkup = sectorSegments.length > 1
+            const sectorOutlineMarkup = sectorSegments.length
               ? sectorSegments.map((segment, index) => {
-                const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
-                return renderSegmentLayer(segment, sectorColor, surfaceWidth, 0.86);
+                const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
+                const segmentPath = path(segment);
+                const sectorColor = String(marker && marker.color ? marker.color : "").trim() || ["#ff4d3d", "#f3de5c", "#f8fbff"][index] || "#f8fbff";
+                const outlineWidth = Math.max(10, Math.round(Math.min(width, height) * 0.016));
+                const accentWidth = Math.max(6, outlineWidth - 3);
+                return `
+                  <path
+                    class="track-sector-outline track-sector-outline--shadow"
+                    d="${segmentPath}"
+                    fill="none"
+                    stroke="rgba(7, 16, 29, 0.92)"
+                    stroke-width="${(outlineWidth + 4).toFixed(2)}"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    pointer-events="none"
+                  ></path>
+                  <path
+                    class="track-sector-outline track-sector-outline--accent"
+                    d="${segmentPath}"
+                    fill="none"
+                    stroke="${escapeHtml(sectorColor)}"
+                    stroke-opacity="0.86"
+                    stroke-width="${outlineWidth.toFixed(2)}"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    pointer-events="none"
+                  ></path>
+                  <path
+                    class="track-sector-outline track-sector-outline--inner"
+                    d="${segmentPath}"
+                    fill="none"
+                    stroke="rgba(234, 241, 255, 0.34)"
+                    stroke-width="${accentWidth.toFixed(2)}"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    pointer-events="none"
+                  ></path>
+                `;
               }).join("")
               : "";
-            const sectorInnerMarkup = renderSegmentStack("rgba(11, 17, 30, 0.96)", innerWidth);
             const sectorHoverMarkup = sectorSegments.length
               ? sectorSegments.map((segment, index) => {
                 const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
                 const segmentPath = path(segment);
-                const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
+                const sectorColor = String(marker && marker.color ? marker.color : "").trim() || ["#ff4d3d", "#f3de5c", "#f8fbff"][index] || "#f8fbff";
                 const sectorLabel = String(marker && marker.label ? marker.label : `S${index + 1}`).trim() || `S${index + 1}`;
                 const sectorTime = String(marker && marker.time ? marker.time : "").trim();
                 const sectorSpeedMin = Number(marker && marker.sector_speed_min);
                 const sectorSpeedMax = Number(marker && marker.sector_speed_max);
-                const hoverStrokeWidth = Math.max(surfaceWidth + 18, surfaceWidth * 1.6);
+                const hoverStrokeWidth = Math.max(28, Math.round(Math.min(width, height) * 0.034));
                 return `
                   <path
                     class="track-sector-hover"
@@ -9448,9 +9523,7 @@
               : "";
             return `
               <g id="track-surface-visual" pointer-events="none">
-                ${sectorSurfaceMarkup}
-                ${sectorAccentMarkup}
-                ${sectorInnerMarkup}
+                ${sectorOutlineMarkup}
               </g>
               ${sectorHoverMarkup ? `<g id="track-surface-hover">${sectorHoverMarkup}</g>` : ""}
             `;
@@ -9577,17 +9650,7 @@
               title,
             };
           }
-          const trackImageCandidates = Array.from(new Set(Array.isArray(map.track_image_candidates) ? map.track_image_candidates.filter(Boolean) : []));
-          const referenceTrack = trackImageCandidates.length
-            ? await resolveTrackReference(trackImageCandidates, rawRacing)
-            : null;
-          const referenceSurfaceOutline = referenceTrack && Array.isArray(referenceTrack.points) && referenceTrack.points.length
-            ? sample(referenceTrack.points, 900)
-            : [];
-          const surfaceOutline = referenceSurfaceOutline.length > 1
-            ? referenceSurfaceOutline
-            : sample(rawSurfaceOutline, 900);
-          const referenceImageUrl = referenceTrack && referenceTrack.url ? referenceTrack.url : null;
+          const surfaceOutline = sample(rawSurfaceOutline, 900);
           const racingScreen = racing.map((point) => toPoint(point));
           const trackSurfaceScreen = (surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing)).map((point) => toPoint(point));
           const trackSurfaceBounds = trackSurfaceScreen.reduce((acc, point) => {
@@ -9862,7 +9925,56 @@
             return [];
           }
 
-          function extractReferenceTrackPoints(svgText) {
+          function scoreTrackShape(points) {
+            if (!Array.isArray(points) || points.length < 12) {
+              return null;
+            }
+
+            const bounds = points.reduce((acc, point) => {
+              acc.minX = Math.min(acc.minX, point[0]);
+              acc.maxX = Math.max(acc.maxX, point[0]);
+              acc.minY = Math.min(acc.minY, point[1]);
+              acc.maxY = Math.max(acc.maxY, point[1]);
+              return acc;
+            }, {
+              minX: Number.POSITIVE_INFINITY,
+              maxX: Number.NEGATIVE_INFINITY,
+              minY: Number.POSITIVE_INFINITY,
+              maxY: Number.NEGATIVE_INFINITY,
+            });
+
+            const width = bounds.maxX - bounds.minX;
+            const height = bounds.maxY - bounds.minY;
+            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+              return null;
+            }
+
+            let perimeter = 0;
+            for (let index = 1; index < points.length; index += 1) {
+              const [x1, y1] = points[index - 1];
+              const [x2, y2] = points[index];
+              perimeter += Math.hypot(x2 - x1, y2 - y1);
+            }
+            if (!Number.isFinite(perimeter) || perimeter <= 0) {
+              return null;
+            }
+
+            const closureDistance = Math.hypot(
+              points[0][0] - points[points.length - 1][0],
+              points[0][1] - points[points.length - 1][1],
+            );
+            const closureRatio = closureDistance / Math.max(perimeter, 1);
+            const complexity = Math.log(points.length + 1);
+            const scale = Math.sqrt(width * height);
+            const score = (complexity * scale) / (1 + Math.min(4, closureRatio * 6));
+
+            return {
+              points,
+              score,
+            };
+          }
+
+          function extractReferenceTrackCandidates(svgText) {
             if (!svgText) {
               return [];
             }
@@ -9894,18 +10006,19 @@
               const candidates = shapes
                 .map((shape) => {
                   const points = sampleTrackShape(shape);
-                  if (points.length < 4) {
-                    return null;
-                  }
-                  const score = points.length;
-                  return { points, score };
+                  return scoreTrackShape(points);
                 })
                 .filter(Boolean)
                 .sort((left, right) => right.score - left.score);
-              return candidates.length ? candidates[0].points : [];
+              return candidates.slice(0, 4).map((candidate) => candidate.points);
             } finally {
               tempSvg.remove();
             }
+          }
+
+          function extractReferenceTrackPoints(svgText) {
+            const candidates = extractReferenceTrackCandidates(svgText);
+            return candidates.length ? candidates[0] : [];
           }
 
           function rotateToLocal(point, stats) {
@@ -9995,6 +10108,8 @@
 
           async function resolveTrackReference(candidates, targetPoints) {
             let loadedImageUrl = null;
+            let bestMatch = null;
+            const bestMatchThreshold = 120;
             for (const candidate of candidates) {
               const loadedUrl = await loadTrackImage(candidate);
               if (!loadedUrl) {
@@ -10016,17 +10131,34 @@
               }
 
               if (svgText) {
-                const referencePoints = extractReferenceTrackPoints(svgText);
-                if (referencePoints.length) {
+                const referenceCandidates = extractReferenceTrackCandidates(svgText);
+                for (const referencePoints of referenceCandidates) {
+                  if (!referencePoints.length) {
+                    continue;
+                  }
                   const fitted = fitReferenceTrack(referencePoints, targetPoints);
                   if (fitted && fitted.points.length) {
-                    return { url: loadedUrl, points: fitted.points };
+                    const candidateScore = Math.sqrt(Math.max(0, fitted.score || 0));
+                    if (candidateScore <= bestMatchThreshold && (!bestMatch || fitted.score < bestMatch.score)) {
+                      bestMatch = {
+                        url: loadedUrl,
+                        points: fitted.points,
+                        score: fitted.score,
+                      };
+                    }
                   }
                 }
               }
             }
 
-            return loadedImageUrl ? { url: loadedImageUrl, points: null } : null;
+            if (bestMatch) {
+              return {
+                url: bestMatch.url,
+                points: bestMatch.points,
+              };
+            }
+
+            return null;
           }
 
           function interpolatePoint(progress) {
@@ -10324,10 +10456,7 @@
               </filter>
             </defs>
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-            <g id="track-underlay">
-              ${referenceImageUrl ? renderTrackImage(referenceImageUrl) : ""}
-              ${renderTrackSurface(surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing), sectorMarkers)}
-            </g>
+            ${renderTrackSurface(surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing), sectorMarkers)}
             ${sectorRacingSegments.length ? renderSectorRacingSegments(sectorRacingSegments, showSectorMarkersOnTrack ? 3.9 : 3.2) : renderAccelerationLine(racing, samples, showSectorMarkersOnTrack ? 3.9 : 3.2)}
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
             <circle cx="${endX.toFixed(2)}" cy="${endY.toFixed(2)}" r="7" fill="#ffbf69"></circle>
