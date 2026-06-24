@@ -2052,6 +2052,7 @@
       }
 
       .stint-graph-viewport {
+        position: relative;
         min-width: 0;
         padding: 10px 0 0;
       }
@@ -2060,6 +2061,43 @@
         width: 100%;
         height: 300px;
         display: block;
+      }
+
+      .stint-graph-lap-time-badge {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        z-index: 2;
+        display: inline-grid;
+        gap: 3px;
+        justify-items: center;
+        min-width: 116px;
+        padding: 10px 14px 11px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(17, 28, 47, 0.98), rgba(10, 16, 27, 0.98));
+        box-shadow: 0 12px 22px rgba(0, 0, 0, 0.18);
+        pointer-events: none;
+      }
+
+      .stint-graph-lap-time-badge span {
+        color: rgba(151, 167, 194, 0.94);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .stint-graph-lap-time-badge strong {
+        color: #f8fbff;
+        font-size: 1.18rem;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        white-space: nowrap;
       }
 
       .stint-graph-meta {
@@ -2537,33 +2575,66 @@
         justify-self: end;
       }
 
-      .stint-graph-summary-records {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        width: min(100%, 460px);
-        justify-self: end;
+      .stint-graph-summary--overlay {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        left: auto;
+        z-index: 3;
+        width: fit-content;
+        max-width: calc(100% - 24px);
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
       }
 
-      .stint-graph-summary .lap-summary-badge,
-      .stint-graph-summary-records .lap-summary-badge {
-        width: 100%;
-        min-height: 58px;
-        box-sizing: border-box;
-        padding: 8px 14px;
+      .stint-graph-summary--overlay .lap-summary {
+        width: fit-content;
+        max-width: 100%;
+        margin: 0;
       }
 
-      .stint-graph-summary-records .lap-summary-badge {
-        gap: 3px;
-        background: rgba(21, 35, 59, 0.9);
+      .stint-graph-summary--overlay .stint-graph-summary-records {
+        width: fit-content;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
       }
 
-      .stint-graph-summary-records .lap-summary-badge span {
-        font-size: 0.74rem;
+      .stint-graph-summary--overlay .stint-graph-summary-records .track-status-disclosure,
+      .stint-graph-summary--overlay .stint-graph-summary-records .lap-summary-badge {
+        min-width: 0;
       }
 
-      .stint-graph-summary-records .lap-summary-badge strong {
-        font-size: 1.05rem;
+      .stint-graph-summary--overlay .lap-summary-badge {
+        width: fit-content;
+        min-width: 0;
+        min-height: 46px;
+        padding: 7px 12px;
+        gap: 2px;
+        border-radius: 12px;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          0 8px 18px rgba(0, 0, 0, 0.18);
+      }
+
+      .stint-graph-summary--overlay .lap-summary-badge span {
+        font-size: 0.66rem;
+        letter-spacing: 0.09em;
+      }
+
+      .stint-graph-summary--overlay .lap-summary-badge strong {
+        font-size: 0.98rem;
+        line-height: 1.02;
+      }
+
+      .stint-graph-render {
+        position: relative;
+        z-index: 1;
       }
 
       .stint-bars-panel {
@@ -2592,28 +2663,31 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
+        gap: 0;
         min-width: 0;
-        flex: 0 1 140px;
-        max-width: 160px;
-        padding: 0 2px;
+        flex: 0 1 156px;
+        max-width: 176px;
+        padding: 0 4px;
+        align-self: center;
       }
 
       .stint-pit-gap-label {
-        flex: 0 0 auto;
-        width: fit-content;
+        position: relative;
+        z-index: 1;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 28px;
-        padding: 0 14px;
-        border: 1px solid rgba(255, 191, 105, 0.3);
-        border-radius: 9999px;
-        background: rgba(255, 191, 105, 0.12);
+        flex: 0 0 auto;
+        min-height: 22px;
+        padding: 0 9px;
+        border: 1px solid rgba(255, 191, 105, 0.24);
+        border-radius: 999px;
+        background: rgba(7, 16, 29, 0.32);
         color: #ffbf69;
-        font-size: 0.72rem;
+        font-size: 0.62rem;
         font-weight: 900;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.11em;
         text-transform: uppercase;
         white-space: nowrap;
       }
@@ -2622,33 +2696,27 @@
         position: relative;
         width: 100%;
         min-width: 0;
-        min-height: 64px;
-        padding: 5px 12px 7px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border: 1px solid rgba(255, 191, 105, 0.16);
-        border-radius: 999px;
-        background: linear-gradient(180deg, rgba(44, 30, 10, 0.9), rgba(18, 16, 24, 0.96));
-        box-shadow: inset 0 0 0 1px rgba(255, 191, 105, 0.05);
-      }
-
-      .stint-pit-gap-content {
-        position: relative;
-        z-index: 1;
+        min-height: 66px;
+        padding: 10px 14px 11px;
         display: grid;
-        gap: 1px;
+        gap: 4px;
         justify-items: center;
-        line-height: 1.05;
-        text-align: center;
+        overflow: hidden;
+        border: 1px solid rgba(255, 191, 105, 0.2);
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(44, 30, 10, 0.94), rgba(18, 16, 24, 0.98));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          inset 0 0 0 1px rgba(255, 191, 105, 0.05),
+          0 8px 14px rgba(0, 0, 0, 0.14);
       }
 
       .stint-pit-gap-fill {
         position: absolute;
-        inset: 0 auto 0 0;
+        inset: 0;
         background: linear-gradient(90deg, rgba(255, 191, 105, 0.95), rgba(255, 138, 91, 0.92));
-        opacity: 0.9;
+        opacity: 0.28;
+        pointer-events: none;
       }
 
       .stint-pit-gap-track.is-above-average .stint-pit-gap-fill {
@@ -2660,60 +2728,113 @@
       }
 
       .stint-pit-gap-time {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         color: #fff3df;
-        font-size: 0.78rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
+        font-size: 0.98rem;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
         white-space: nowrap;
         text-shadow: 0 1px 0 rgba(7, 16, 29, 0.6);
       }
 
-      .stint-pit-gap-comparison {
-        color: #d7f4ff;
-        font-size: 0.64rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        white-space: nowrap;
-      }
-
-      .stint-pit-gap-average {
-        color: #cde7ff;
-        font-size: 0.62rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        white-space: nowrap;
-      }
-
-      .stint-pit-gap-stopped {
+      .stint-pit-gap-row {
         position: relative;
         z-index: 1;
-        flex: 0 0 auto;
-        width: fit-content;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 22px;
-        padding: 0 10px;
-        border: 1px solid rgba(99, 230, 178, 0.3);
-        border-radius: 9999px;
-        background: rgba(99, 230, 178, 0.14);
-        color: #77f0d1;
-        font-size: 0.62rem;
-        font-weight: 900;
-        letter-spacing: 0.09em;
-        text-transform: uppercase;
-        white-space: nowrap;
+        gap: 8px;
+        width: 100%;
       }
 
-      .stint-pit-gap-track.is-above-average .stint-pit-gap-comparison {
+      .stint-pit-gap-divider {
+        position: relative;
+        z-index: 1;
+        width: 1px;
+        height: 18px;
+        background: rgba(255, 255, 255, 0.14);
+      }
+
+      .stint-pit-gap-average {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 5px;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        color: rgba(215, 244, 255, 0.82);
+      }
+
+      .stint-pit-gap-average strong {
+        color: #f8fbff;
+        font-size: 0.9rem;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+      }
+
+      .stint-pit-gap-average-gap {
+        color: rgba(255, 255, 255, 0.74);
+      }
+
+      .stint-pit-gap-track.is-above-average .stint-pit-gap-label {
+        border-color: rgba(255, 191, 105, 0.28);
         color: #ffbf69;
       }
 
-      .stint-pit-gap-track.is-below-average .stint-pit-gap-comparison {
+      .stint-pit-gap-track.is-below-average .stint-pit-gap-label {
+        border-color: rgba(99, 230, 178, 0.2);
+        color: #cfeeff;
+      }
+
+      .stint-pit-gap-track.is-even-average .stint-pit-gap-label {
+        border-color: rgba(148, 163, 184, 0.2);
+        color: #d7f4ff;
+      }
+
+      .stint-pit-gap-track.is-above-average .stint-pit-gap-time {
+        color: #fff0d3;
+      }
+
+      .stint-pit-gap-track.is-below-average .stint-pit-gap-time {
+        color: #9ee9ff;
+      }
+
+      .stint-pit-gap-track.is-even-average .stint-pit-gap-time {
+        color: #dff7ff;
+      }
+
+      .stint-pit-gap-track.is-above-average .stint-pit-gap-average {
+        color: rgba(255, 240, 211, 0.88);
+      }
+
+      .stint-pit-gap-track.is-below-average .stint-pit-gap-average {
+        color: rgba(158, 233, 255, 0.88);
+      }
+
+      .stint-pit-gap-track.is-even-average .stint-pit-gap-average {
+        color: rgba(223, 247, 255, 0.88);
+      }
+
+      .stint-pit-gap-track.is-above-average .stint-pit-gap-average-gap {
+        color: #ffbf69;
+      }
+
+      .stint-pit-gap-track.is-below-average .stint-pit-gap-average-gap {
         color: #63e6b2;
       }
 
-      .stint-pit-gap-track.is-even-average .stint-pit-gap-comparison {
+      .stint-pit-gap-track.is-even-average .stint-pit-gap-average-gap {
         color: #d7f4ff;
       }
 
@@ -3483,7 +3604,14 @@
 
       .track-map-sector-divider {
         stroke: rgba(0, 0, 0, 0.96);
-        stroke-width: 3;
+        stroke-width: 5;
+        stroke-linecap: round;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .track-map-sector-divider-shadow {
+        stroke: rgba(0, 0, 0, 0.55);
+        stroke-width: 10;
         stroke-linecap: round;
         vector-effect: non-scaling-stroke;
       }
@@ -4217,6 +4345,96 @@
           0 0 6px rgba(239, 68, 68, 0.68),
           0 0 14px rgba(255, 123, 134, 0.24);
         filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.24));
+      }
+
+      .stint-graph-lap-time-badge.track-status-green {
+        border-color: rgba(111, 255, 167, 0.82);
+        box-shadow:
+          0 0 0 1px rgba(111, 255, 167, 0.36),
+          0 0 0 4px rgba(111, 255, 167, 0.12),
+          0 0 24px 4px rgba(111, 255, 167, 0.28);
+        filter: drop-shadow(0 0 12px rgba(111, 255, 167, 0.22));
+      }
+
+      .stint-graph-lap-time-badge.track-status-green::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid rgba(111, 255, 167, 0.35);
+        pointer-events: none;
+      }
+
+      .stint-graph-lap-time-badge.track-status-yellow {
+        border-color: rgba(250, 204, 21, 0.82);
+        box-shadow:
+          0 0 0 1px rgba(250, 204, 21, 0.36),
+          0 0 0 4px rgba(250, 204, 21, 0.12),
+          0 0 24px 4px rgba(250, 204, 21, 0.28);
+        filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.22));
+      }
+
+      .stint-graph-lap-time-badge.track-status-yellow::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid rgba(250, 204, 21, 0.35);
+        pointer-events: none;
+      }
+
+      .stint-graph-lap-time-badge.track-status-safety-car {
+        border-color: rgba(249, 115, 22, 0.82);
+        box-shadow:
+          0 0 0 1px rgba(249, 115, 22, 0.36),
+          0 0 0 4px rgba(249, 115, 22, 0.12),
+          0 0 24px 4px rgba(249, 115, 22, 0.28);
+        filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.22));
+      }
+
+      .stint-graph-lap-time-badge.track-status-safety-car::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid rgba(249, 115, 22, 0.35);
+        pointer-events: none;
+      }
+
+      .stint-graph-lap-time-badge.track-status-vsc {
+        border-color: rgba(56, 189, 248, 0.82);
+        box-shadow:
+          0 0 0 1px rgba(56, 189, 248, 0.36),
+          0 0 0 4px rgba(56, 189, 248, 0.12),
+          0 0 24px 4px rgba(56, 189, 248, 0.28);
+        filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.22));
+      }
+
+      .stint-graph-lap-time-badge.track-status-vsc::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        pointer-events: none;
+      }
+
+      .stint-graph-lap-time-badge.track-status-red {
+        border-color: rgba(239, 68, 68, 0.82);
+        box-shadow:
+          0 0 0 1px rgba(239, 68, 68, 0.36),
+          0 0 0 4px rgba(239, 68, 68, 0.12),
+          0 0 24px 4px rgba(239, 68, 68, 0.28);
+        filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.22));
+      }
+
+      .stint-graph-lap-time-badge.track-status-red::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        pointer-events: none;
       }
 
       .lap-summary-badge-note {
@@ -5252,60 +5470,6 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="track-map-header-summary">
-                <div class="stint-graph-summary">
-                  <div class="lap-summary">
-                    <div class="lap-summary-badge">
-                      <span>Lap</span>
-                      <strong>{{ telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" }}</strong>
-                      {% if telemetry_summary and telemetry_summary.deleted_label %}
-                        <span class="lap-summary-badge-note">{{ telemetry_summary.deleted_label }}</span>
-                      {% endif %}
-                    </div>
-                    <div class="lap-summary-badge">
-                      <span>Lap Time</span>
-                      <strong>{% if telemetry_summary %}{{ telemetry_summary.lap_time }}{% else %}-{% endif %}</strong>
-                    </div>
-                  </div>
-                  {% if lap_record %}
-                    <div class="stint-graph-summary-records">
-                      {% for key, label, value in lap_record %}
-                        {% if key == 'track_status' %}
-                          <details class="track-status-disclosure">
-                            <summary class="lap-summary-badge lap-summary-badge--compact track-status-summary">
-                              <span>{{ label }}</span>
-                              <strong class="{% if value == 'Green' %}track-status-green{% elif value == 'Yellow Flag' %}track-status-yellow{% elif value == 'Safety Car' %}track-status-safety-car{% elif value == 'Virtual Safety Car' %}track-status-vsc{% elif value == 'Red Flag' %}track-status-red{% endif %}">{{ value }}</strong>
-                            </summary>
-                            <div class="track-status-dropdown" role="list" aria-label="Track status changes throughout the session">
-                              {% if track_status_segments %}
-                                {% for segment in track_status_segments %}
-                                  <div class="track-status-dropdown-item" role="listitem" style="--status-accent: {{ segment.color }};">
-                                    <strong>{{ segment.label | upper }}</strong>
-                                    <span>
-                                      {% if segment.start_lap == segment.end_lap %}
-                                        (Lap {{ segment.start_lap }})
-                                      {% else %}
-                                        (Lap {{ segment.start_lap }} - {{ segment.end_lap }})
-                                      {% endif %}
-                                    </span>
-                                  </div>
-                                {% endfor %}
-                              {% else %}
-                                <div class="track-status-dropdown-empty">No additional track status changes</div>
-                              {% endif %}
-                            </div>
-                          </details>
-                        {% else %}
-                          <div class="lap-summary-badge lap-summary-badge--compact">
-                            <span>{{ label }}</span>
-                            <strong>{{ value }}</strong>
-                          </div>
-                        {% endif %}
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-              </div>
             </header>
             {% if selected_stint_data %}
               <div class="lap-support-hero" id="lap-stint-panel">
@@ -5338,15 +5502,22 @@
                                 aria-label="Stationary pit time before stint {{ stint.stint }}"
                                 title="Time the car was completely stationary during the pit stop"
                               >
-                                <span class="stint-pit-gap-label">PIT</span>
                                 <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
                                   <span
                                     class="stint-pit-gap-fill"
                                     aria-hidden="true"
-                                    style="width: {{ stint.pit_stop_fill_percent if stint.pit_stop_fill_percent is not none else 100 }}%;"
                                   ></span>
                                   {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
-                                    <span class="stint-pit-gap-stopped">{{ stint.pit_stop_stopped_time }}</span>
+                                    <span class="stint-pit-gap-row">
+                                      <span class="stint-pit-gap-label">PIT</span>
+                                      <span class="stint-pit-gap-divider" aria-hidden="true"></span>
+                                      <span class="stint-pit-gap-time">{{ stint.pit_stop_stopped_time }}</span>
+                                    </span>
+                                    {% if stint.pit_stop_stopped_delta_time is defined and stint.pit_stop_stopped_delta_time %}
+                                      <span class="stint-pit-gap-average">
+                                        <span class="stint-pit-gap-average-gap">({{ stint.pit_stop_stopped_delta_time }})</span>
+                                      </span>
+                                    {% endif %}
                                   {% endif %}
                                 </div>
                               </div>
@@ -5471,7 +5642,33 @@
                       data-driver="{{ selected_driver }}"
                       data-stint="{{ selected_stint }}"
                       data-selected-lap="{{ selected_lap }}"
-                    ></div>
+                      data-track-status-class="{{ lap_track_status_class }}"
+                    >
+                      <div class="stint-graph-summary stint-graph-summary--overlay">
+                        <div class="lap-summary">
+                          <div class="lap-summary-badge">
+                            <span>Lap</span>
+                            <strong>{{ telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" }}</strong>
+                            {% if telemetry_summary and telemetry_summary.deleted_label %}
+                              <span class="lap-summary-badge-note">{{ telemetry_summary.deleted_label }}</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                        {% if lap_record %}
+                          <div class="stint-graph-summary-records">
+                            {% for key, label, value in lap_record %}
+                              {% if key != 'track_status' %}
+                                <div class="lap-summary-badge lap-summary-badge--compact">
+                                  <span>{{ label }}</span>
+                                  <strong>{{ value }}</strong>
+                                </div>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+                      </div>
+                      <div class="stint-graph-render" data-stint-graph-render></div>
+                    </div>
                   {% endif %}
                 </div>
               </div>
@@ -5679,6 +5876,55 @@
           const modalGpSelect = document.getElementById("modal-gp");
           const modalSubmitButton = sessionSelectorModal ? sessionSelectorModal.querySelector('button[type="submit"]') : null;
           const navigationTransitionMs = 220;
+          try {
+            if ("scrollRestoration" in window.history) {
+              window.history.scrollRestoration = "manual";
+            }
+          } catch (error) {
+            // Ignore browser support differences.
+          }
+          const scrollStateKey = "__codex_scroll_position__";
+          const saveScrollPosition = () => {
+            try {
+              sessionStorage.setItem(scrollStateKey, JSON.stringify({
+                x: window.scrollX || 0,
+                y: window.scrollY || 0,
+              }));
+            } catch (error) {
+              // Ignore storage failures.
+            }
+          };
+          const restoreScrollPosition = () => {
+            let state = null;
+            try {
+              state = JSON.parse(sessionStorage.getItem(scrollStateKey) || "null");
+            } catch (error) {
+              state = null;
+            }
+            if (!state) {
+              return;
+            }
+            const targetX = Number(state.x) || 0;
+            const targetY = Number(state.y) || 0;
+            try {
+              sessionStorage.removeItem(scrollStateKey);
+            } catch (error) {
+              // Ignore storage failures.
+            }
+            window.requestAnimationFrame(() => {
+              window.scrollTo(targetX, targetY);
+              window.requestAnimationFrame(() => {
+                window.scrollTo(targetX, targetY);
+              });
+            });
+          };
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", restoreScrollPosition, { once: true });
+          } else {
+            restoreScrollPosition();
+          }
+          window.__saveScrollPosition = saveScrollPosition;
+          window.__restoreScrollPosition = restoreScrollPosition;
           const startPageTransition = (href, delay = navigationTransitionMs) => {
             const targetHref = String(href || "").trim();
             if (!targetHref) {
@@ -5696,6 +5942,7 @@
               return;
             }
 
+            saveScrollPosition();
             document.body.classList.add("page-transitioning");
             window.setTimeout(() => {
               window.location.assign(resolvedHref);
@@ -6025,6 +6272,8 @@
           const range = max - min || 1;
           const stintBestLapValue = String(stint.stint_best_lap_value || "").trim();
           const sessionBestLapValue = String(stint.session_best_lap_value || "").trim();
+          const selectedLapEntry = laps.find((lap) => String(lap.value || "").trim() === selectedLap) || laps[laps.length - 1];
+          const selectedLapTime = selectedLapEntry ? normalizeLapTimeText(selectedLapEntry.lap_time) : "-";
 
           function escapeHtml(value) {
             return String(value)
@@ -6284,15 +6533,21 @@
             }
 
             const badgeLabel = String(lap.position_change_text || "").trim();
+            const lapMarkers = getLapMarkers(lap.lap_type);
             const tooltipNames = Array.isArray(lap.position_change_driver_names)
               ? lap.position_change_driver_names.map((name) => String(name || "").trim()).filter(Boolean)
               : [];
             const badgeWidth = Math.max(36, Math.ceil((badgeLabel.length * 6.0) + 12));
             const badgeHeight = 16;
+            const lapBadgeHeight = 16;
             const topMin = padding.top + 2;
             const topMax = height - padding.bottom - badgeHeight - 4;
+            const lapTopMin = padding.top + 2;
+            const lapPlaceAbove = y - lapBadgeHeight - 8 >= lapTopMin;
             const placeAbove = y - badgeHeight - 32 >= topMin;
-            const chosenTop = placeAbove ? y - badgeHeight - 32 : y + 16;
+            const chosenTop = placeAbove
+              ? y - badgeHeight - 32
+              : y + (lapMarkers.length && !lapPlaceAbove ? 28 : 16);
             const badgeTop = Math.max(topMin, Math.min(topMax, chosenTop));
             const badgeLeft = Math.max(padding.left + 2, Math.min(width - padding.right - badgeWidth - 2, x - (badgeWidth / 2)));
             const badgeCenterX = badgeLeft + (badgeWidth / 2);
@@ -6311,24 +6566,47 @@
             const bubbleLineHeight = 10;
             const bubbleTextTop = 6;
             const bubbleHeight = Math.max(18, Math.ceil((tooltipNames.length * bubbleLineHeight) + bubbleTextTop));
-            const bubbleGap = 8;
+            const bubbleGap = 16;
             const bubbleTopMin = padding.top + 2;
             const bubbleTopMax = height - padding.bottom - bubbleHeight - 4;
-            const bubbleAbove = badgeTop - bubbleHeight - bubbleGap >= bubbleTopMin;
-            const bubbleTop = bubbleAbove
-              ? Math.max(bubbleTopMin, badgeTop - bubbleHeight - bubbleGap)
-              : Math.min(bubbleTopMax, badgeTop + badgeHeight + bubbleGap);
-            const bubbleLeft = Math.max(
-              padding.left + 2,
-              Math.min(width - padding.right - bubbleWidth - 2, x - (bubbleWidth / 2)),
+            const bubbleCenterY = Math.max(
+              bubbleTopMin + (bubbleHeight / 2),
+              Math.min(bubbleTopMax + (bubbleHeight / 2), badgeCenterY),
             );
+            const preferRight = x < (width / 2);
+            const sideGap = 18;
+            const sideLeft = preferRight
+              ? badgeLeft + badgeWidth + sideGap
+              : badgeLeft - bubbleWidth - sideGap;
+            const sideFits = sideLeft >= (padding.left + 2) && (sideLeft + bubbleWidth) <= (width - padding.right - 2);
+            const bubbleAbove = badgeTop - bubbleHeight - bubbleGap >= bubbleTopMin;
+            const bubbleBelow = badgeTop + badgeHeight + bubbleGap <= bubbleTopMax;
+            const useSideBubble = sideFits;
+            const bubbleLeft = useSideBubble
+              ? sideLeft
+              : Math.max(
+                padding.left + 2,
+                Math.min(width - padding.right - bubbleWidth - 2, x - (bubbleWidth / 2)),
+              );
+            const bubbleTop = useSideBubble
+              ? Math.max(bubbleTopMin, Math.min(bubbleTopMax, bubbleCenterY - (bubbleHeight / 2)))
+              : (bubbleAbove
+                ? Math.max(bubbleTopMin, badgeTop - bubbleHeight - bubbleGap - 10)
+                : Math.min(bubbleTopMax, badgeTop + badgeHeight + bubbleGap));
             const bubbleCenterX = bubbleLeft + (bubbleWidth / 2);
             const singleLineBubble = tooltipNames.length === 1;
             const bubbleTextStartY = singleLineBubble
               ? bubbleTop + (bubbleHeight / 2) + 0.5
               : bubbleTop + 7.5;
-            const lineX = badgeCenterX.toFixed(2);
-            const lineY1 = bubbleAbove ? (bubbleTop + bubbleHeight).toFixed(2) : (bubbleTop).toFixed(2);
+            const lineX1 = useSideBubble
+              ? (preferRight ? (badgeLeft + badgeWidth).toFixed(2) : badgeLeft.toFixed(2))
+              : badgeCenterX.toFixed(2);
+            const lineX2 = useSideBubble
+              ? (preferRight ? bubbleLeft.toFixed(2) : (bubbleLeft + bubbleWidth).toFixed(2))
+              : bubbleCenterX.toFixed(2);
+            const lineY1 = useSideBubble
+              ? badgeCenterY.toFixed(2)
+              : (bubbleAbove ? (bubbleTop + bubbleHeight).toFixed(2) : bubbleTop.toFixed(2));
             const lineY2 = badgeCenterY.toFixed(2);
             const bubbleTextMarkup = tooltipNames.map((name, index) => {
               const yOffset = singleLineBubble
@@ -6342,7 +6620,7 @@
                 <rect x="${badgeLeft.toFixed(2)}" y="${badgeTop.toFixed(2)}" width="${badgeWidth}" height="${badgeHeight}" rx="8"></rect>
                 <text x="${badgeCenterX.toFixed(2)}" y="${badgeCenterY.toFixed(2)}" font-size="8.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(badgeLabel)}</text>
                 <g class="stint-graph-position-change-tooltip">
-                  <line x1="${lineX}" y1="${lineY1}" x2="${bubbleCenterX.toFixed(2)}" y2="${lineY2}" stroke="rgba(255,255,255,0.28)" stroke-width="1.1" stroke-linecap="round"></line>
+                  <line x1="${lineX1}" y1="${lineY1}" x2="${lineX2}" y2="${lineY2}" stroke="rgba(255,255,255,0.28)" stroke-width="1.1" stroke-linecap="round"></line>
                   <rect x="${bubbleLeft.toFixed(2)}" y="${bubbleTop.toFixed(2)}" width="${bubbleWidth}" height="${bubbleHeight}" rx="9"></rect>
                   <text x="${bubbleCenterX.toFixed(2)}" y="${bubbleTextStartY.toFixed(2)}" fill="#f8fafc" font-size="8.6" font-weight="800" text-anchor="middle" dominant-baseline="${singleLineBubble ? "middle" : "hanging"}">${bubbleTextMarkup}</text>
                 </g>
@@ -6417,6 +6695,10 @@
             xLabels += `<text x="${labelX.toFixed(2)}" y="${xLabelY}" fill="rgba(151,167,194,0.9)" font-size="12" text-anchor="middle">${escapeHtml(lap.lap_number)}</text>`;
           });
 
+          const renderHost = container.querySelector("[data-stint-graph-render]") || container;
+          const trackStatusClass = String(container.dataset.trackStatusClass || "").trim();
+          const lapTimeBadgeClass = trackStatusClass ? `stint-graph-lap-time-badge ${trackStatusClass}` : "stint-graph-lap-time-badge";
+
           const points = laps
             .map((lap, index) => {
               const x = toX(index);
@@ -6448,7 +6730,11 @@
             })
             .join("");
 
-          container.innerHTML = `
+          renderHost.innerHTML = `
+            <div class="${lapTimeBadgeClass}" aria-label="Selected lap time">
+              <span>Lap Time</span>
+              <strong>${escapeHtml(selectedLapTime)}</strong>
+            </div>
             <svg class="stint-graph-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Stint lap time graph">
               <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
               ${grid}
@@ -6459,7 +6745,7 @@
             </svg>
           `;
 
-          container.querySelectorAll(".stint-graph-point").forEach((point) => {
+          renderHost.querySelectorAll(".stint-graph-point").forEach((point) => {
             const href = point.getAttribute("data-href");
             if (!href) {
               return;
@@ -6487,12 +6773,18 @@
 
             point.addEventListener("click", (event) => {
               event.preventDefault();
+              if (window.__saveScrollPosition) {
+                window.__saveScrollPosition();
+              }
               window.location.assign(href);
             });
 
             point.addEventListener("keydown", (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
+                if (window.__saveScrollPosition) {
+                  window.__saveScrollPosition();
+                }
                 window.location.assign(href);
               }
             });
@@ -7388,7 +7680,10 @@
                 event.preventDefault();
                 event.stopPropagation();
               }
-            showNavigationLoadingOverlay("Lap view");
+              if (window.__saveScrollPosition) {
+                window.__saveScrollPosition();
+              }
+              showNavigationLoadingOverlay("Lap view");
               window.requestAnimationFrame(() => {
                 window.requestAnimationFrame(() => {
                   window.location.assign(href);
@@ -7694,6 +7989,9 @@
                 window.__startPageTransition(href);
                 return;
               }
+              if (window.__saveScrollPosition) {
+                window.__saveScrollPosition();
+              }
               window.location.assign(href);
             };
 
@@ -7990,6 +8288,9 @@
             if (event) {
               event.preventDefault();
               event.stopPropagation();
+            }
+            if (window.__saveScrollPosition) {
+              window.__saveScrollPosition();
             }
             showNavigationLoadingOverlay("Lap view");
             window.requestAnimationFrame(() => {
@@ -8288,13 +8589,16 @@
           `;
 
           const stintBars = Array.from(svg.querySelectorAll(".pit-stint-bar"));
-          const openStint = (bar) => {
-            const href = bar ? (bar.getAttribute("data-href") || "").trim() : "";
-            if (!href) {
-              return;
-            }
-            window.location.assign(href);
-          };
+            const openStint = (bar) => {
+              const href = bar ? (bar.getAttribute("data-href") || "").trim() : "";
+              if (!href) {
+                return;
+              }
+              if (window.__saveScrollPosition) {
+                window.__saveScrollPosition();
+              }
+              window.location.assign(href);
+            };
 
           const clearStints = () => {
             stintBars.forEach((item) => {
@@ -8750,6 +9054,7 @@
               const pillCenterY = pillY + 7;
 
               if (index > 0) {
+                markup += `<line class="track-map-sector-divider-shadow" x1="${x1.toFixed(2)}" y1="${sectorBandTop.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${(sectorBandTop + sectorBandHeight).toFixed(2)}"></line>`;
                 markup += `<line class="track-map-sector-divider" x1="${x1.toFixed(2)}" y1="${sectorBandTop.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${(sectorBandTop + sectorBandHeight).toFixed(2)}"></line>`;
               }
 
@@ -9285,7 +9590,7 @@
             return `hsl(${hue.toFixed(0)} ${saturation.toFixed(0)}% ${lightness.toFixed(0)}%)`;
           }
 
-          function renderAccelerationLine(points, pointsWithAcceleration, strokeWidth = 3.2, groupId = "track-acceleration-line") {
+          function renderAccelerationLine(points, pointsWithAcceleration, strokeWidth = 3.2, groupId = "track-acceleration-line", strokeOpacity = 1) {
             if (!points.length || !pointsWithAcceleration.length) {
               return "";
             }
@@ -9305,7 +9610,7 @@
                 ? (firstAcceleration + secondAcceleration) / 2
                 : (Number.isFinite(firstAcceleration) ? firstAcceleration : (Number.isFinite(secondAcceleration) ? secondAcceleration : null));
               const stroke = acceleration === null ? "#94a3b8" : accelerationColor(acceleration);
-              markup += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"></line>`;
+              markup += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${stroke}" stroke-opacity="${strokeOpacity}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"></line>`;
             }
 
             const groupAttributes = groupId ? ` id="${groupId}"` : "";
@@ -9327,12 +9632,12 @@
               const driverColor = String(segment && (segment.source_driver_color || segment.color) || "#44c2ff").trim() || "#44c2ff";
               const segmentLabel = String(segment && (segment.source_driver_display || segment.source_driver_name || segment.source_driver_abbr || segment.label) || `S${index + 1}`).trim() || `S${index + 1}`;
               const segmentPath = path(points);
-              const baseStrokeWidth = Math.max(strokeWidth + 1.3, strokeWidth * 1.22);
-              const accentStrokeWidth = Math.max(2.4, strokeWidth);
+              const baseStrokeWidth = Math.max(strokeWidth + 1.6, strokeWidth * 1.32);
+              const accentStrokeWidth = Math.max(2.8, strokeWidth);
               return `
                 <g class="track-sector-racing-segment" data-sector="${escapeHtml(segmentLabel)}" style="pointer-events:none">
-                  <path d="${segmentPath}" fill="none" stroke="${driverColor}" stroke-opacity="0.34" stroke-width="${baseStrokeWidth.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"></path>
-                  ${renderAccelerationLine(points, samples, accentStrokeWidth, null)}
+                  <path d="${segmentPath}" fill="none" stroke="${driverColor}" stroke-opacity="0.42" stroke-width="${baseStrokeWidth.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"></path>
+                  ${renderAccelerationLine(points, samples, accentStrokeWidth, null, 0.92)}
                 </g>
               `;
             }).join("");
@@ -9448,53 +9753,28 @@
               : [];
             const separatorGap = Math.max(48, Math.min(88, Math.round(Math.min(width, height) * 0.028 * 2.6)));
             const sectorSegments = splitPolylineByFractions(points, sectorFractions, separatorGap);
-            const sectorOutlineMarkup = sectorSegments.length
+            const surfaceWidth = Math.max(20, Math.min(38, Math.round(Math.min(width, height) * 0.034)));
+            const innerWidth = Math.max(12, surfaceWidth - 10);
+            const outerWidth = surfaceWidth + 4;
+            const outerPath = path(points);
+            const defaultSectorColors = ["#ff4d3d", "#f3de5c", "#f8fbff"];
+            const sectorColors = sectorSegments.map((_, index) => {
+              const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
+              const markerColor = String(marker && (marker.source_driver_color || marker.color) || "").trim();
+              return markerColor || defaultSectorColors[index] || defaultSectorColors[defaultSectorColors.length - 1];
+            });
+            const sectorSurfaceMarkup = sectorSegments.length > 1
               ? sectorSegments.map((segment, index) => {
-                const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
                 const segmentPath = path(segment);
-                const sectorColor = String(marker && marker.color ? marker.color : "").trim() || ["#ff4d3d", "#f3de5c", "#f8fbff"][index] || "#f8fbff";
-                const outlineWidth = Math.max(10, Math.round(Math.min(width, height) * 0.016));
-                const accentWidth = Math.max(6, outlineWidth - 3);
-                return `
-                  <path
-                    class="track-sector-outline track-sector-outline--shadow"
-                    d="${segmentPath}"
-                    fill="none"
-                    stroke="rgba(7, 16, 29, 0.92)"
-                    stroke-width="${(outlineWidth + 4).toFixed(2)}"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    pointer-events="none"
-                  ></path>
-                  <path
-                    class="track-sector-outline track-sector-outline--accent"
-                    d="${segmentPath}"
-                    fill="none"
-                    stroke="${escapeHtml(sectorColor)}"
-                    stroke-opacity="0.86"
-                    stroke-width="${outlineWidth.toFixed(2)}"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    pointer-events="none"
-                  ></path>
-                  <path
-                    class="track-sector-outline track-sector-outline--inner"
-                    d="${segmentPath}"
-                    fill="none"
-                    stroke="rgba(234, 241, 255, 0.34)"
-                    stroke-width="${accentWidth.toFixed(2)}"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    pointer-events="none"
-                  ></path>
-                `;
+                const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
+                return `<path d="${segmentPath}" fill="none" stroke="${escapeHtml(sectorColor)}" stroke-opacity="0.92" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
               }).join("")
-              : "";
+              : `<path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.26)" stroke-width="${surfaceWidth}" stroke-linecap="round" stroke-linejoin="round"></path>`;
             const sectorHoverMarkup = sectorSegments.length
               ? sectorSegments.map((segment, index) => {
                 const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
                 const segmentPath = path(segment);
-                const sectorColor = String(marker && marker.color ? marker.color : "").trim() || ["#ff4d3d", "#f3de5c", "#f8fbff"][index] || "#f8fbff";
+                const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
                 const sectorLabel = String(marker && marker.label ? marker.label : `S${index + 1}`).trim() || `S${index + 1}`;
                 const sectorTime = String(marker && marker.time ? marker.time : "").trim();
                 const sectorSpeedMin = Number(marker && marker.sector_speed_min);
@@ -9523,7 +9803,9 @@
               : "";
             return `
               <g id="track-surface-visual" pointer-events="none">
-                ${sectorOutlineMarkup}
+                <path d="${outerPath}" fill="none" stroke="rgba(111, 130, 158, 0.14)" stroke-width="${outerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
+                ${sectorSurfaceMarkup}
+                <path d="${outerPath}" fill="none" stroke="rgba(11, 17, 30, 0.98)" stroke-width="${innerWidth}" stroke-linecap="round" stroke-linejoin="round"></path>
               </g>
               ${sectorHoverMarkup ? `<g id="track-surface-hover">${sectorHoverMarkup}</g>` : ""}
             `;
@@ -10457,7 +10739,7 @@
             </defs>
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
             ${renderTrackSurface(surfaceOutline.length > 1 ? surfaceOutline : (outline.length > 1 ? outline : racing), sectorMarkers)}
-            ${sectorRacingSegments.length ? renderSectorRacingSegments(sectorRacingSegments, showSectorMarkersOnTrack ? 3.9 : 3.2) : renderAccelerationLine(racing, samples, showSectorMarkersOnTrack ? 3.9 : 3.2)}
+            ${sectorRacingSegments.length ? renderSectorRacingSegments(sectorRacingSegments, showSectorMarkersOnTrack ? 4.6 : 3.6) : renderAccelerationLine(racing, samples, showSectorMarkersOnTrack ? 4.6 : 3.6, "track-acceleration-line", 0.92)}
             <circle cx="${startX.toFixed(2)}" cy="${startY.toFixed(2)}" r="7" fill="#63e6b2"></circle>
             <circle cx="${endX.toFixed(2)}" cy="${endY.toFixed(2)}" r="7" fill="#ffbf69"></circle>
             <g id="lap-marker" transform="translate(${startX.toFixed(2)} ${startY.toFixed(2)})">
@@ -10610,6 +10892,9 @@
                   redirected = true;
                   setProgress(100, "Complete");
                   window.setTimeout(() => {
+                    if (window.__saveScrollPosition) {
+                      window.__saveScrollPosition();
+                    }
                     window.location.reload();
                   }, 250);
                   return;
@@ -10619,6 +10904,9 @@
                   redirected = true;
                   setProgress(100, data.message || data.stage || "Session load failed");
                   window.setTimeout(() => {
+                    if (window.__saveScrollPosition) {
+                      window.__saveScrollPosition();
+                    }
                     window.location.reload();
                   }, 250);
                   return;

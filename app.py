@@ -589,6 +589,36 @@ def _format_track_status(value):
     return ", ".join(labels) if labels else status
 
 
+def _track_status_glow_class(value):
+    status = _clean_value(value).strip().lower()
+    if not status or status == "-":
+        return ""
+
+    if "red flag" in status or "5" in status:
+        return "track-status-red"
+    if "virtual safety car" in status or "vsc" in status or "6" in status or "7" in status:
+        return "track-status-vsc"
+    if "safety car" in status or "4" in status:
+        return "track-status-safety-car"
+    if "yellow flag" in status or "yellow" in status or "2" in status:
+        return "track-status-yellow"
+    if "green" in status or "1" in status:
+        return "track-status-green"
+    return ""
+
+
+def _selected_lap_track_status_class(session, driver_number, lap_key, selected_lap_data=None):
+    lap_data = selected_lap_data
+    if lap_data is None and session and driver_number and lap_key:
+        try:
+            lap_data = _resolve_lap(session, driver_number, lap_key)
+        except Exception:
+            lap_data = None
+    if lap_data is None:
+        return ""
+    return _track_status_glow_class(lap_data.get("TrackStatus", None))
+
+
 def _session_track_status_segments(session, include_yellow=False):
     if not session:
         return []
@@ -3582,15 +3612,17 @@ def _race_stints(session, driver_number, session_code):
             ) if index > 0 else None
             stint["pit_stop_stopped_seconds"] = pit_stop_stopped_seconds
             stint["pit_stop_stopped_time"] = _format_minutes_seconds(pit_stop_stopped_seconds) if pit_stop_stopped_seconds is not None else "-"
-            if pit_stop_seconds is not None:
-                pit_stop_max_seconds = max(pit_stop_max_seconds or 0.0, float(pit_stop_seconds))
+            pit_stop_fill_basis = pit_stop_stopped_seconds if pit_stop_stopped_seconds is not None else pit_stop_seconds
+            stint["pit_stop_fill_seconds"] = pit_stop_fill_basis
+            if pit_stop_fill_basis is not None:
+                pit_stop_max_seconds = max(pit_stop_max_seconds or 0.0, float(pit_stop_fill_basis))
 
         for stint in stints:
-            pit_stop_seconds = stint.get("pit_stop_seconds")
-            if pit_stop_seconds is None or not pit_stop_max_seconds:
-                stint["pit_stop_fill_percent"] = None if pit_stop_seconds is None else 100.0
+            pit_stop_fill_seconds = stint.get("pit_stop_fill_seconds")
+            if pit_stop_fill_seconds is None or not pit_stop_max_seconds:
+                stint["pit_stop_fill_percent"] = None if pit_stop_fill_seconds is None else 100.0
                 continue
-            stint["pit_stop_fill_percent"] = max(28.0, min(100.0, (float(pit_stop_seconds) / pit_stop_max_seconds) * 100.0))
+            stint["pit_stop_fill_percent"] = max(28.0, min(100.0, (float(pit_stop_fill_seconds) / pit_stop_max_seconds) * 100.0))
 
         def _best_timed_lap(laps_for_best):
             candidates = [lap for lap in laps_for_best if lap.get("lap_time_seconds") is not None and lap.get("value")]
@@ -3696,13 +3728,12 @@ def _race_stints(session, driver_number, session_code):
     }
 
 
-def _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=None):
+def _race_pit_stop_metric_average_seconds(stint_cache, metric_key, exclude_driver_number=None):
     if not stint_cache:
         return None
 
     excluded_driver = _normalize_driver_number(exclude_driver_number) if exclude_driver_number else ""
-    driver_averages = []
-    pit_stop_samples = []
+    metric_samples = []
 
     for driver_number, driver_data in stint_cache.items():
         if excluded_driver and _normalize_driver_number(driver_number) == excluded_driver:
@@ -3710,28 +3741,25 @@ def _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=None):
         if not driver_data:
             continue
 
-        driver_samples = []
         for stint in driver_data.get("stints", []):
-            pit_stop_seconds = stint.get("pit_stop_seconds")
-            if pit_stop_seconds is None:
+            metric_value = stint.get(metric_key)
+            if metric_value is None:
                 continue
             try:
-                numeric = float(pit_stop_seconds)
+                numeric = float(metric_value)
             except (TypeError, ValueError):
                 continue
             if numeric < 0:
                 continue
-            driver_samples.append(numeric)
+            metric_samples.append(numeric)
 
-        if driver_samples:
-            driver_averages.append(sum(driver_samples) / len(driver_samples))
-            pit_stop_samples.extend(driver_samples)
-
-    if driver_averages:
-        return sum(driver_averages) / len(driver_averages)
-    if pit_stop_samples:
-        return sum(pit_stop_samples) / len(pit_stop_samples)
+    if metric_samples:
+        return sum(metric_samples) / len(metric_samples)
     return None
+
+
+def _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=None):
+    return _race_pit_stop_metric_average_seconds(stint_cache, "pit_stop_seconds", exclude_driver_number=exclude_driver_number)
 
 
 def _pit_strategy_graph(session, session_code=None):
@@ -5849,6 +5877,7 @@ def data():
     secondary_telemetry_charts = []
     qualifying_gap_reference_lap = None
     track_map = None
+    lap_track_status_class = ""
     race_position_graph = None
     pit_strategy_graph = None
     selected_stint = _parse_stint_value(stint_key)
@@ -6073,7 +6102,8 @@ def data():
     race_stints_display = race_stints
     if session_is_race and race_stints and race_stints.get("stints") and driver_number:
         pit_stop_average_seconds = _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=driver_number)
-        if pit_stop_average_seconds is None and session and driver_options:
+        pit_stop_stopped_average_seconds = _race_pit_stop_metric_average_seconds(stint_cache, "pit_stop_stopped_seconds", exclude_driver_number=driver_number)
+        if (pit_stop_average_seconds is None or pit_stop_stopped_average_seconds is None) and session and driver_options:
             selected_driver_key = _normalize_driver_number(driver_number)
             for driver_option in driver_options:
                 other_driver_number = driver_option.get("value")
@@ -6086,16 +6116,46 @@ def data():
                     stint_cache[other_driver_key] = _race_stints(session, other_driver_number, ctx["session_code"])
                 except Exception:
                     stint_cache[other_driver_key] = None
-            pit_stop_average_seconds = _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=driver_number)
-        if pit_stop_average_seconds is not None:
-            pit_stop_average_time = _format_minutes_seconds(pit_stop_average_seconds)
+            if pit_stop_average_seconds is None:
+                pit_stop_average_seconds = _race_pit_stop_average_seconds(stint_cache, exclude_driver_number=driver_number)
+            if pit_stop_stopped_average_seconds is None:
+                pit_stop_stopped_average_seconds = _race_pit_stop_metric_average_seconds(stint_cache, "pit_stop_stopped_seconds", exclude_driver_number=driver_number)
+        if pit_stop_average_seconds is not None or pit_stop_stopped_average_seconds is not None:
             race_stints_display = {**race_stints}
             race_stints_display["stints"] = [dict(stint) for stint in race_stints.get("stints", [])]
-            race_stints_display["pit_stop_average_seconds"] = pit_stop_average_seconds
-            race_stints_display["pit_stop_average_time"] = pit_stop_average_time
+            if pit_stop_average_seconds is not None:
+                pit_stop_average_time = _format_minutes_seconds(pit_stop_average_seconds)
+                race_stints_display["pit_stop_average_seconds"] = pit_stop_average_seconds
+                race_stints_display["pit_stop_average_time"] = pit_stop_average_time
+            if pit_stop_stopped_average_seconds is not None:
+                pit_stop_stopped_average_time = _format_minutes_seconds(pit_stop_stopped_average_seconds)
+                race_stints_display["pit_stop_stopped_average_seconds"] = pit_stop_stopped_average_seconds
+                race_stints_display["pit_stop_stopped_average_time"] = pit_stop_stopped_average_time
             for stint in race_stints_display["stints"]:
                 pit_stop_seconds = stint.get("pit_stop_seconds")
-                if pit_stop_seconds is None:
+                pit_stop_stopped_seconds = stint.get("pit_stop_stopped_seconds")
+                if pit_stop_stopped_average_seconds is not None and pit_stop_stopped_seconds is not None:
+                    try:
+                        delta_seconds = float(pit_stop_stopped_seconds) - float(pit_stop_stopped_average_seconds)
+                    except (TypeError, ValueError):
+                        continue
+                    delta_text = _format_signed_duration(delta_seconds)
+                    if abs(delta_seconds) < 0.0005:
+                        comparison_class = "is-even-average"
+                    elif delta_seconds > 0:
+                        comparison_class = "is-above-average"
+                    else:
+                        comparison_class = "is-below-average"
+                    comparison_text = delta_text
+                    comparison_title = f"Stopped time gap {delta_text}."
+                    stint["pit_stop_stopped_average_time"] = pit_stop_stopped_average_time
+                    stint["pit_stop_stopped_delta_seconds"] = delta_seconds
+                    stint["pit_stop_stopped_delta_time"] = delta_text
+                    stint["pit_stop_comparison_class"] = comparison_class
+                    stint["pit_stop_comparison_text"] = comparison_text
+                    stint["pit_stop_comparison_title"] = comparison_title
+                    continue
+                if pit_stop_average_seconds is None or pit_stop_seconds is None:
                     continue
                 try:
                     delta_seconds = float(pit_stop_seconds) - float(pit_stop_average_seconds)
@@ -6109,7 +6169,7 @@ def data():
                 else:
                     comparison_class = "is-below-average"
                 comparison_text = delta_text
-                comparison_title = f"Average pit time {pit_stop_average_time} (AVG); gap {delta_text}."
+                comparison_title = f"Pit stop gap {delta_text}."
                 stint["pit_stop_average_time"] = pit_stop_average_time
                 stint["pit_stop_delta_seconds"] = delta_seconds
                 stint["pit_stop_delta_time"] = delta_text
@@ -6153,6 +6213,7 @@ def data():
             len(telemetry_rows),
             track_map is not None,
         )
+    lap_track_status_class = _selected_lap_track_status_class(session, driver_number, selected_lap_value, selected_lap_data)
     track_status_segments = _session_track_status_segments(session, include_yellow=True) if session else []
     lap_entry_source = request.args.get("source", "").strip().lower()
     lap_back_to_driver_table_url = f"/data?{urlencode({
@@ -6177,6 +6238,7 @@ def data():
         data_summary=_data_summary(data_state) if data_state else None,
         telemetry_summary=telemetry_summary,
         lap_record=lap_record,
+        lap_track_status_class=lap_track_status_class,
         selected_stint=selected_stint,
         selected_stint_data=selected_stint_data,
         telemetry_columns=telemetry_columns,
