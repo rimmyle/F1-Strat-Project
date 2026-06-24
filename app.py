@@ -607,6 +607,75 @@ def _track_status_glow_class(value):
     return ""
 
 
+def _track_status_priority(track_status_class):
+    return {
+        "track-status-red": 4,
+        "track-status-safety-car": 3,
+        "track-status-vsc": 2,
+        "track-status-yellow": 1,
+        "track-status-green": 0,
+    }.get(track_status_class, -1)
+
+
+def _lap_telemetry_track_status_class(lap_data):
+    if lap_data is None:
+        return ""
+
+    try:
+        telemetry = lap_data.get_telemetry(frequency="original")
+    except Exception:
+        telemetry = None
+
+    if telemetry is None or telemetry.empty or "Status" not in telemetry.columns:
+        return ""
+
+    best_class = ""
+    best_priority = -1
+    for raw_status in telemetry["Status"].dropna().tolist():
+        status_class = _track_status_glow_class(raw_status)
+        if not status_class:
+            continue
+        priority = _track_status_priority(status_class)
+        if priority > best_priority:
+            best_priority = priority
+            best_class = status_class
+            if best_priority == _track_status_priority("track-status-red"):
+                break
+
+    return best_class
+
+
+def _track_status_class_from_session_segments(session, lap_data):
+    if not session or lap_data is None:
+        return ""
+
+    lap_start_seconds = _lap_time_seconds(lap_data.get("LapStartTime", None))
+    lap_end_seconds = _lap_time_seconds(lap_data.get("Time", None))
+    if lap_start_seconds is None or lap_end_seconds is None:
+        return ""
+
+    best_class = ""
+    best_priority = -1
+    for segment in _session_track_status_segments(session, include_yellow=True):
+        segment_class = _track_status_glow_class(segment.get("label", ""))
+        if not segment_class:
+            continue
+
+        segment_start = segment.get("start_seconds")
+        segment_end = segment.get("end_seconds")
+        if segment_start is None or segment_end is None:
+            continue
+        if segment_end <= lap_start_seconds or segment_start >= lap_end_seconds:
+            continue
+
+        priority = _track_status_priority(segment_class)
+        if priority > best_priority:
+            best_priority = priority
+            best_class = segment_class
+
+    return best_class
+
+
 def _selected_lap_track_status_class(session, driver_number, lap_key, selected_lap_data=None):
     lap_data = selected_lap_data
     if lap_data is None and session and driver_number and lap_key:
@@ -616,6 +685,15 @@ def _selected_lap_track_status_class(session, driver_number, lap_key, selected_l
             lap_data = None
     if lap_data is None:
         return ""
+
+    telemetry_class = _lap_telemetry_track_status_class(lap_data)
+    if telemetry_class:
+        return telemetry_class
+
+    session_class = _track_status_class_from_session_segments(session, lap_data)
+    if session_class:
+        return session_class
+
     return _track_status_glow_class(lap_data.get("TrackStatus", None))
 
 

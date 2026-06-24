@@ -2111,7 +2111,7 @@
 
       .stint-graph-point {
         cursor: pointer;
-        pointer-events: all;
+        pointer-events: none;
       }
 
       .stint-graph-point circle {
@@ -2121,6 +2121,7 @@
           stroke 120ms ease,
           stroke-width 120ms ease,
           opacity 120ms ease;
+        pointer-events: all;
       }
 
       .stint-graph-lap-marker rect {
@@ -2396,16 +2397,9 @@
         fill: #fb7185;
       }
 
-      .stint-graph-point.is-selected .stint-graph-point-halo {
-        fill: rgba(68, 194, 255, 0.14);
-        stroke: rgba(68, 194, 255, 0.7);
-        stroke-width: 1.4;
-        filter: drop-shadow(0 0 8px rgba(68, 194, 255, 0.28));
-      }
-
       .stint-graph-point.is-selected .stint-graph-point-core {
         stroke: #f8fbff;
-        stroke-width: 2.2;
+        stroke-width: 1.8;
         filter: drop-shadow(0 0 5px rgba(68, 194, 255, 0.26));
       }
 
@@ -6713,8 +6707,7 @@
               const isStintBest = Boolean(stintBestLapValue) && lapValue === stintBestLapValue && !isRaceBest;
               const pointMarkup = isSelected
                 ? `
-                  <circle class="stint-graph-point-halo" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="11"></circle>
-                  <circle class="stint-graph-point-core" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="5.8" fill="${pointColor}"></circle>
+                  <circle class="stint-graph-point-core" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="6" fill="${pointColor}"></circle>
                 `
                 : `<circle class="stint-graph-point-core" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="6" fill="${pointColor}"></circle>`;
               return `
@@ -6760,7 +6753,7 @@
               const isDotTarget = Boolean(
                 target
                 && target.closest
-                && target.closest(".stint-graph-point-core, .stint-graph-point-halo"),
+                && target.closest(".stint-graph-point-core"),
               );
               const isPositionTarget = Boolean(
                 target
