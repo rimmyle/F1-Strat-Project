@@ -2054,12 +2054,12 @@
       .stint-graph-viewport {
         position: relative;
         min-width: 0;
-        padding: 10px 0 0;
+        padding: 24px 0 0;
       }
 
       .stint-graph-lap-stack {
         position: absolute;
-        top: 14px;
+        top: -12px;
         left: 50%;
         z-index: 3;
         display: grid;
@@ -2077,14 +2077,14 @@
 
       .stint-graph-lap-time-badge {
         display: inline-grid;
-        gap: 3px;
+        gap: 2px;
         justify-items: center;
-        min-width: 116px;
-        padding: 10px 14px 11px;
+        min-width: 110px;
+        padding: 8px 12px 9px;
         border: 1px solid rgba(148, 163, 184, 0.18);
-        border-radius: 16px;
+        border-radius: 14px;
         background: linear-gradient(180deg, rgba(17, 28, 47, 0.98), rgba(10, 16, 27, 0.98));
-        box-shadow: 0 12px 22px rgba(0, 0, 0, 0.18);
+        box-shadow: 0 10px 18px rgba(0, 0, 0, 0.16);
         pointer-events: none;
       }
 
@@ -2096,21 +2096,21 @@
       }
 
       .stint-graph-lap-time-badge-label {
-        font-size: 0.78rem;
-        letter-spacing: 0.08em;
+        font-size: 0.74rem;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
       }
 
       .stint-graph-lap-time-badge-position {
-        font-size: 0.72rem;
-        letter-spacing: 0.06em;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         opacity: 0.94;
       }
 
       .stint-graph-lap-time-badge strong {
         color: #f8fbff;
-        font-size: 1.18rem;
+        font-size: 1.14rem;
         font-weight: 900;
         letter-spacing: -0.02em;
         line-height: 1;
@@ -2147,13 +2147,16 @@
         cursor: pointer;
       }
 
-      .stint-graph-lap-marker rect {
+      .stint-graph-lap-marker rect,
+      .stint-graph-lap-marker circle {
         opacity: 0.96;
+        pointer-events: visiblePainted;
       }
 
       .stint-graph-lap-marker text {
         font-family: inherit;
         letter-spacing: 0.05em;
+        pointer-events: visiblePainted;
       }
 
       .stint-graph-status-marker text {
@@ -2495,9 +2498,7 @@
         min-width: 0;
         width: 100%;
         grid-template-columns: minmax(0, 1fr);
-        grid-template-areas:
-          "driver"
-          "bars";
+        grid-template-areas: "driver";
         gap: 20px;
         justify-self: stretch;
         align-content: start;
@@ -2532,6 +2533,13 @@
         max-width: none;
         padding: 22px 22px 20px;
         text-align: center;
+      }
+
+      .stint-graph-driver .stint-bars-panel {
+        grid-area: auto;
+        margin-top: 6px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(148, 163, 184, 0.14);
       }
 
       .stint-graph-driver-portrait {
@@ -5532,57 +5540,57 @@
                             <small>{{ selected_driver_data.team_name }}</small>
                           </span>
                         </span>
-                      </div>
-                    {% endif %}
-                    {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
-                      {% set stint_driver = selected_driver | default('', true) %}
-                      <div class="stint-bars-panel">
-                        <div class="stint-bars-list">
-                          {% for stint in race_stints.stints %}
-                            {% if stint.pit_stop_seconds is not none %}
-                              <div
-                                class="stint-pit-gap"
-                                aria-label="Stationary pit time before stint {{ stint.stint }}"
-                                title="Time the car was completely stationary during the pit stop"
-                              >
-                                <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
-                                  <span
-                                    class="stint-pit-gap-fill"
-                                    aria-hidden="true"
-                                  ></span>
-                                  {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
-                                    <span class="stint-pit-gap-row">
-                                      <span class="stint-pit-gap-label">PIT</span>
-                                      <span class="stint-pit-gap-divider" aria-hidden="true"></span>
-                                      <span class="stint-pit-gap-time">{{ stint.pit_stop_stopped_time }}</span>
+                        {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
+                          {% set stint_driver = selected_driver | default('', true) %}
+                          <div class="stint-bars-panel">
+                            <div class="stint-bars-list">
+                              {% for stint in race_stints.stints %}
+                                {% if stint.pit_stop_seconds is not none %}
+                                  <div
+                                    class="stint-pit-gap"
+                                    aria-label="Stationary pit time before stint {{ stint.stint }}"
+                                    title="Time the car was completely stationary during the pit stop"
+                                  >
+                                    <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
+                                      <span
+                                        class="stint-pit-gap-fill"
+                                        aria-hidden="true"
+                                      ></span>
+                                      {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
+                                        <span class="stint-pit-gap-row">
+                                          <span class="stint-pit-gap-label">PIT</span>
+                                          <span class="stint-pit-gap-divider" aria-hidden="true"></span>
+                                          <span class="stint-pit-gap-time">{{ stint.pit_stop_stopped_time }}</span>
+                                        </span>
+                                        {% if stint.pit_stop_stopped_delta_time is defined and stint.pit_stop_stopped_delta_time %}
+                                          <span class="stint-pit-gap-average">
+                                            <span class="stint-pit-gap-average-gap">({{ stint.pit_stop_stopped_delta_time }})</span>
+                                          </span>
+                                        {% endif %}
+                                      {% endif %}
+                                    </div>
+                                  </div>
+                                {% endif %}
+                                <a
+                                  class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
+                                  href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
+                                  style="--stint-color: {{ stint.tyre_color }};"
+                                >
+                                  <div class="stint-bar-top">
+                                    <strong>Stint {{ stint.stint }}</strong>
+                                  </div>
+                                  <div class="stint-bar-track stint-bar-track--stint">
+                                    <span class="stint-bar-fill" aria-hidden="true"></span>
+                                    <span class="stint-bar-content stint-bar-content--stint">
+                                      <span class="stint-bar-compound">{{ stint.compound | default('-', true) | trim | upper }}</span>
+                                      <span class="stint-bar-length">{{ stint.lap_count }} LAP{{ 'S' if stint.lap_count != 1 else '' }}</span>
                                     </span>
-                                    {% if stint.pit_stop_stopped_delta_time is defined and stint.pit_stop_stopped_delta_time %}
-                                      <span class="stint-pit-gap-average">
-                                        <span class="stint-pit-gap-average-gap">({{ stint.pit_stop_stopped_delta_time }})</span>
-                                      </span>
-                                    {% endif %}
-                                  {% endif %}
-                                </div>
-                              </div>
-                            {% endif %}
-                            <a
-                              class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
-                              href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
-                              style="--stint-color: {{ stint.tyre_color }};"
-                            >
-                              <div class="stint-bar-top">
-                                <strong>Stint {{ stint.stint }}</strong>
-                              </div>
-                              <div class="stint-bar-track stint-bar-track--stint">
-                                <span class="stint-bar-fill" aria-hidden="true"></span>
-                                <span class="stint-bar-content stint-bar-content--stint">
-                                  <span class="stint-bar-compound">{{ stint.compound | default('-', true) | trim | upper }}</span>
-                                  <span class="stint-bar-length">{{ stint.lap_count }} LAP{{ 'S' if stint.lap_count != 1 else '' }}</span>
-                                </span>
-                              </div>
-                            </a>
-                          {% endfor %}
-                        </div>
+                                  </div>
+                                </a>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        {% endif %}
                       </div>
                     {% endif %}
                   </div>
@@ -6311,10 +6319,17 @@
             return;
           }
 
-          const values = laps.map((lap) => Number(lap.lap_time_seconds));
+          const scaleValues = laps
+            .filter((lap) => !isTransitionLap(lap.lap_type))
+            .map((lap) => Number(lap.lap_time_seconds))
+            .filter((value) => Number.isFinite(value));
+          const values = scaleValues.length
+            ? scaleValues
+            : laps.map((lap) => Number(lap.lap_time_seconds)).filter((value) => Number.isFinite(value));
           const min = Math.min(...values);
           const max = Math.max(...values);
           const range = max - min || 1;
+          const stintAverageLapTimeSeconds = values.reduce((sum, value) => sum + value, 0) / values.length;
           const stintBestLapValue = String(stint.stint_best_lap_value || "").trim();
           const sessionBestLapValue = String(stint.session_best_lap_value || "").trim();
           function escapeHtml(value) {
@@ -6417,6 +6432,11 @@
               ];
             }
             return [];
+          }
+
+          function isTransitionLap(lapType) {
+            const normalized = String(lapType || "").trim().toLowerCase();
+            return normalized === "out lap" || normalized === "in lap" || normalized === "out / in lap";
           }
 
           function renderStatusMarkers() {
@@ -6554,15 +6574,24 @@
               return "";
             }
 
-            const badgeHeight = 16;
-            const badgeGap = 4;
-            const badgeWidths = markers.map((marker) => Math.max(34, Math.ceil((marker.label.length * 5.8) + 12)));
+            const isTransition = isTransitionLap(lap.lap_type);
+            const badgeHeight = isTransition ? 30 : 16;
+            const badgeGap = isTransition ? 4 : 4;
+            const badgeWidths = markers.map((marker) => (
+              isTransition
+                ? Math.max(30, Math.ceil((marker.label.length * 9.2) + 8))
+                : Math.max(34, Math.ceil((marker.label.length * 5.8) + 12))
+            ));
             const totalWidth = badgeWidths.reduce((sum, value) => sum + value, 0) + ((markers.length - 1) * badgeGap);
             const topMin = padding.top + 2;
             const topMax = height - padding.bottom - badgeHeight - 4;
-            const placeAbove = y - badgeHeight - 8 >= topMin;
-            const chosenTop = placeAbove ? y - badgeHeight - 8 : y + 8;
-            const badgeTop = Math.max(topMin, Math.min(topMax, chosenTop));
+            const badgeTop = isTransition
+              ? Math.max(topMin, Math.min(topMax, y - (badgeHeight / 2)))
+              : (() => {
+                const placeAbove = y - badgeHeight - 8 >= topMin;
+                const chosenTop = placeAbove ? y - badgeHeight - 8 : y + 8;
+                return Math.max(topMin, Math.min(topMax, chosenTop));
+              })();
             const centeredLeft = x - (totalWidth / 2);
             const badgeLeft = Math.max(padding.left + 2, Math.min(width - padding.right - totalWidth - 2, centeredLeft));
 
@@ -6573,9 +6602,12 @@
               cursor += badgeWidth + badgeGap;
               const badgeCenterX = badgeX + (badgeWidth / 2);
               const badgeCenterY = badgeTop + (badgeHeight / 2) + 0.5;
+              const badgeRadius = badgeHeight / 2;
               return `
                 <g class="stint-graph-lap-marker stint-graph-lap-marker-${marker.key}">
-                  <rect x="${badgeX.toFixed(2)}" y="${badgeTop.toFixed(2)}" width="${badgeWidth.toFixed(2)}" height="${badgeHeight}" rx="8" fill="rgba(7, 16, 29, 0.96)" stroke="${marker.color}" stroke-width="1.2"></rect>
+                  ${isTransition
+                    ? `<circle cx="${badgeCenterX.toFixed(2)}" cy="${badgeCenterY.toFixed(2)}" r="${badgeRadius.toFixed(2)}" fill="rgba(7, 16, 29, 0.96)" stroke="${marker.color}" stroke-width="1.2"></circle>`
+                    : `<rect x="${badgeX.toFixed(2)}" y="${badgeTop.toFixed(2)}" width="${badgeWidth.toFixed(2)}" height="${badgeHeight}" rx="8" fill="rgba(7, 16, 29, 0.96)" stroke="${marker.color}" stroke-width="1.2"></rect>`}
                   <text x="${badgeCenterX.toFixed(2)}" y="${badgeCenterY.toFixed(2)}" fill="${marker.color}" font-size="8.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(marker.label)}</text>
                 </g>
               `;
@@ -6760,7 +6792,11 @@
           let path = "";
           laps.forEach((lap, index) => {
             const x = toX(index);
-            const y = toY(Number(lap.lap_time_seconds));
+            const lapTimeSeconds = Number(lap.lap_time_seconds);
+            const displayLapTimeSeconds = isTransitionLap(lap.lap_type) && Number.isFinite(stintAverageLapTimeSeconds)
+              ? stintAverageLapTimeSeconds
+              : lapTimeSeconds;
+            const y = toY(displayLapTimeSeconds);
             path += `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)} `;
           });
 
@@ -6785,7 +6821,11 @@
           const points = laps
             .map((lap, index) => {
               const x = toX(index);
-              const y = toY(Number(lap.lap_time_seconds));
+              const lapTimeSeconds = Number(lap.lap_time_seconds);
+              const displayLapTimeSeconds = isTransitionLap(lap.lap_type) && Number.isFinite(stintAverageLapTimeSeconds)
+                ? stintAverageLapTimeSeconds
+                : lapTimeSeconds;
+              const y = toY(displayLapTimeSeconds);
               const isSelected = String(lap.value || "") === selectedLap;
               const pointColor = isSelected ? "#44c2ff" : index === laps.length - 1 ? "#44c2ff" : "#ffbf69";
               const lapTypeText = String(lap.lap_type || "").trim();
@@ -6795,10 +6835,8 @@
               const isRaceBest = Boolean(sessionBestLapValue) && lapValue === sessionBestLapValue;
               const isStintBest = Boolean(stintBestLapValue) && lapValue === stintBestLapValue && !isRaceBest;
               const hasUpperBadge = Boolean(isRaceBest || isStintBest);
-              const pointMarkup = isSelected
-                ? `
-                  <circle class="stint-graph-point-core" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="6" fill="${pointColor}"></circle>
-                `
+              const pointMarkup = isTransitionLap(lap.lap_type)
+                ? ""
                 : `<circle class="stint-graph-point-core" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="6" fill="${pointColor}"></circle>`;
               return `
                 <a class="stint-graph-point ${isSelected ? "is-selected" : ""}" href="${href}" data-href="${href}" tabindex="0" role="link" aria-label="Lap ${escapeHtml(lap.lap_number)} - ${escapeHtml(lap.lap_time)}${lapTypeLabel}" aria-current="${isSelected ? "true" : "false"}">
@@ -6839,7 +6877,7 @@
               const isDotTarget = Boolean(
                 target
                 && target.closest
-                && target.closest(".stint-graph-point-core"),
+                && (target.closest(".stint-graph-point-core") || target.closest(".stint-graph-lap-marker")),
               );
               const isPositionTarget = Boolean(
                 target
@@ -6878,12 +6916,17 @@
             });
             point.addEventListener("focus", (event) => {
               const target = event.target;
+              const isDotTarget = Boolean(
+                target
+                && target.closest
+                && (target.closest(".stint-graph-point-core") || target.closest(".stint-graph-lap-marker")),
+              );
               const isPositionTarget = Boolean(
                 target
                 && target.closest
                 && target.closest(".stint-graph-position-change"),
               );
-              point.classList.toggle("is-dot-hovered", !isPositionTarget);
+              point.classList.toggle("is-dot-hovered", isDotTarget || !isPositionTarget);
               point.classList.toggle("is-position-hovered", isPositionTarget);
             });
             point.addEventListener("blur", clearHoverState);
@@ -7434,26 +7477,30 @@
               <div class="loading-card">
                 <svg class="loading-wheel" viewBox="0 0 160 160" aria-hidden="true">
                   <defs>
-                    <radialGradient id="nav-loading-tire-fill" cx="50%" cy="46%" r="66%">
+                    <radialGradient id="tire-fill" cx="50%" cy="46%" r="66%">
                       <stop offset="0%" stop-color="#242a33"></stop>
                       <stop offset="52%" stop-color="#11161d"></stop>
                       <stop offset="100%" stop-color="#050608"></stop>
                     </radialGradient>
-                    <radialGradient id="nav-loading-rim-fill" cx="50%" cy="42%" r="66%">
+                    <radialGradient id="rim-fill" cx="50%" cy="42%" r="66%">
                       <stop offset="0%" stop-color="#f5f7fa"></stop>
                       <stop offset="52%" stop-color="#b9c0c8"></stop>
                       <stop offset="100%" stop-color="#7b838d"></stop>
                     </radialGradient>
-                    <linearGradient id="nav-loading-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"></stop>
+                    <linearGradient id="spoke-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#eef2f7"></stop>
+                      <stop offset="100%" stop-color="#8b93a0"></stop>
+                    </linearGradient>
+                    <linearGradient id="tire-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="rgba(255,255,255,0.22)"></stop>
                       <stop offset="60%" stop-color="rgba(255,255,255,0.05)"></stop>
                       <stop offset="100%" stop-color="rgba(255,255,255,0)"></stop>
                     </linearGradient>
                   </defs>
-                  <circle cx="80" cy="80" r="61" fill="url(#nav-loading-tire-fill)" stroke="#050608" stroke-width="6"></circle>
+                  <circle cx="80" cy="80" r="61" fill="url(#tire-fill)" stroke="#050608" stroke-width="6"></circle>
                   <path d="M 123.3 47.7 A 58 58 0 0 1 123.3 112.3" fill="none" stroke="#ff2020" stroke-width="5.5" stroke-linecap="round"></path>
                   <path d="M 36.7 112.3 A 58 58 0 0 1 36.7 47.7" fill="none" stroke="#ff2020" stroke-width="5.5" stroke-linecap="round"></path>
-                  <circle cx="80" cy="80" r="39" fill="url(#nav-loading-rim-fill)" stroke="#707985" stroke-width="2.5"></circle>
+                  <circle cx="80" cy="80" r="39" fill="url(#rim-fill)" stroke="#707985" stroke-width="2.5"></circle>
                   <circle cx="80" cy="80" r="26" fill="#aab2bb" stroke="#f2f4f7" stroke-width="1.5"></circle>
                   <circle cx="80" cy="80" r="16.5" fill="#8f98a3" stroke="#dfe4ea" stroke-width="1.25"></circle>
                   <g fill="#75808d">
@@ -7464,7 +7511,12 @@
                     <circle cx="52" cy="100" r="2.2"></circle>
                     <circle cx="52" cy="60" r="2.2"></circle>
                   </g>
-                  <path d="M39 69c9-24 26-37 41-37 14 0 31 11 40 31" fill="none" stroke="url(#nav-loading-highlight)" stroke-width="8" stroke-linecap="round" opacity="0.85"></path>
+                  <path d="M39 69c9-24 26-37 41-37 14 0 31 11 40 31" fill="none" stroke="url(#tire-highlight)" stroke-width="8" stroke-linecap="round" opacity="0.85"></path>
+                  <text x="80" y="31" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="900" fill="#ff2020" letter-spacing="0.08em">PIRELLI</text>
+                  <text x="80" y="126" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="900" fill="#ff2020" letter-spacing="0.08em" transform="rotate(180 80 126)">
+                    <tspan dy="0.08em">P</tspan>
+                    <tspan dy="0.01em"> ZERO</tspan>
+                  </text>
                 </svg>
                 <h2 class="loading-title"></h2>
                 <p class="loading-copy"></p>
