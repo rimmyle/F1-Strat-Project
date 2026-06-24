@@ -1886,6 +1886,52 @@ def _exact_driver_lap(session, driver_number, lap_number):
     return matches.iloc[0]
 
 
+def _fastest_driver_lap(session, driver_number, max_lap_number=None):
+    if not session or not driver_number:
+        return None
+
+    try:
+        driver_laps = _safe_driver_laps(session, driver_number)
+    except Exception:
+        return None
+
+    if driver_laps is None or driver_laps.empty:
+        return None
+
+    timed_laps = driver_laps[driver_laps["LapTime"].notna()].copy() if "LapTime" in driver_laps.columns else driver_laps.copy()
+    if timed_laps.empty:
+        return None
+
+    if max_lap_number is not None and "LapNumber" in timed_laps.columns:
+        try:
+            lap_limit = int(float(max_lap_number))
+        except (TypeError, ValueError):
+            lap_limit = None
+        if lap_limit is not None:
+            lap_numbers = pd.to_numeric(timed_laps["LapNumber"], errors="coerce")
+            timed_laps = timed_laps[lap_numbers.notna() & (lap_numbers <= lap_limit)].copy()
+            if timed_laps.empty:
+                return None
+
+    try:
+        fastest_lap = timed_laps.pick_fastest()
+    except Exception:
+        fastest_lap = None
+
+    if fastest_lap is not None and not getattr(fastest_lap, "empty", False):
+        if isinstance(fastest_lap, pd.DataFrame):
+            fastest_lap = fastest_lap.iloc[0] if not fastest_lap.empty else None
+        return fastest_lap
+
+    sort_columns = [column for column in ["LapTime", "LapNumber", "Time"] if column in timed_laps.columns]
+    if sort_columns:
+        timed_laps = timed_laps.sort_values(by=sort_columns, na_position="last")
+    if timed_laps.empty:
+        return None
+
+    return timed_laps.iloc[0]
+
+
 def _qualifying_overview_composite_telemetry(session, sector_markers):
     if not session or not sector_markers:
         return None
@@ -3233,6 +3279,7 @@ def _lap_summary(lap, telemetry):
         "driver": _clean_value(lap.get("Driver", "-")),
         "team": _clean_value(lap.get("Team", "-")),
         "lap_number": _clean_value(lap.get("LapNumber", "-")),
+        "position": _clean_value(lap.get("Position", "-")),
         "lap_time": _format_lap_time(lap.get("LapTime", "-")),
         "compound": _clean_value(lap.get("Compound", "-")),
         "stint": _clean_value(lap.get("Stint", "-")),
@@ -3264,7 +3311,6 @@ def _lap_record(lap, telemetry):
 
     fields = [
         ("track_status", "Track Status", _format_track_status(lap.get("TrackStatus", "-"))),
-        ("position", "Position", _clean_value(lap.get("Position", "-"))),
     ]
 
     return fields
@@ -4013,30 +4059,28 @@ def _pit_strategy_graph(session, session_code=None):
 
             overlapping_laps = laps_for_status[
                 (laps_for_status["LapStartTime"] < end_time) & (laps_for_status["Time"] > start_time)
-            ]["LapNumber"].dropna()
+            ].copy()
             if overlapping_laps.empty:
                 continue
 
-            start_seconds = None
-            end_seconds = None
-            try:
-                start_candidates = laps_for_status.loc[overlapping_laps.index, "LapStartTime"].dropna()
-                if not start_candidates.empty:
-                    start_seconds = _lap_time_seconds(start_candidates.min())
-            except Exception:
-                start_seconds = None
-            try:
-                end_candidates = laps_for_status.loc[overlapping_laps.index, "Time"].dropna()
-                if not end_candidates.empty:
-                    end_seconds = _lap_time_seconds(end_candidates.max())
-            except Exception:
-                end_seconds = None
+            overlapping_laps = overlapping_laps.sort_values(by=["LapNumber", "LapStartTime", "Time"])
+            first_overlap = overlapping_laps.iloc[0]
+            last_overlap = overlapping_laps.iloc[-1]
+
+            start_seconds = _lap_time_seconds(start_time)
+            end_seconds = _lap_time_seconds(end_time)
+            first_lap_start_seconds = _lap_time_seconds(first_overlap.get("LapStartTime", None))
+            last_lap_end_seconds = _lap_time_seconds(last_overlap.get("Time", None))
+            if start_seconds is not None and first_lap_start_seconds is not None:
+                start_seconds = max(start_seconds, first_lap_start_seconds)
+            if end_seconds is not None and last_lap_end_seconds is not None:
+                end_seconds = min(end_seconds, last_lap_end_seconds)
             if start_seconds is not None and end_seconds is not None and end_seconds < start_seconds:
                 end_seconds = start_seconds
 
             segment = {
-                "start_lap": int(float(overlapping_laps.min())),
-                "end_lap": int(float(overlapping_laps.max())),
+                "start_lap": int(float(first_overlap.get("LapNumber", overlapping_laps["LapNumber"].min()))),
+                "end_lap": int(float(last_overlap.get("LapNumber", overlapping_laps["LapNumber"].max()))),
                 "start_seconds": float(start_seconds) if start_seconds is not None else None,
                 "end_seconds": float(end_seconds) if end_seconds is not None else None,
                 **marker,
@@ -4582,13 +4626,29 @@ def _race_position_graph(session, year=None, gp=None, session_code="R"):
 
             overlapping_laps = laps_for_status[
                 (laps_for_status["LapStartTime"] < end_time) & (laps_for_status["Time"] > start_time)
-            ]["LapNumber"].dropna()
+            ].copy()
             if overlapping_laps.empty:
                 continue
 
+            overlapping_laps = overlapping_laps.sort_values(by=["LapNumber", "LapStartTime", "Time"])
+            first_overlap = overlapping_laps.iloc[0]
+            last_overlap = overlapping_laps.iloc[-1]
+            start_seconds = _lap_time_seconds(start_time)
+            end_seconds = _lap_time_seconds(end_time)
+            first_lap_start_seconds = _lap_time_seconds(first_overlap.get("LapStartTime", None))
+            last_lap_end_seconds = _lap_time_seconds(last_overlap.get("Time", None))
+            if start_seconds is not None and first_lap_start_seconds is not None:
+                start_seconds = max(start_seconds, first_lap_start_seconds)
+            if end_seconds is not None and last_lap_end_seconds is not None:
+                end_seconds = min(end_seconds, last_lap_end_seconds)
+            if start_seconds is not None and end_seconds is not None and end_seconds < start_seconds:
+                end_seconds = start_seconds
+
             segment = {
-                "start_lap": int(float(overlapping_laps.min())),
-                "end_lap": int(float(overlapping_laps.max())),
+                "start_lap": int(float(first_overlap.get("LapNumber", overlapping_laps["LapNumber"].min()))),
+                "end_lap": int(float(last_overlap.get("LapNumber", overlapping_laps["LapNumber"].max()))),
+                "start_seconds": float(start_seconds) if start_seconds is not None else None,
+                "end_seconds": float(end_seconds) if end_seconds is not None else None,
                 **marker,
             }
 
@@ -6258,6 +6318,12 @@ def data():
         telemetry_columns, telemetry_rows, telemetry = _telemetry_rows(selected_lap_data)
         telemetry_summary = _lap_summary(selected_lap_data, telemetry)
         lap_record = _lap_record(selected_lap_data, telemetry)
+        race_gap_reference_lap = None
+        if not session_is_qualifying and ctx["session_code"] == "R":
+            selected_position = _safe_int_value(selected_lap_data.get("Position"), default=0)
+            if selected_position == 1:
+                selected_lap_number = _safe_int_value(selected_lap_data.get("LapNumber"), default=0)
+                race_gap_reference_lap = _fastest_driver_lap(session, driver_number, selected_lap_number or None)
         if session_is_qualifying:
             qualifying_gap_reference_lap = _qualifying_phase_fastest_lap(
                 session,
@@ -6265,7 +6331,8 @@ def data():
                 phase_rows=qualifying_phase_rows,
                 phase_windows=qualifying_timeline_graph.get("phase_windows", {}) if isinstance(qualifying_timeline_graph, dict) else None,
             )
-        telemetry_charts = _telemetry_charts(selected_lap_data, qualifying_gap_reference_lap)
+        telemetry_gap_reference_lap = qualifying_gap_reference_lap if session_is_qualifying else race_gap_reference_lap
+        telemetry_charts = _telemetry_charts(selected_lap_data, telemetry_gap_reference_lap)
         primary_telemetry_titles = {"Speed", "Throttle", "Brake"}
         primary_telemetry_charts = [
             chart

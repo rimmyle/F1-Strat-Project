@@ -2057,6 +2057,18 @@
         padding: 10px 0 0;
       }
 
+      .stint-graph-lap-stack {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        z-index: 3;
+        display: grid;
+        gap: 0;
+        justify-items: center;
+        transform: translateX(-50%);
+        pointer-events: none;
+      }
+
       .stint-graph-svg {
         width: 100%;
         height: 300px;
@@ -2064,12 +2076,6 @@
       }
 
       .stint-graph-lap-time-badge {
-        position: absolute;
-        top: 14px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        z-index: 2;
         display: inline-grid;
         gap: 3px;
         justify-items: center;
@@ -2082,13 +2088,24 @@
         pointer-events: none;
       }
 
-      .stint-graph-lap-time-badge span {
+      .stint-graph-lap-time-badge-label,
+      .stint-graph-lap-time-badge-position {
         color: rgba(151, 167, 194, 0.94);
-        font-size: 0.68rem;
         font-weight: 800;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
         white-space: nowrap;
+      }
+
+      .stint-graph-lap-time-badge-label {
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .stint-graph-lap-time-badge-position {
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        opacity: 0.94;
       }
 
       .stint-graph-lap-time-badge strong {
@@ -2112,16 +2129,22 @@
       .stint-graph-point {
         cursor: pointer;
         pointer-events: none;
+        outline: none;
       }
 
-      .stint-graph-point circle {
+      .stint-graph-point > * {
+        pointer-events: none;
+      }
+
+      .stint-graph-point-core {
+        pointer-events: fill;
         transition:
           fill 120ms ease,
           filter 120ms ease,
           stroke 120ms ease,
           stroke-width 120ms ease,
           opacity 120ms ease;
-        pointer-events: all;
+        cursor: pointer;
       }
 
       .stint-graph-lap-marker rect {
@@ -2141,6 +2164,11 @@
       .stint-graph-point:hover circle,
       .stint-graph-point:focus circle {
         filter: brightness(1.12);
+      }
+
+      .stint-graph-point:focus,
+      .stint-graph-point:focus-visible {
+        outline: none;
       }
 
       .stint-graph-lap-tooltip {
@@ -2570,13 +2598,10 @@
       }
 
       .stint-graph-summary--overlay {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        left: auto;
-        z-index: 3;
+        position: static;
         width: fit-content;
-        max-width: calc(100% - 24px);
+        max-width: 100%;
+        margin: 0 0 12px auto;
         pointer-events: auto;
         display: flex;
         flex-direction: column;
@@ -2935,6 +2960,13 @@
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 24px rgba(0, 0, 0, 0.22);
         text-shadow: 0 1px 0 rgba(7, 16, 29, 0.9), 0 0 10px rgba(7, 16, 29, 0.24);
         backdrop-filter: blur(3px);
+      }
+
+      .stint-bar-content--stint {
+        flex-wrap: nowrap;
+        gap: 8px;
+        width: max-content;
+        min-width: max-content;
       }
 
       .stint-bar-compound {
@@ -3422,12 +3454,15 @@
 
       .lap-track-card .track-map-sector-stack {
         display: flex;
-        flex-direction: column;
-        gap: 10px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 12px;
         min-width: 0;
         align-self: start;
-        justify-self: start;
-        grid-column: 1;
+        justify-self: center;
+        grid-column: 1 / -1;
+        margin-bottom: 2px;
       }
 
       .lap-track-card .track-map-sector-badge {
@@ -3436,12 +3471,14 @@
         align-items: center;
         justify-content: center;
         gap: 3px;
+        min-width: 118px;
         min-height: 56px;
         padding: 10px 14px;
         border: 1px solid rgba(148, 163, 184, 0.16);
         border-radius: 16px;
         background: linear-gradient(180deg, rgba(21, 35, 59, 0.96), rgba(12, 19, 34, 0.98));
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        text-align: center;
       }
 
       .lap-track-card .track-map-sector-badge-label {
@@ -3599,14 +3636,14 @@
       .track-map-sector-divider {
         stroke: rgba(0, 0, 0, 0.96);
         stroke-width: 5;
-        stroke-linecap: round;
+        stroke-linecap: butt;
         vector-effect: non-scaling-stroke;
       }
 
       .track-map-sector-divider-shadow {
         stroke: rgba(0, 0, 0, 0.55);
         stroke-width: 10;
-        stroke-linecap: round;
+        stroke-linecap: butt;
         vector-effect: non-scaling-stroke;
       }
 
@@ -4548,16 +4585,21 @@
       .qualifying-overview-track-map-overlay {
         position: absolute;
         top: 18px;
-        left: 18px;
+        left: 50%;
         z-index: 2;
-        display: grid;
-        gap: 10px;
-        justify-items: start;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 12px;
+        width: min(100%, calc(100% - 36px));
+        transform: translateX(-50%);
         pointer-events: none;
       }
 
       .qualifying-overview-track-map-overlay-group {
         display: block;
+        flex: 0 1 240px;
         min-width: 0;
       }
 
@@ -4567,6 +4609,7 @@
         min-height: 0;
         min-width: 0;
         max-width: min(340px, calc(100vw - 72px));
+        width: 100%;
         padding: 10px 11px 11px;
         border: 1px solid rgba(148, 163, 184, 0.16);
         border-radius: 22px;
@@ -4734,8 +4777,13 @@
 
         .qualifying-overview-track-map-overlay {
           top: 12px;
-          left: 12px;
+          left: 50%;
           gap: 8px;
+          width: calc(100% - 24px);
+        }
+
+        .qualifying-overview-track-map-overlay-group {
+          flex: 1 1 220px;
         }
 
         .qualifying-overview-track-map-overlay .track-map-sector-driver-badge {
@@ -5357,6 +5405,7 @@
                               viewBox="0 0 1000 700"
                               role="img"
                               aria-label="Qualifying overview track map"
+                              data-sector-badge-mode="stack"
                               data-driver-abbr="{{ qualifying_overview_track_map.driver_abbr }}"
                               data-driver-circle-label="{{ qualifying_overview_track_map.driver_circle_label }}"
                               data-driver-name="{{ qualifying_overview_track_map.reference_driver_name if qualifying_overview_track_map.reference_driver_name else qualifying_overview_track_map.driver_abbr }}"
@@ -5627,7 +5676,7 @@
                     {% endif %}
                   {% endif %}
                   {% if not session_is_qualifying %}
-                    <div
+                  <div
                       class="stint-graph-viewport"
                       data-stint-graph
                       data-year="{{ form.year }}"
@@ -5639,19 +5688,10 @@
                       data-track-status-class="{{ lap_track_status_class }}"
                     >
                       <div class="stint-graph-summary stint-graph-summary--overlay">
-                        <div class="lap-summary">
-                          <div class="lap-summary-badge">
-                            <span>Lap</span>
-                            <strong>{{ telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" }}</strong>
-                            {% if telemetry_summary and telemetry_summary.deleted_label %}
-                              <span class="lap-summary-badge-note">{{ telemetry_summary.deleted_label }}</span>
-                            {% endif %}
-                          </div>
-                        </div>
                         {% if lap_record %}
                           <div class="stint-graph-summary-records">
                             {% for key, label, value in lap_record %}
-                              {% if key != 'track_status' %}
+                              {% if key != 'track_status' and key != 'position' %}
                                 <div class="lap-summary-badge lap-summary-badge--compact">
                                   <span>{{ label }}</span>
                                   <strong>{{ value }}</strong>
@@ -5660,6 +5700,17 @@
                             {% endfor %}
                           </div>
                         {% endif %}
+                      </div>
+                      <div class="stint-graph-lap-stack" aria-label="Selected lap">
+                        {% set display_lap_number = telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" %}
+                        <div class="stint-graph-lap-time-badge {% if lap_track_status_class %}{{ lap_track_status_class }}{% endif %}" aria-label="Selected lap time">
+                          {% set display_lap_position = telemetry_summary.position if telemetry_summary and telemetry_summary.position and telemetry_summary.position != '-' else '' %}
+                          <span class="stint-graph-lap-time-badge-label">Lap {{ display_lap_number }}</span>
+                          {% if display_lap_position %}
+                            <span class="stint-graph-lap-time-badge-position">(POS {{ display_lap_position }})</span>
+                          {% endif %}
+                          <strong>{{ telemetry_summary.lap_time if telemetry_summary else "-" }}</strong>
+                        </div>
                       </div>
                       <div class="stint-graph-render" data-stint-graph-render></div>
                     </div>
@@ -6266,9 +6317,6 @@
           const range = max - min || 1;
           const stintBestLapValue = String(stint.stint_best_lap_value || "").trim();
           const sessionBestLapValue = String(stint.session_best_lap_value || "").trim();
-          const selectedLapEntry = laps.find((lap) => String(lap.value || "").trim() === selectedLap) || laps[laps.length - 1];
-          const selectedLapTime = selectedLapEntry ? normalizeLapTimeText(selectedLapEntry.lap_time) : "-";
-
           function escapeHtml(value) {
             return String(value)
               .replaceAll("&", "&amp;")
@@ -6388,6 +6436,47 @@
             const statusBottom = height - 4;
             const statusLabelY = height - 7;
             const xSpacing = laps.length > 1 ? (innerWidth / (laps.length - 1)) : 0;
+            const xBetween = (leftX, rightX, fraction) => {
+              const safeFraction = Number.isFinite(fraction) ? Math.max(0, Math.min(1, fraction)) : 0;
+              return leftX + ((rightX - leftX) * safeFraction);
+            };
+
+            const lapFraction = (lapIndex, seconds) => {
+              const lap = laps[lapIndex];
+              if (!lap) {
+                return 0;
+              }
+
+              const lapStartSeconds = Number(lap.lap_start_seconds);
+              const lapEndSeconds = Number(lap.lap_end_seconds);
+              if (!Number.isFinite(seconds) || !Number.isFinite(lapStartSeconds) || !Number.isFinite(lapEndSeconds) || lapEndSeconds <= lapStartSeconds) {
+                return 0;
+              }
+
+              return Math.max(0, Math.min(1, (seconds - lapStartSeconds) / (lapEndSeconds - lapStartSeconds)));
+            };
+
+            const statusStartX = (lapIndex, seconds) => {
+              if (laps.length <= 1) {
+                return toX(0);
+              }
+              if (lapIndex <= 0) {
+                return toX(0);
+              }
+              const fraction = lapFraction(lapIndex, seconds);
+              return xBetween(toX(lapIndex - 1), toX(lapIndex), fraction);
+            };
+
+            const statusEndX = (lapIndex, seconds) => {
+              if (laps.length <= 1) {
+                return toX(0);
+              }
+              const fraction = lapFraction(lapIndex, seconds);
+              if (lapIndex >= laps.length - 1) {
+                return toX(lapIndex);
+              }
+              return xBetween(toX(lapIndex), toX(lapIndex + 1), fraction);
+            };
 
             const findStartIndex = (segment) => {
               for (let index = 0; index < laps.length; index += 1) {
@@ -6425,8 +6514,8 @@
                 return "";
               }
               const endIndex = findEndIndex(segment, startIndex);
-              const startX = toX(startIndex);
-              const endX = toX(endIndex);
+              const startX = statusStartX(startIndex, segment.start_seconds);
+              const endX = statusEndX(endIndex, segment.end_seconds);
               const isSingleLap = Math.abs(endX - startX) < Math.max(16, xSpacing * 0.65);
               const labelWidth = Math.max(28, Math.min(width - padding.left - padding.right - 8, Math.ceil((label.length * 6.2) + 12)));
 
@@ -6521,7 +6610,7 @@
             `;
           }
 
-          function renderPositionChangeMarker(lap, x, y) {
+          function renderPositionChangeMarker(lap, x, y, hasUpperBadge = false) {
             if (!showPositionMarkers || !lap || !lap.position_change_text) {
               return "";
             }
@@ -6538,10 +6627,12 @@
             const topMax = height - padding.bottom - badgeHeight - 4;
             const lapTopMin = padding.top + 2;
             const lapPlaceAbove = y - lapBadgeHeight - 8 >= lapTopMin;
-            const placeAbove = y - badgeHeight - 32 >= topMin;
+            const aboveOffset = hasUpperBadge ? 44 : 32;
+            const belowOffset = hasUpperBadge ? 24 : 16;
+            const placeAbove = y - badgeHeight - aboveOffset >= topMin;
             const chosenTop = placeAbove
-              ? y - badgeHeight - 32
-              : y + (lapMarkers.length && !lapPlaceAbove ? 28 : 16);
+              ? y - badgeHeight - aboveOffset
+              : y + (lapMarkers.length && !lapPlaceAbove ? Math.max(28, belowOffset + 4) : belowOffset);
             const badgeTop = Math.max(topMin, Math.min(topMax, chosenTop));
             const badgeLeft = Math.max(padding.left + 2, Math.min(width - padding.right - badgeWidth - 2, x - (badgeWidth / 2)));
             const badgeCenterX = badgeLeft + (badgeWidth / 2);
@@ -6690,8 +6781,6 @@
           });
 
           const renderHost = container.querySelector("[data-stint-graph-render]") || container;
-          const trackStatusClass = String(container.dataset.trackStatusClass || "").trim();
-          const lapTimeBadgeClass = trackStatusClass ? `stint-graph-lap-time-badge ${trackStatusClass}` : "stint-graph-lap-time-badge";
 
           const points = laps
             .map((lap, index) => {
@@ -6705,6 +6794,7 @@
               const lapValue = String(lap.value || "").trim();
               const isRaceBest = Boolean(sessionBestLapValue) && lapValue === sessionBestLapValue;
               const isStintBest = Boolean(stintBestLapValue) && lapValue === stintBestLapValue && !isRaceBest;
+              const hasUpperBadge = Boolean(isRaceBest || isStintBest);
               const pointMarkup = isSelected
                 ? `
                   <circle class="stint-graph-point-core" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="6" fill="${pointColor}"></circle>
@@ -6716,7 +6806,7 @@
                   ${isRaceBest ? renderBestLapMarker(lap, x, y, { label: "PB", className: "stint-graph-race-best" }) : ""}
                   ${isStintBest ? renderBestLapMarker(lap, x, y, { label: "SB", className: "stint-graph-personal-best" }) : ""}
                   ${renderLapMarkers(lap, x, y)}
-                  ${renderPositionChangeMarker(lap, x, y)}
+                  ${renderPositionChangeMarker(lap, x, y, hasUpperBadge)}
                   ${renderLapTimeTooltip(lap, x, y, pointColor)}
                 </a>
               `;
@@ -6724,10 +6814,6 @@
             .join("");
 
           renderHost.innerHTML = `
-            <div class="${lapTimeBadgeClass}" aria-label="Selected lap time">
-              <span>Lap Time</span>
-              <strong>${escapeHtml(selectedLapTime)}</strong>
-            </div>
             <svg class="stint-graph-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Stint lap time graph">
               <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
               ${grid}
@@ -7347,9 +7433,38 @@
             overlay.innerHTML = `
               <div class="loading-card">
                 <svg class="loading-wheel" viewBox="0 0 160 160" aria-hidden="true">
-                  <circle cx="80" cy="80" r="61" fill="#11161d" stroke="#050608" stroke-width="6"></circle>
-                  <circle cx="80" cy="80" r="39" fill="#b9c0c8" stroke="#707985" stroke-width="2.5"></circle>
+                  <defs>
+                    <radialGradient id="nav-loading-tire-fill" cx="50%" cy="46%" r="66%">
+                      <stop offset="0%" stop-color="#242a33"></stop>
+                      <stop offset="52%" stop-color="#11161d"></stop>
+                      <stop offset="100%" stop-color="#050608"></stop>
+                    </radialGradient>
+                    <radialGradient id="nav-loading-rim-fill" cx="50%" cy="42%" r="66%">
+                      <stop offset="0%" stop-color="#f5f7fa"></stop>
+                      <stop offset="52%" stop-color="#b9c0c8"></stop>
+                      <stop offset="100%" stop-color="#7b838d"></stop>
+                    </radialGradient>
+                    <linearGradient id="nav-loading-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"></stop>
+                      <stop offset="60%" stop-color="rgba(255,255,255,0.05)"></stop>
+                      <stop offset="100%" stop-color="rgba(255,255,255,0)"></stop>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="80" cy="80" r="61" fill="url(#nav-loading-tire-fill)" stroke="#050608" stroke-width="6"></circle>
+                  <path d="M 123.3 47.7 A 58 58 0 0 1 123.3 112.3" fill="none" stroke="#ff2020" stroke-width="5.5" stroke-linecap="round"></path>
+                  <path d="M 36.7 112.3 A 58 58 0 0 1 36.7 47.7" fill="none" stroke="#ff2020" stroke-width="5.5" stroke-linecap="round"></path>
+                  <circle cx="80" cy="80" r="39" fill="url(#nav-loading-rim-fill)" stroke="#707985" stroke-width="2.5"></circle>
+                  <circle cx="80" cy="80" r="26" fill="#aab2bb" stroke="#f2f4f7" stroke-width="1.5"></circle>
                   <circle cx="80" cy="80" r="16.5" fill="#8f98a3" stroke="#dfe4ea" stroke-width="1.25"></circle>
+                  <g fill="#75808d">
+                    <circle cx="80" cy="44" r="2.2"></circle>
+                    <circle cx="108" cy="60" r="2.2"></circle>
+                    <circle cx="108" cy="100" r="2.2"></circle>
+                    <circle cx="80" cy="116" r="2.2"></circle>
+                    <circle cx="52" cy="100" r="2.2"></circle>
+                    <circle cx="52" cy="60" r="2.2"></circle>
+                  </g>
+                  <path d="M39 69c9-24 26-37 41-37 14 0 31 11 40 31" fill="none" stroke="url(#nav-loading-highlight)" stroke-width="8" stroke-linecap="round" opacity="0.85"></path>
                 </svg>
                 <h2 class="loading-title"></h2>
                 <p class="loading-copy"></p>
@@ -9634,6 +9749,10 @@
                 </g>
               `;
             }).join("");
+          }
+
+          function renderSectorBoundaryCaps() {
+            return "";
           }
 
           function splitPolylineByFractions(points, fractions, gapDistance = 0) {
