@@ -348,22 +348,62 @@
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        margin: 16px 0 12px;
-        padding: 0.7rem 1rem;
+        margin: 0;
+        padding: 0;
+        color: var(--text);
+        font-size: clamp(1.55rem, 2.9vw, 2.5rem);
+        font-weight: 800;
+        line-height: 1.02;
+        text-decoration: none;
+        letter-spacing: -0.035em;
+        white-space: nowrap;
+      }
+
+      .session-badge-title-wrap {
+        position: relative;
+        display: grid;
+        gap: 6px;
+        justify-items: center;
+        padding: 14px 18px 12px;
+        border: 1px solid rgba(68, 194, 255, 0.22);
+        border-radius: 24px;
+        background:
+          radial-gradient(circle at top left, rgba(68, 194, 255, 0.16), transparent 52%),
+          linear-gradient(180deg, rgba(15, 29, 49, 0.96), rgba(9, 16, 29, 0.98));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          0 16px 32px rgba(0, 0, 0, 0.18);
+      }
+
+      .session-badge-title-wrap:hover {
+        border-color: rgba(68, 194, 255, 0.34);
+      }
+
+      .session-badge-title-eyebrow {
+        color: rgba(151, 167, 194, 0.82);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .session-badge-title-text {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.7rem 1.05rem;
         border: 1px solid rgba(68, 194, 255, 0.24);
         border-radius: 18px;
         background: linear-gradient(135deg, rgba(68, 194, 255, 0.12), rgba(99, 230, 178, 0.08));
-        color: var(--text);
-        font-size: clamp(1.5rem, 2.8vw, 2.4rem);
-        font-weight: 400;
-        line-height: 1.1;
-        text-decoration: none;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          0 10px 22px rgba(0, 0, 0, 0.12);
       }
 
       .session-badge-row {
         display: grid;
         justify-items: center;
-        gap: 10px;
+        gap: 12px;
       }
 
       .session-badge-row--sprint {
@@ -2054,12 +2094,12 @@
       .stint-graph-viewport {
         position: relative;
         min-width: 0;
-        padding: 24px 0 0;
+        padding: 18px 0 0;
       }
 
       .stint-graph-lap-stack {
         position: absolute;
-        top: -12px;
+        top: -24px;
         left: 50%;
         z-index: 3;
         display: grid;
@@ -2539,29 +2579,28 @@
         grid-area: auto;
         margin-top: 6px;
         padding-top: 16px;
-        border-top: 1px solid rgba(148, 163, 184, 0.14);
       }
 
       .stint-graph-driver-portrait {
         position: relative;
         display: grid;
         place-items: center;
-        padding: 14px;
-        border-radius: 30px;
-        background:
-          linear-gradient(180deg, rgba(33, 45, 68, 0.9), rgba(10, 16, 27, 0.98));
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.05),
-          0 10px 18px rgba(0, 0, 0, 0.16);
+        width: 176px;
+        height: 176px;
+        padding: 0;
+        border-radius: 28px;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
       }
 
       .stint-graph-driver .driver-headshot {
-        width: 136px;
-        height: 136px;
-        border-radius: 22px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        width: 100%;
+        height: 100%;
+        border-radius: 28px;
+        background: transparent;
+        border: 0;
+        object-fit: contain;
       }
 
       .stint-graph-driver .selection-driver-copy {
@@ -3395,12 +3434,12 @@
 
       .lap-support-hero {
         display: grid;
-        gap: 16px;
+        gap: 24px;
         padding: 0;
       }
 
       .lap-support-hero .stint-graph-layout {
-        gap: 12px;
+        gap: 24px;
       }
 
       .lap-support-hero .stint-graph-meta {
@@ -3413,6 +3452,35 @@
 
       .lap-support-hero .stint-graph-actions {
         margin-bottom: 0;
+      }
+
+      .stint-analysis-pane {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+        padding: 18px 20px 20px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(12, 20, 35, 0.98), rgba(8, 15, 27, 0.98));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.03),
+          0 18px 34px rgba(0, 0, 0, 0.18);
+      }
+
+      .stint-analysis-pane .stint-bars-panel {
+        margin: 0;
+        padding: 0;
+      }
+
+      .stint-analysis-pane .stint-bars-list {
+        justify-content: center;
+      }
+
+      .stint-analysis-pane .stint-graph-viewport {
+        padding: 14px 0 0;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+        background: transparent;
+        border-radius: 0;
       }
 
       .lap-support-hero .stint-graph-viewport {
@@ -4932,7 +5000,12 @@
       <header>
         <div class="header-badges" data-header-badges data-session="{{ form.session }}">
           <div class="session-badge-row">
-            <a class="session-badge-title" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}" data-session-selector-trigger>{{ session_title }}</a>
+            <div class="session-badge-title-wrap">
+              <span class="session-badge-title-eyebrow">Session</span>
+              <a class="session-badge-title" href="/session?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}" data-session-selector-trigger>
+                <span class="session-badge-title-text">{{ session_title }}</span>
+              </a>
+            </div>
             <div class="session-badge-group">
               {% set ns = namespace(practice_sessions=[], qualifying_sessions=[], sprint_sessions=[], sprint_qualifying_sessions=[], race_sessions=[], other_sessions=[]) %}
               {% for session in session_options %}
@@ -5540,60 +5613,102 @@
                             <small>{{ selected_driver_data.team_name }}</small>
                           </span>
                         </span>
-                        {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
-                          {% set stint_driver = selected_driver | default('', true) %}
-                          <div class="stint-bars-panel">
-                            <div class="stint-bars-list">
-                              {% for stint in race_stints.stints %}
-                                {% if stint.pit_stop_seconds is not none %}
-                                  <div
-                                    class="stint-pit-gap"
-                                    aria-label="Stationary pit time before stint {{ stint.stint }}"
-                                    title="Time the car was completely stationary during the pit stop"
-                                  >
-                                    <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
-                                      <span
-                                        class="stint-pit-gap-fill"
-                                        aria-hidden="true"
-                                      ></span>
-                                      {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
-                                        <span class="stint-pit-gap-row">
-                                          <span class="stint-pit-gap-label">PIT</span>
-                                          <span class="stint-pit-gap-divider" aria-hidden="true"></span>
-                                          <span class="stint-pit-gap-time">{{ stint.pit_stop_stopped_time }}</span>
-                                        </span>
-                                        {% if stint.pit_stop_stopped_delta_time is defined and stint.pit_stop_stopped_delta_time %}
-                                          <span class="stint-pit-gap-average">
-                                            <span class="stint-pit-gap-average-gap">({{ stint.pit_stop_stopped_delta_time }})</span>
-                                          </span>
-                                        {% endif %}
-                                      {% endif %}
-                                    </div>
-                                  </div>
-                                {% endif %}
-                                <a
-                                  class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
-                                  href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
-                                  style="--stint-color: {{ stint.tyre_color }};"
-                                >
-                                  <div class="stint-bar-top">
-                                    <strong>Stint {{ stint.stint }}</strong>
-                                  </div>
-                                  <div class="stint-bar-track stint-bar-track--stint">
-                                    <span class="stint-bar-fill" aria-hidden="true"></span>
-                                    <span class="stint-bar-content stint-bar-content--stint">
-                                      <span class="stint-bar-compound">{{ stint.compound | default('-', true) | trim | upper }}</span>
-                                      <span class="stint-bar-length">{{ stint.lap_count }} LAP{{ 'S' if stint.lap_count != 1 else '' }}</span>
-                                    </span>
-                                  </div>
-                                </a>
-                              {% endfor %}
-                            </div>
-                          </div>
-                        {% endif %}
                       </div>
                     {% endif %}
                   </div>
+                  {% if not session_is_qualifying %}
+                    <section class="stint-analysis-pane" aria-label="Stint analysis">
+                      {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
+                        {% set stint_driver = selected_driver | default('', true) %}
+                        <div class="stint-bars-panel stint-bars-panel--graph">
+                          <div class="stint-bars-list">
+                            {% for stint in race_stints.stints %}
+                              {% if stint.pit_stop_seconds is not none %}
+                                <div
+                                  class="stint-pit-gap"
+                                  aria-label="Stationary pit time before stint {{ stint.stint }}"
+                                  title="Time the car was completely stationary during the pit stop"
+                                >
+                                  <div class="stint-pit-gap-track {% if stint.pit_stop_comparison_class is defined and stint.pit_stop_comparison_class %}{{ stint.pit_stop_comparison_class }}{% endif %}">
+                                    <span
+                                      class="stint-pit-gap-fill"
+                                      aria-hidden="true"
+                                    ></span>
+                                    {% if stint.pit_stop_stopped_time is defined and stint.pit_stop_stopped_time %}
+                                      <span class="stint-pit-gap-row">
+                                        <span class="stint-pit-gap-label">PIT</span>
+                                        <span class="stint-pit-gap-divider" aria-hidden="true"></span>
+                                        <span class="stint-pit-gap-time">{{ stint.pit_stop_stopped_time }}</span>
+                                      </span>
+                                      {% if stint.pit_stop_stopped_delta_time is defined and stint.pit_stop_stopped_delta_time %}
+                                        <span class="stint-pit-gap-average">
+                                          <span class="stint-pit-gap-average-gap">({{ stint.pit_stop_stopped_delta_time }})</span>
+                                        </span>
+                                      {% endif %}
+                                    {% endif %}
+                                  </div>
+                                </div>
+                              {% endif %}
+                              <a
+                                class="stint-bar-link {% if stint.stint == selected_stint %}active{% endif %}"
+                                href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
+                                style="--stint-color: {{ stint.tyre_color }};"
+                              >
+                                <div class="stint-bar-top">
+                                  <strong>Stint {{ stint.stint }}</strong>
+                                </div>
+                                <div class="stint-bar-track stint-bar-track--stint">
+                                  <span class="stint-bar-fill" aria-hidden="true"></span>
+                                  <span class="stint-bar-content stint-bar-content--stint">
+                                    <span class="stint-bar-compound">{{ stint.compound | default('-', true) | trim | upper }}</span>
+                                    <span class="stint-bar-length">{{ stint.lap_count }} LAP{{ 'S' if stint.lap_count != 1 else '' }}</span>
+                                  </span>
+                                </div>
+                              </a>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      {% endif %}
+                      <div
+                        class="stint-graph-viewport"
+                        data-stint-graph
+                        data-year="{{ form.year }}"
+                        data-gp="{{ form.gp }}"
+                        data-session="{{ form.session }}"
+                        data-driver="{{ selected_driver }}"
+                        data-stint="{{ selected_stint }}"
+                        data-selected-lap="{{ selected_lap }}"
+                        data-track-status-class="{{ lap_track_status_class }}"
+                      >
+                        <div class="stint-graph-summary stint-graph-summary--overlay">
+                          {% if lap_record %}
+                            <div class="stint-graph-summary-records">
+                              {% for key, label, value in lap_record %}
+                                {% if key != 'track_status' and key != 'position' %}
+                                  <div class="lap-summary-badge lap-summary-badge--compact">
+                                    <span>{{ label }}</span>
+                                    <strong>{{ value }}</strong>
+                                  </div>
+                                {% endif %}
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                        <div class="stint-graph-lap-stack" aria-label="Selected lap">
+                          {% set display_lap_number = telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" %}
+                          <div class="stint-graph-lap-time-badge {% if lap_track_status_class %}{{ lap_track_status_class }}{% endif %}" aria-label="Selected lap time">
+                            {% set display_lap_position = telemetry_summary.position if telemetry_summary and telemetry_summary.position and telemetry_summary.position != '-' else '' %}
+                            <span class="stint-graph-lap-time-badge-label">Lap {{ display_lap_number }}</span>
+                            {% if display_lap_position %}
+                              <span class="stint-graph-lap-time-badge-position">(POS {{ display_lap_position }})</span>
+                            {% endif %}
+                            <strong>{{ telemetry_summary.lap_time if telemetry_summary else "-" }}</strong>
+                          </div>
+                        </div>
+                        <div class="stint-graph-render" data-stint-graph-render></div>
+                      </div>
+                    </section>
+                  {% endif %}
                   {% if session_is_practice and practice_phase_runs %}
                     {% set display_practice_run = selected_practice_run if selected_practice_run else (practice_phase_runs[0] if practice_phase_runs else none) %}
                     {% set display_practice_other_runs = practice_phase_other_runs if selected_practice_run else (practice_phase_runs | rejectattr('run_number', 'equalto', display_practice_run.run_number) | list) if display_practice_run else [] %}
@@ -5682,46 +5797,6 @@
                         </div>
                       </section>
                     {% endif %}
-                  {% endif %}
-                  {% if not session_is_qualifying %}
-                  <div
-                      class="stint-graph-viewport"
-                      data-stint-graph
-                      data-year="{{ form.year }}"
-                      data-gp="{{ form.gp }}"
-                      data-session="{{ form.session }}"
-                      data-driver="{{ selected_driver }}"
-                      data-stint="{{ selected_stint }}"
-                      data-selected-lap="{{ selected_lap }}"
-                      data-track-status-class="{{ lap_track_status_class }}"
-                    >
-                      <div class="stint-graph-summary stint-graph-summary--overlay">
-                        {% if lap_record %}
-                          <div class="stint-graph-summary-records">
-                            {% for key, label, value in lap_record %}
-                              {% if key != 'track_status' and key != 'position' %}
-                                <div class="lap-summary-badge lap-summary-badge--compact">
-                                  <span>{{ label }}</span>
-                                  <strong>{{ value }}</strong>
-                                </div>
-                              {% endif %}
-                            {% endfor %}
-                          </div>
-                        {% endif %}
-                      </div>
-                      <div class="stint-graph-lap-stack" aria-label="Selected lap">
-                        {% set display_lap_number = telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" %}
-                        <div class="stint-graph-lap-time-badge {% if lap_track_status_class %}{{ lap_track_status_class }}{% endif %}" aria-label="Selected lap time">
-                          {% set display_lap_position = telemetry_summary.position if telemetry_summary and telemetry_summary.position and telemetry_summary.position != '-' else '' %}
-                          <span class="stint-graph-lap-time-badge-label">Lap {{ display_lap_number }}</span>
-                          {% if display_lap_position %}
-                            <span class="stint-graph-lap-time-badge-position">(POS {{ display_lap_position }})</span>
-                          {% endif %}
-                          <strong>{{ telemetry_summary.lap_time if telemetry_summary else "-" }}</strong>
-                        </div>
-                      </div>
-                      <div class="stint-graph-render" data-stint-graph-render></div>
-                    </div>
                   {% endif %}
                 </div>
               </div>
@@ -6308,7 +6383,7 @@
 
           const width = Math.max(1000, Math.round(container.getBoundingClientRect().width || 0));
           const height = 260;
-          const padding = { top: 18, right: 0, bottom: 34, left: 52 };
+          const padding = { top: 30, right: 0, bottom: 34, left: 52 };
           const innerWidth = width - padding.left - padding.right;
           const innerHeight = height - padding.top - padding.bottom;
           const laps = stint.laps.filter((lap) => lap.lap_time_seconds != null);
@@ -6575,11 +6650,11 @@
             }
 
             const isTransition = isTransitionLap(lap.lap_type);
-            const badgeHeight = isTransition ? 30 : 16;
+            const badgeHeight = isTransition ? 26 : 16;
             const badgeGap = isTransition ? 4 : 4;
             const badgeWidths = markers.map((marker) => (
               isTransition
-                ? Math.max(30, Math.ceil((marker.label.length * 9.2) + 8))
+                ? Math.max(28, Math.ceil((marker.label.length * 8.5) + 8))
                 : Math.max(34, Math.ceil((marker.label.length * 5.8) + 12))
             ));
             const totalWidth = badgeWidths.reduce((sum, value) => sum + value, 0) + ((markers.length - 1) * badgeGap);
@@ -6592,7 +6667,10 @@
                 const chosenTop = placeAbove ? y - badgeHeight - 8 : y + 8;
                 return Math.max(topMin, Math.min(topMax, chosenTop));
               })();
-            const centeredLeft = x - (totalWidth / 2);
+            const transitionNudge = isTransition
+              ? (marker.key === "out" ? 4 : marker.key === "in" ? -4 : 0)
+              : 0;
+            const centeredLeft = x - (totalWidth / 2) + transitionNudge;
             const badgeLeft = Math.max(padding.left + 2, Math.min(width - padding.right - totalWidth - 2, centeredLeft));
 
             let cursor = badgeLeft;
@@ -6601,14 +6679,16 @@
               const badgeX = cursor;
               cursor += badgeWidth + badgeGap;
               const badgeCenterX = badgeX + (badgeWidth / 2);
-              const badgeCenterY = badgeTop + (badgeHeight / 2) + 0.5;
               const badgeRadius = badgeHeight / 2;
+              const badgeCenterY = isTransition
+                ? y
+                : (badgeTop + (badgeHeight / 2) + 0.5);
               return `
                 <g class="stint-graph-lap-marker stint-graph-lap-marker-${marker.key}">
                   ${isTransition
-                    ? `<circle cx="${badgeCenterX.toFixed(2)}" cy="${badgeCenterY.toFixed(2)}" r="${badgeRadius.toFixed(2)}" fill="rgba(7, 16, 29, 0.96)" stroke="${marker.color}" stroke-width="1.2"></circle>`
+                    ? `<circle cx="${badgeCenterX.toFixed(2)}" cy="${badgeCenterY.toFixed(2)}" r="${badgeRadius.toFixed(2)}" fill="rgba(7, 16, 29, 0.94)" stroke="${marker.color}" stroke-width="1.4"></circle>`
                     : `<rect x="${badgeX.toFixed(2)}" y="${badgeTop.toFixed(2)}" width="${badgeWidth.toFixed(2)}" height="${badgeHeight}" rx="8" fill="rgba(7, 16, 29, 0.96)" stroke="${marker.color}" stroke-width="1.2"></rect>`}
-                  <text x="${badgeCenterX.toFixed(2)}" y="${badgeCenterY.toFixed(2)}" fill="${marker.color}" font-size="8.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(marker.label)}</text>
+                  <text x="${badgeCenterX.toFixed(2)}" y="${badgeCenterY.toFixed(2)}" fill="${marker.color}" font-size="8.2" font-weight="800" text-anchor="middle" dominant-baseline="middle">${escapeHtml(marker.label)}</text>
                 </g>
               `;
             }).join("");
