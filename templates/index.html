@@ -2648,28 +2648,32 @@
 
       .stint-graph-summary--overlay {
         position: static;
-        width: fit-content;
-        max-width: 100%;
-        margin: 0 0 12px auto;
+        width: 100%;
+        max-width: none;
+        margin: 0 0 6px;
         pointer-events: auto;
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 8px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: 10px;
       }
 
       .stint-graph-summary--overlay .lap-summary {
-        width: fit-content;
-        max-width: 100%;
+        width: auto;
+        max-width: none;
         margin: 0;
       }
 
       .stint-graph-summary--overlay .stint-graph-summary-records {
-        width: fit-content;
-        max-width: 100%;
+        width: 100%;
+        max-width: none;
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: flex-start;
         gap: 8px;
       }
 
@@ -3317,7 +3321,6 @@
         border-radius: 20px;
         background: linear-gradient(180deg, rgba(14, 23, 39, 0.98), rgba(9, 16, 29, 0.98));
         box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
       }
 
       .lap-support-header {
@@ -3447,6 +3450,22 @@
         gap: 24px;
       }
 
+      .lap-support-panel .driver-hero-card {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .lap-support-panel .driver-hero-card::before {
+        display: none;
+      }
+
+      .lap-support-panel .driver-hero-card > * {
+        position: relative;
+        z-index: 1;
+      }
+
       .lap-support-hero .stint-graph-meta {
         padding: 0;
         border: 0;
@@ -3515,13 +3534,13 @@
       .lap-track-card .track-map-stage {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
-        gap: 16px;
+        gap: 14px;
         min-width: 0;
-        padding: 16px;
-        border: 1px solid rgba(148, 163, 184, 0.14);
-        border-radius: 16px;
-        background: linear-gradient(180deg, rgba(7, 14, 27, 0.95), rgba(12, 19, 34, 0.98));
-        overflow: hidden;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        overflow: visible;
         align-items: stretch;
         justify-items: stretch;
       }
@@ -5635,6 +5654,44 @@
                   </div>
                   {% if not session_is_qualifying %}
                     <section class="stint-analysis-pane" aria-label="Stint analysis">
+                      <div
+                        class="stint-graph-viewport"
+                        data-stint-graph
+                        data-year="{{ form.year }}"
+                        data-gp="{{ form.gp }}"
+                        data-session="{{ form.session }}"
+                        data-driver="{{ selected_driver }}"
+                        data-stint="{{ selected_stint }}"
+                        data-selected-lap="{{ selected_lap }}"
+                        data-track-status-class="{{ lap_track_status_class }}"
+                      >
+                        <div class="stint-graph-summary stint-graph-summary--overlay">
+                          {% if lap_record %}
+                            <div class="stint-graph-summary-records">
+                              {% for key, label, value in lap_record %}
+                                {% if key != 'track_status' and key != 'position' %}
+                                  <div class="lap-summary-badge lap-summary-badge--compact">
+                                    <span>{{ label }}</span>
+                                    <strong>{{ value }}</strong>
+                                  </div>
+                                {% endif %}
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                        <div class="stint-graph-lap-stack" aria-label="Selected lap">
+                          {% set display_lap_number = telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" %}
+                          <div class="stint-graph-lap-time-badge {% if lap_track_status_class %}{{ lap_track_status_class }}{% endif %}" aria-label="Selected lap time">
+                            {% set display_lap_position = telemetry_summary.position if telemetry_summary and telemetry_summary.position and telemetry_summary.position != '-' else '' %}
+                            <span class="stint-graph-lap-time-badge-label">Lap {{ display_lap_number }}</span>
+                            {% if display_lap_position %}
+                              <span class="stint-graph-lap-time-badge-position">(POS {{ display_lap_position }})</span>
+                            {% endif %}
+                            <strong>{{ telemetry_summary.lap_time if telemetry_summary else "-" }}</strong>
+                          </div>
+                        </div>
+                        <div class="stint-graph-render" data-stint-graph-render></div>
+                      </div>
                       {% if race_stints and race_stints.stints and form.session in ['R', 'S'] %}
                         {% set stint_driver = selected_driver | default('', true) %}
                         <div class="stint-bars-panel stint-bars-panel--graph">
@@ -5686,44 +5743,6 @@
                           </div>
                         </div>
                       {% endif %}
-                      <div
-                        class="stint-graph-viewport"
-                        data-stint-graph
-                        data-year="{{ form.year }}"
-                        data-gp="{{ form.gp }}"
-                        data-session="{{ form.session }}"
-                        data-driver="{{ selected_driver }}"
-                        data-stint="{{ selected_stint }}"
-                        data-selected-lap="{{ selected_lap }}"
-                        data-track-status-class="{{ lap_track_status_class }}"
-                      >
-                        <div class="stint-graph-summary stint-graph-summary--overlay">
-                          {% if lap_record %}
-                            <div class="stint-graph-summary-records">
-                              {% for key, label, value in lap_record %}
-                                {% if key != 'track_status' and key != 'position' %}
-                                  <div class="lap-summary-badge lap-summary-badge--compact">
-                                    <span>{{ label }}</span>
-                                    <strong>{{ value }}</strong>
-                                  </div>
-                                {% endif %}
-                              {% endfor %}
-                            </div>
-                          {% endif %}
-                        </div>
-                        <div class="stint-graph-lap-stack" aria-label="Selected lap">
-                          {% set display_lap_number = telemetry_summary.lap_number if telemetry_summary else selected_lap.split(':')[-1] if selected_lap else "-" %}
-                          <div class="stint-graph-lap-time-badge {% if lap_track_status_class %}{{ lap_track_status_class }}{% endif %}" aria-label="Selected lap time">
-                            {% set display_lap_position = telemetry_summary.position if telemetry_summary and telemetry_summary.position and telemetry_summary.position != '-' else '' %}
-                            <span class="stint-graph-lap-time-badge-label">Lap {{ display_lap_number }}</span>
-                            {% if display_lap_position %}
-                              <span class="stint-graph-lap-time-badge-position">(POS {{ display_lap_position }})</span>
-                            {% endif %}
-                            <strong>{{ telemetry_summary.lap_time if telemetry_summary else "-" }}</strong>
-                          </div>
-                        </div>
-                        <div class="stint-graph-render" data-stint-graph-render></div>
-                      </div>
                     </section>
                   {% endif %}
                   {% if session_is_practice and practice_phase_runs %}
