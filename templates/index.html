@@ -2716,8 +2716,8 @@
         grid-area: bars;
         display: grid;
         min-width: 0;
-        gap: 12px;
-        padding-top: 2px;
+        gap: 8px;
+        padding-top: 0;
         width: 100%;
         justify-items: stretch;
       }
@@ -2726,7 +2726,7 @@
         display: flex;
         flex-wrap: nowrap;
         justify-content: stretch;
-        gap: 10px 12px;
+        gap: 8px 10px;
         align-items: stretch;
         min-width: 0;
         width: 100%;
@@ -2743,7 +2743,7 @@
         min-width: 0;
         flex: 1 1 0;
         max-width: none;
-        padding: 0 4px;
+        padding: 0 2px;
         align-self: center;
       }
 
@@ -2754,13 +2754,13 @@
         align-items: center;
         justify-content: center;
         flex: 0 0 auto;
-        min-height: 22px;
-        padding: 0 9px;
+        min-height: 18px;
+        padding: 0 8px;
         border: 1px solid rgba(255, 191, 105, 0.24);
         border-radius: 999px;
         background: rgba(7, 16, 29, 0.32);
         color: #ffbf69;
-        font-size: 0.62rem;
+        font-size: 0.56rem;
         font-weight: 900;
         letter-spacing: 0.11em;
         text-transform: uppercase;
@@ -2771,14 +2771,14 @@
         position: relative;
         width: 100%;
         min-width: 0;
-        min-height: 66px;
-        padding: 10px 14px 11px;
+        min-height: 52px;
+        padding: 8px 10px 9px;
         display: grid;
-        gap: 4px;
+        gap: 3px;
         justify-items: center;
         overflow: hidden;
         border: 1px solid rgba(255, 191, 105, 0.2);
-        border-radius: 18px;
+        border-radius: 14px;
         background: linear-gradient(180deg, rgba(44, 30, 10, 0.94), rgba(18, 16, 24, 0.98));
         box-shadow:
           inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -2809,7 +2809,7 @@
         align-items: center;
         justify-content: center;
         color: #fff3df;
-        font-size: 0.98rem;
+        font-size: 0.84rem;
         font-weight: 900;
         letter-spacing: 0.02em;
         line-height: 1;
@@ -2824,7 +2824,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
         width: 100%;
       }
 
@@ -2832,7 +2832,7 @@
         position: relative;
         z-index: 1;
         width: 1px;
-        height: 18px;
+        height: 14px;
         background: rgba(255, 255, 255, 0.14);
       }
 
@@ -2843,7 +2843,7 @@
         align-items: baseline;
         justify-content: center;
         gap: 5px;
-        font-size: 0.62rem;
+        font-size: 0.56rem;
         font-weight: 800;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -2919,10 +2919,10 @@
         flex: 1 1 0;
         max-width: none;
         display: grid;
-        gap: 8px;
-        padding: 12px 12px 13px;
+        gap: 6px;
+        padding: 8px 9px 9px;
         border: 1px solid rgba(148, 163, 184, 0.14);
-        border-radius: 14px;
+        border-radius: 12px;
         background: rgba(21, 35, 59, 0.88);
         color: var(--text);
         text-decoration: none;
@@ -2944,17 +2944,17 @@
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         color: var(--muted);
-        font-size: 0.72rem;
+        font-size: 0.62rem;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.09em;
       }
 
       .stint-bar-top strong {
         color: #f8fbff;
-        font-size: 0.8rem;
-        padding: 4px 9px;
+        font-size: 0.72rem;
+        padding: 3px 7px;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.12);
@@ -2964,27 +2964,26 @@
       .stint-bar-top strong,
       .stint-bar-top span,
       .stint-bar-label,
-      .stint-bar-compound,
       .stint-bar-length {
         white-space: nowrap;
       }
 
       .stint-bar-track {
         position: relative;
-        min-height: 34px;
+        min-height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
         border: 1px solid rgba(148, 163, 184, 0.12);
-        border-radius: 12px;
+        border-radius: 10px;
         background: rgba(9, 16, 29, 0.92);
       }
 
       .stint-bar-track--stint {
-        min-height: 66px;
-        padding: 11px 15px;
-        border-radius: 16px;
+        min-height: 48px;
+        padding: 8px 10px;
+        border-radius: 14px;
       }
 
       .stint-bar-fill {
@@ -3006,10 +3005,10 @@
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
-        gap: 10px;
-        min-width: 154px;
+        gap: 6px;
+        min-width: 96px;
         max-width: 100%;
-        padding: 8px 15px;
+        padding: 5px 9px;
         border-radius: 999px;
         background: linear-gradient(180deg, rgba(7, 16, 29, 0.72), rgba(7, 16, 29, 0.46));
         border: 1px solid rgba(255, 255, 255, 0.24);
@@ -3020,29 +3019,20 @@
 
       .stint-bar-content--stint {
         flex-wrap: nowrap;
-        gap: 8px;
+        gap: 0;
         width: max-content;
-        min-width: max-content;
-      }
-
-      .stint-bar-compound {
-        color: #f8fbff;
-        font-size: 0.96rem;
-        font-weight: 900;
-        line-height: 1;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
+        min-width: 0;
       }
 
       .stint-bar-length {
         color: rgba(248, 251, 255, 0.92);
-        font-size: 0.68rem;
+        font-size: 0.58rem;
         font-weight: 800;
         line-height: 1;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        padding-left: 10px;
-        border-left: 1px solid rgba(255, 255, 255, 0.3);
+        padding-left: 0;
+        border-left: 0;
       }
 
       .stint-bar-label {
@@ -3441,13 +3431,19 @@
       }
 
       .lap-support-hero {
-        display: grid;
+        display: flex;
+        flex-direction: column;
         gap: 24px;
-        padding: 0;
+        width: 100%;
+        padding: 18px 20px 20px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
       }
 
       .lap-support-hero .stint-graph-layout {
+        display: flex;
+        flex-direction: column;
         gap: 24px;
+        width: 100%;
       }
 
       .lap-support-panel .driver-hero-card {
@@ -3484,11 +3480,11 @@
         grid-auto-flow: row;
         grid-auto-rows: auto;
         align-content: start;
-        gap: 18px;
+        gap: 14px;
         min-width: 0;
         width: 100%;
-        min-height: 520px;
-        padding: 18px 20px 20px;
+        min-height: 480px;
+        padding: 14px 16px 16px;
         border: 1px solid rgba(148, 163, 184, 0.16);
         border-radius: 22px;
         background: linear-gradient(180deg, rgba(12, 20, 35, 0.98), rgba(8, 15, 27, 0.98));
@@ -3507,12 +3503,27 @@
       }
 
       .stint-analysis-pane .stint-bars-list {
+        gap: 8px 10px;
         justify-content: stretch;
+      }
+
+      .stint-analysis-pane .stint-bar-link {
+        gap: 4px;
+        padding: 6px 8px 7px;
+      }
+
+      .stint-analysis-pane .stint-bar-track--stint {
+        min-height: 42px;
+        padding: 6px 8px;
+      }
+
+      .stint-analysis-pane .stint-bar-content--stint {
+        padding: 4px 8px;
       }
 
       .stint-analysis-pane .stint-graph-viewport {
         grid-column: 1 / -1;
-        padding: 14px 0 0;
+        padding: 10px 0 0;
         border-top: 1px solid rgba(148, 163, 184, 0.12);
         background: transparent;
         border-radius: 0;
@@ -3591,6 +3602,7 @@
         background: linear-gradient(180deg, rgba(21, 35, 59, 0.96), rgba(12, 19, 34, 0.98));
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
         text-align: center;
+        cursor: help;
       }
 
       .lap-track-card .track-map-sector-badge-label {
@@ -3635,8 +3647,8 @@
         z-index: 6;
         display: grid;
         gap: 8px;
-        min-width: 180px;
-        max-width: 240px;
+        min-width: 224px;
+        max-width: 300px;
         padding: 10px 12px 11px;
         border: 1px solid var(--sector-color, rgba(68, 194, 255, 0.38));
         border-radius: 16px;
@@ -3675,7 +3687,7 @@
 
       .track-map-sector-tooltip-stats {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
       }
 
@@ -5502,7 +5514,16 @@
                                       </div>
                                       <div class="qualifying-overview-track-map-overlay-sector-list" aria-label="Sectors owned by {{ sector_group.source_driver_name if sector_group.source_driver_name else sector_group.source_driver_display }}">
                                         {% for marker in sector_group.sectors %}
-                                          <div class="track-map-sector-badge qualifying-overview-sector-time-badge" style="--sector-color: {{ marker.source_driver_color if marker.source_driver_color else '#ff4d3d' }};" title="{{ marker.source_driver_name if marker.source_driver_name else marker.source_driver_display }}">
+                                          <div
+                                            class="track-map-sector-badge qualifying-overview-sector-time-badge"
+                                            style="--sector-color: {{ marker.source_driver_color if marker.source_driver_color else '#ff4d3d' }};"
+                                            data-sector-label="{{ marker.label if marker.label else 'Sector ' ~ loop.index }}"
+                                            data-sector-time="{{ marker.time }}"
+                                            data-sector-seconds="{{ marker.seconds }}"
+                                            data-sector-speed-min="{{ marker.sector_speed_min if marker.sector_speed_min is not none else '' }}"
+                                            data-sector-speed-max="{{ marker.sector_speed_max if marker.sector_speed_max is not none else '' }}"
+                                            data-sector-color="{{ marker.source_driver_color if marker.source_driver_color else '#ff4d3d' }}"
+                                          >
                                             <span class="track-map-sector-badge-label">{{ marker.label if marker.label else 'Sector ' ~ loop.index }}</span>
                                             <span class="track-map-sector-badge-time">{{ marker.time }}</span>
                                             {% if qualifying_overview_track_map.phase_code == 'ALL' and marker.source_phase_label %}
@@ -5714,11 +5735,6 @@
                                         <span class="stint-pit-gap-divider" aria-hidden="true"></span>
                                         <span class="stint-pit-gap-time">{{ stint.pit_stop_stopped_time }}</span>
                                       </span>
-                                      {% if stint.pit_stop_stopped_delta_time is defined and stint.pit_stop_stopped_delta_time %}
-                                        <span class="stint-pit-gap-average">
-                                          <span class="stint-pit-gap-average-gap">({{ stint.pit_stop_stopped_delta_time }})</span>
-                                        </span>
-                                      {% endif %}
                                     {% endif %}
                                   </div>
                                 </div>
@@ -5728,13 +5744,9 @@
                                 href="/lap?year={{ form.year }}&gp={{ form.gp|urlencode }}&session={{ form.session }}&driver={{ stint_driver }}&stint={{ stint.stint }}#lap-stint-panel"
                                 style="--stint-color: {{ stint.tyre_color }};"
                               >
-                                <div class="stint-bar-top">
-                                  <strong>Stint {{ stint.stint }}</strong>
-                                </div>
                                 <div class="stint-bar-track stint-bar-track--stint">
                                   <span class="stint-bar-fill" aria-hidden="true"></span>
                                   <span class="stint-bar-content stint-bar-content--stint">
-                                    <span class="stint-bar-compound">{{ stint.compound | default('-', true) | trim | upper }}</span>
                                     <span class="stint-bar-length">{{ stint.lap_count }} LAP{{ 'S' if stint.lap_count != 1 else '' }}</span>
                                   </span>
                                 </div>
@@ -5930,16 +5942,22 @@
               <section class="lap-support-card lap-track-card">
                 <div class="track-map-viewport">
                   <div class="track-map-stage">
-                    <div class="track-map-telemetry track-map-telemetry-top">
-                      <div class="telemetry-composite" id="telemetry-primary-charts"></div>
-                    </div>
                     <div class="track-map-body">
                       {% if track_map and track_map.sector_markers %}
                         <div class="track-map-sector-stack" aria-label="Sector split times">
                           {% for marker in track_map.sector_markers %}
                             {% set sector_palette = ['#ff4d3d', '#f3de5c', '#f8fbff'] %}
                             {% set sector_color = sector_palette[loop.index0] if loop.index0 < sector_palette|length else (marker.source_driver_color if marker.source_driver_color else '#ff4d3d') %}
-                            <div class="track-map-sector-badge" style="--sector-color: {{ sector_color }};">
+                            <div
+                              class="track-map-sector-badge"
+                              style="--sector-color: {{ sector_color }};"
+                              data-sector-label="{{ marker.label if marker.label else 'Sector ' ~ loop.index }}"
+                              data-sector-time="{{ marker.time }}"
+                              data-sector-seconds="{{ marker.seconds }}"
+                              data-sector-speed-min="{{ marker.sector_speed_min if marker.sector_speed_min is not none else '' }}"
+                              data-sector-speed-max="{{ marker.sector_speed_max if marker.sector_speed_max is not none else '' }}"
+                              data-sector-color="{{ sector_color }}"
+                            >
                               <span class="track-map-sector-badge-label">Sector {{ loop.index }}</span>
                               <span class="track-map-sector-badge-time">{{ marker.time }}</span>
                             </div>
@@ -5958,6 +5976,9 @@
                         data-driver-color="{{ selected_driver_data.team_badge_color if selected_driver_data else '#44c2ff' }}"
                       ></svg>
                       <div class="track-map-sector-tooltip" data-track-sector-tooltip hidden aria-hidden="true"></div>
+                    </div>
+                    <div class="track-map-telemetry track-map-telemetry-top">
+                      <div class="telemetry-composite" id="telemetry-primary-charts"></div>
                     </div>
                     <div class="track-map-telemetry track-map-telemetry-bottom">
                       <div class="telemetry-composite" id="telemetry-secondary-charts"></div>
@@ -9464,7 +9485,7 @@
                   <div class="chart-sector-strip" aria-hidden="true">
                     ${chart.sector_windows.map((sector, sectorIndex) => {
                       const sectorColor = String(sector && sector.color ? sector.color : "").trim() || ["#ff4d3d", "#f5f6f8", "#f3de5c"][sectorIndex % 3];
-                      const sectorLabel = String(sector && sector.label ? sector.label : `S${sectorIndex + 1}`).trim() || `S${sectorIndex + 1}`;
+                      const sectorLabel = String(sector && sector.label ? sector.label : `Sector ${sectorIndex + 1}`).trim() || `Sector ${sectorIndex + 1}`;
                       const sectorTime = String(sector && sector.time ? sector.time : "").trim();
                       const sectorDriver = String(sector && (sector.source_driver_abbr || sector.source_driver_name || sector.source_driver_display) ? (sector.source_driver_abbr || sector.source_driver_name || sector.source_driver_display) : "").trim();
                       return `
@@ -10082,10 +10103,11 @@
                 const marker = sectorMarkers.length ? (sectorMarkers[index] || sectorMarkers[sectorMarkers.length - 1]) : null;
                 const segmentPath = path(segment);
                 const sectorColor = sectorColors[index] || sectorColors[sectorColors.length - 1];
-                const sectorLabel = String(marker && marker.label ? marker.label : `S${index + 1}`).trim() || `S${index + 1}`;
+                const sectorLabel = String(marker && marker.label ? marker.label : `Sector ${index + 1}`).trim() || `Sector ${index + 1}`;
                 const sectorTime = String(marker && marker.time ? marker.time : "").trim();
                 const sectorSpeedMin = Number(marker && marker.sector_speed_min);
                 const sectorSpeedMax = Number(marker && marker.sector_speed_max);
+                const sectorSeconds = Number(marker && marker.seconds);
                 const hoverStrokeWidth = Math.max(28, Math.round(Math.min(width, height) * 0.034));
                 return `
                   <path
@@ -10093,6 +10115,7 @@
                     data-sector-index="${index}"
                     data-sector-label="${escapeHtml(sectorLabel)}"
                     data-sector-time="${escapeHtml(sectorTime)}"
+                    data-sector-seconds="${Number.isFinite(sectorSeconds) ? sectorSeconds.toFixed(3) : ""}"
                     data-sector-speed-min="${Number.isFinite(sectorSpeedMin) ? sectorSpeedMin.toFixed(1) : ""}"
                     data-sector-speed-max="${Number.isFinite(sectorSpeedMax) ? sectorSpeedMax.toFixed(1) : ""}"
                     data-sector-color="${escapeHtml(sectorColor)}"
@@ -10273,6 +10296,24 @@
             return Number.isFinite(numeric) ? `${Math.round(numeric)} km/h` : "-";
           };
 
+          const formatSectorDelta = (value) => {
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+              return "-";
+            }
+
+            const formatted = typeof formatLapTime === "function"
+              ? formatLapTime(Math.abs(numeric))
+              : `${Math.abs(numeric).toFixed(3)}`;
+            if (numeric > 0) {
+              return `+${formatted}`;
+            }
+            if (numeric < 0) {
+              return `-${formatted}`;
+            }
+            return formatted;
+          };
+
           const positionSectorTooltip = (event) => {
             if (!sectorTooltip || !trackMapBody) {
               return;
@@ -10328,9 +10369,23 @@
 
             const sectorLabel = String(target.dataset.sectorLabel || "").trim() || "Sector";
             const sectorTime = String(target.dataset.sectorTime || "").trim() || "-";
+            const sectorSeconds = Number(target.dataset.sectorSeconds);
             const sectorSpeedMin = formatSectorSpeed(target.dataset.sectorSpeedMin);
             const sectorSpeedMax = formatSectorSpeed(target.dataset.sectorSpeedMax);
             const sectorColor = String(target.dataset.sectorColor || "").trim() || "#44c2ff";
+            const fastestSectorSeconds = sectorTooltipTargets.reduce((fastest, element) => {
+              const seconds = Number(element.dataset.sectorSeconds);
+              if (!Number.isFinite(seconds)) {
+                return fastest;
+              }
+              if (!Number.isFinite(fastest) || seconds < fastest) {
+                return seconds;
+              }
+              return fastest;
+            }, Number.POSITIVE_INFINITY);
+            const sectorDeltaSeconds = Number.isFinite(sectorSeconds) && Number.isFinite(fastestSectorSeconds)
+              ? sectorSeconds - fastestSectorSeconds
+              : null;
             const isNewTarget = activeSectorTooltipTarget !== target || sectorTooltip.hidden;
             activeSectorTooltipTarget = target;
 
@@ -10350,6 +10405,10 @@
                   <div class="track-map-sector-tooltip-stat">
                     <span>Highest speed</span>
                     <strong>${escapeHtml(sectorSpeedMax)}</strong>
+                  </div>
+                  <div class="track-map-sector-tooltip-stat">
+                    <span>Delta</span>
+                    <strong>${escapeHtml(formatSectorDelta(sectorDeltaSeconds))}</strong>
                   </div>
                 </div>
               `;
@@ -11059,10 +11118,12 @@
           const markerCircle = marker ? marker.querySelector("circle") : null;
           const markerText = marker ? marker.querySelector("text") : null;
 
-          const sectorHoverTargets = Array.from(svg.querySelectorAll(".track-sector-hover"));
-          if (sectorHoverTargets.length) {
-            svg.addEventListener("pointermove", (event) => {
-              const target = event.target instanceof Element ? event.target.closest(".track-sector-hover") : null;
+          const sectorTooltipTargets = trackMapBody
+            ? Array.from(trackMapBody.querySelectorAll(".track-sector-hover, .track-map-sector-badge[data-sector-label]"))
+            : [];
+          if (sectorTooltipTargets.length) {
+            trackMapBody.addEventListener("pointermove", (event) => {
+              const target = event.target instanceof Element ? event.target.closest(".track-sector-hover, .track-map-sector-badge[data-sector-label]") : null;
               if (!target) {
                 hideSectorTooltip();
                 return;
@@ -11071,7 +11132,7 @@
               showSectorTooltip(target, event);
             });
 
-            svg.addEventListener("pointerleave", hideSectorTooltip);
+            trackMapBody.addEventListener("pointerleave", hideSectorTooltip);
           }
 
           if (!marker || duration <= 0) {

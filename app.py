@@ -4963,9 +4963,9 @@ def _track_map_payload(session, lap, lap_duration_seconds=None, telemetry=None):
 
     sector_markers = []
     sector_specs = [
-        ("S1", lap.get("Sector1Time", None)),
-        ("S2", lap.get("Sector2Time", None)),
-        ("S3", lap.get("Sector3Time", None)),
+        ("Sector 1", lap.get("Sector1Time", None)),
+        ("Sector 2", lap.get("Sector2Time", None)),
+        ("Sector 3", lap.get("Sector3Time", None)),
     ]
     lap_time_seconds = lap_duration_seconds
     if lap_time_seconds is None:
@@ -5166,7 +5166,7 @@ def _qualifying_overview_track_map_payload(session, phase=None, driver_options=N
             if driver_key:
                 driver_lookup[driver_key] = option
 
-    sector_columns = [("Sector1Time", "S1"), ("Sector2Time", "S2"), ("Sector3Time", "S3")]
+    sector_columns = [("Sector1Time", "Sector 1"), ("Sector2Time", "Sector 2"), ("Sector3Time", "Sector 3")]
     sector_markers = []
     cumulative_seconds = 0.0
     for sector_column, sector_label in sector_columns:
