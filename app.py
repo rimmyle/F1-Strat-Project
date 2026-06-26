@@ -6093,7 +6093,7 @@ def data():
         driver_number = _resolve_driver(session, driver_number, driver_options) if session else driver_number
     else:
         driver_number = None
-        if session and driver_options and session_code.startswith("FP"):
+        if session and driver_options and (session_code.startswith("FP") or lap_page_requested):
             driver_number = driver_options[0]["value"]
     selected_driver_data = next((option for option in driver_options if option["value"] == driver_number), None)
     if selected_driver_data is None and driver_requested and driver_options:
